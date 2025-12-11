@@ -38,6 +38,12 @@ export async function POST(
       SELECT id, totalPushups FROM players WHERE id = ${playerId}
     `;
 
+    console.log('Player query result:', { 
+      playerResult,
+      rows: playerResult.rows,
+      firstRow: playerResult.rows ? playerResult.rows[0] : null
+    });
+
     if (!playerResult.rows || playerResult.rows.length === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
