@@ -29,6 +29,7 @@ export default function PlayerCard({
   theme = 'cartoon',
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
+  const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -68,6 +69,14 @@ export default function PlayerCard({
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete ${player.name}? This will remove all their pushup history.`)) {
       onDelete();
+    }
+  };
+
+  const handleCustomRemove = () => {
+    const amount = parseInt(removeValue);
+    if (!isNaN(amount) && amount > 0) {
+      onRemovePushups(amount);
+      setRemoveValue('');
     }
   };
 
@@ -181,7 +190,7 @@ export default function PlayerCard({
       <div className="space-y-4">
         {/* Quick buttons */}
         <div className="grid grid-cols-4 gap-2">
-          {[1, 5, 10, 25].map((amount) => (
+          {[10, 20, 30, 50].map((amount) => (
             <motion.button
               key={`add-${amount}`}
               whileHover={{ scale: 1.05 }}
@@ -208,7 +217,7 @@ export default function PlayerCard({
           ))}
         </div>
 
-        {/* Custom input */}
+        {/* Custom add input */}
         <div className="flex gap-2">
           <input
             type="number"
@@ -240,16 +249,37 @@ export default function PlayerCard({
           </motion.button>
         </div>
 
-        {/* Remove button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => onRemovePushups(1)}
-          className="w-full bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold py-2 rounded transition-colors border border-red-500/30 flex items-center justify-center gap-2"
-        >
-          <Minus className="w-4 h-4" />
-          Remove 1
-        </motion.button>
+        {/* Custom remove input */}
+        <div className="flex gap-2">
+          <input
+            type="number"
+            value={removeValue}
+            onChange={(e) => setRemoveValue(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleCustomRemove();
+              }
+            }}
+            placeholder="Remove amount"
+            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
+            style={{
+              backgroundColor:
+                theme === 'christmas' ? 'rgb(60, 20, 20)' : 'rgb(55, 30, 30)',
+              borderColor:
+                theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(239, 68, 68)',
+              color: 'white',
+            }}
+          />
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleCustomRemove}
+            className="bg-red-500/40 hover:bg-red-500/60 text-red-300 font-bold px-4 py-2 rounded transition-colors border border-red-500/30 flex items-center gap-2"
+          >
+            <Minus className="w-4 h-4" />
+            Remove
+          </motion.button>
+        </div>
       </div>
 
       {/* Daily History Modal */}
