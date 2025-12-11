@@ -7,6 +7,7 @@ function transformRow(row: any) {
     id: row.id,
     name: row.name,
     totalPushups: row.totalpushups,
+    dailyTarget: row.dailytarget,
     updatedAt: row.updatedat,
   };
 }
@@ -72,7 +73,7 @@ export async function POST(
       UPDATE players 
       SET totalpushups = ${newTotal}, updatedat = CURRENT_TIMESTAMP 
       WHERE id = ${playerId}
-      RETURNING id, name, totalpushups, updatedat
+      RETURNING id, name, totalpushups, dailytarget, updatedat
     `;
 
     if (!result.rows || result.rows.length === 0) {
