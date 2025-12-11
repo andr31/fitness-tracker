@@ -134,7 +134,8 @@ export default function Home() {
         }}
       >
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            {/* Title and Logo */}
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center gap-3"
@@ -166,73 +167,75 @@ export default function Home() {
               </h1>
             </motion.div>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsModalOpen(true)}
-              className="text-white font-bold px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg"
-              style={{
-                backgroundColor:
-                  theme === 'christmas'
-                    ? 'rgb(34, 197, 94)'
-                    : 'rgb(34, 197, 94)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  theme === 'christmas'
-                    ? 'rgb(22, 163, 74)'
-                    : 'rgb(22, 163, 74)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  theme === 'christmas'
-                    ? 'rgb(34, 197, 94)'
-                    : 'rgb(34, 197, 94)';
-              }}
-            >
-              <Plus className="w-5 h-5" />
-              Add Player
-            </motion.button>
-          </div>
+            {/* Theme Switcher and Add Button */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Theme Buttons */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setTheme('cartoon')}
+                className="px-4 py-2 rounded-lg font-semibold transition-all"
+                style={{
+                  backgroundColor:
+                    theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                  color: 'white',
+                  boxShadow:
+                    theme === 'cartoon'
+                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      : 'none',
+                }}
+              >
+                🤖 Cartoon
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setTheme('christmas')}
+                className="px-4 py-2 rounded-lg font-semibold transition-all"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgb(34, 197, 94)'
+                      : 'rgb(55, 65, 81)',
+                  color: 'white',
+                  boxShadow:
+                    theme === 'christmas'
+                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                      : 'none',
+                }}
+              >
+                🎄 Christmas
+              </motion.button>
 
-          {/* Theme Switcher */}
-          <div className="flex gap-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setTheme('cartoon')}
-              className="px-4 py-2 rounded-lg font-semibold transition-all"
-              style={{
-                backgroundColor:
-                  theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
-                color: 'white',
-                boxShadow:
-                  theme === 'cartoon'
-                    ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    : 'none',
-              }}
-            >
-              🤖 Cartoon
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setTheme('christmas')}
-              className="px-4 py-2 rounded-lg font-semibold transition-all"
-              style={{
-                backgroundColor:
-                  theme === 'christmas'
-                    ? 'rgb(34, 197, 94)'
-                    : 'rgb(55, 65, 81)',
-                color: 'white',
-                boxShadow:
-                  theme === 'christmas'
-                    ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                    : 'none',
-              }}
-            >
-              🎄 Christmas
-            </motion.button>
+              {/* Add Player Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsModalOpen(true)}
+                className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgb(34, 197, 94)'
+                      : 'rgb(34, 197, 94)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    theme === 'christmas'
+                      ? 'rgb(22, 163, 74)'
+                      : 'rgb(22, 163, 74)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    theme === 'christmas'
+                      ? 'rgb(34, 197, 94)'
+                      : 'rgb(34, 197, 94)';
+                }}
+              >
+                <Plus className="w-5 h-5" />
+                Add Player
+              </motion.button>
+            </div>
           </div>
         </div>
       </motion.header>
