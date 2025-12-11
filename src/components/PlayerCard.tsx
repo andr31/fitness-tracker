@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Trash2, User } from 'lucide-react';
+import { Plus, Minus, Trash2 } from 'lucide-react';
+import AnimatedIcon from './AnimatedIcon';
+import { getPlayerEmoji, getPlayerAnimation } from '@/lib/emojis';
 
 interface Player {
   id: number;
@@ -46,9 +48,11 @@ export default function PlayerCard({
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-            <User className="w-6 h-6 text-white" />
-          </div>
+          <AnimatedIcon
+            emoji={getPlayerEmoji(player.name)}
+            animationType={getPlayerAnimation(player.id)}
+            size="large"
+          />
           <div>
             <h3 className="text-xl font-bold text-white">{player.name}</h3>
             <motion.p
