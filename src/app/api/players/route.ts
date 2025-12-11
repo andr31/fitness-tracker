@@ -17,7 +17,7 @@ export async function GET() {
     const result = await sql`
       SELECT id, name, totalpushups, createdat, updatedat 
       FROM players 
-      ORDER BY totalpushups DESC
+      ORDER BY totalpushups DESC, updatedat ASC
     `;
 
     return NextResponse.json(result.rows.map(transformRow));
