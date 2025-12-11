@@ -6,12 +6,19 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  console.log('Raw id from params:', { id, typeof: typeof id });
+  
   try {
-    const playerId = parseInt(id, 10);
+    if (!id || id === 'undefined') {
+      console.error('ID is missing or undefined');
+      return NextResponse.json({ error: 'Player ID is required' }, { status: 400 });
+    }
 
-    if (isNaN(playerId) || !id) {
-      console.error('Invalid playerId:', { id, playerId });
-      return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
+    const playerId = parseInt(id, 10);
+    console.log('Parsed playerId:', { id, playerId, isNaN: isNaN(playerId) });
+
+    if (isNaN(playerId)) {
+      return NextResponse.json({ error: 'Invalid player ID format' }, { status: 400 });
     }
 
     const { amount } = await request.json();
