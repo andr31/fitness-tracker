@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, Trash2 } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
-import { getPlayerEmoji, getPlayerAnimation } from '@/lib/emojis';
+import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 
 interface Player {
   id: number;
@@ -17,6 +17,7 @@ interface PlayerCardProps {
   onAddPushups: (amount: number) => void;
   onRemovePushups: (amount: number) => void;
   onDelete: () => void;
+  theme?: Theme;
 }
 
 export default function PlayerCard({
@@ -24,6 +25,7 @@ export default function PlayerCard({
   onAddPushups,
   onRemovePushups,
   onDelete,
+  theme = 'cartoon',
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
 
@@ -44,12 +46,20 @@ export default function PlayerCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-6 shadow-lg border border-gray-700 hover:border-gray-600 transition-all"
+      className="rounded-lg p-6 shadow-lg border hover:border-opacity-75 transition-all"
+      style={{
+        background:
+          theme === 'christmas'
+            ? 'linear-gradient(to bottom right, rgba(127, 29, 29, 0.6), rgba(20, 83, 45, 0.4), rgba(15, 35, 60, 0.3))'
+            : 'linear-gradient(to bottom right, rgb(31, 41, 55), rgb(17, 24, 39))',
+        borderColor:
+          theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
+      }}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <AnimatedIcon
-            emoji={getPlayerEmoji(player.name)}
+            emoji={getPlayerEmoji(player.name, theme)}
             animationType={getPlayerAnimation(player.id)}
             size="large"
           />
@@ -57,7 +67,10 @@ export default function PlayerCard({
             <h3 className="text-xl font-bold text-white">{player.name}</h3>
             <motion.p
               key={player.totalPushups}
-              initial={{ scale: 1.3, color: '#FFD700' }}
+              initial={{
+                scale: 1.3,
+                color: theme === 'christmas' ? '#FBBF24' : '#FFD700',
+              }}
               animate={{ scale: 1, color: '#FFFFFF' }}
               transition={{ duration: 0.4 }}
               className="text-2xl font-bold"
@@ -71,9 +84,23 @@ export default function PlayerCard({
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={onDelete}
-          className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+          className="p-2 rounded-lg transition-colors"
+          style={{
+            backgroundColor:
+              theme === 'christmas'
+                ? 'rgba(239, 68, 68, 0.2)'
+                : 'rgba(239, 68, 68, 0.2)',
+          }}
         >
-          <Trash2 className="w-5 h-5 text-red-400 hover:text-red-300" />
+          <Trash2
+            className="w-5 h-5"
+            style={{
+              color:
+                theme === 'christmas'
+                  ? 'rgb(252, 165, 165)'
+                  : 'rgb(248, 113, 113)',
+            }}
+          />
         </motion.button>
       </div>
 
@@ -86,7 +113,21 @@ export default function PlayerCard({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleQuickAdd(amount)}
-              className="bg-green-500/20 hover:bg-green-500/40 text-green-300 font-bold py-2 rounded transition-colors border border-green-500/30"
+              className="font-bold py-2 rounded transition-colors border"
+              style={{
+                backgroundColor:
+                  theme === 'christmas'
+                    ? 'rgba(34, 197, 94, 0.2)'
+                    : 'rgba(34, 197, 94, 0.2)',
+                color:
+                  theme === 'christmas'
+                    ? 'rgb(186, 230, 253)'
+                    : 'rgb(134, 239, 172)',
+                borderColor:
+                  theme === 'christmas'
+                    ? 'rgba(34, 197, 94, 0.3)'
+                    : 'rgba(34, 197, 94, 0.3)',
+              }}
             >
               +{amount}
             </motion.button>
@@ -105,7 +146,14 @@ export default function PlayerCard({
               }
             }}
             placeholder="Custom amount"
-            className="flex-1 bg-gray-700 text-white rounded px-3 py-2 border border-gray-600 focus:border-blue-400 outline-none transition-colors"
+            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
+            style={{
+              backgroundColor:
+                theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
+              borderColor:
+                theme === 'christmas' ? 'rgb(34, 197, 94)' : 'rgb(75, 85, 99)',
+              color: 'white',
+            }}
           />
           <motion.button
             whileHover={{ scale: 1.05 }}

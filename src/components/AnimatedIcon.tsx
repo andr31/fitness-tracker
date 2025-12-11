@@ -17,50 +17,54 @@ const sizeMap = {
 
 const animationVariants = {
   bounce: {
-    y: [0, -20, 0],
+    y: [0, -30, 0],
     transition: {
-      duration: 0.8,
+      duration: 1.2,
       repeat: Infinity,
       ease: 'easeInOut',
     },
   },
   wiggle: {
-    rotate: [-5, 5, -5],
-    transition: {
-      duration: 0.6,
-      repeat: Infinity,
-      ease: 'easeInOut',
-    },
-  },
-  spin: {
-    rotate: [0, 360],
-    transition: {
-      duration: 2,
-      repeat: Infinity,
-      ease: 'linear',
-    },
-  },
-  pulse: {
-    scale: [1, 1.2, 1],
+    rotate: [-10, 10, -10, 10, -10],
+    scale: [1, 1.1, 1, 1.1, 1],
     transition: {
       duration: 1,
       repeat: Infinity,
       ease: 'easeInOut',
     },
   },
-  float: {
-    y: [0, -10, 0],
-    x: [0, 5, 0],
+  spin: {
+    rotate: [0, 360],
+    scale: [1, 1.2, 1],
     transition: {
       duration: 3,
+      repeat: Infinity,
+      ease: 'linear',
+    },
+  },
+  pulse: {
+    scale: [1, 1.3, 0.95, 1.2, 1],
+    transition: {
+      duration: 1.6,
+      repeat: Infinity,
+      ease: 'easeInOut',
+    },
+  },
+  float: {
+    y: [0, -20, 0],
+    x: [0, 15, -10, 0],
+    rotate: [0, 10, -10, 0],
+    transition: {
+      duration: 4,
       repeat: Infinity,
       ease: 'easeInOut',
     },
   },
   shake: {
-    x: [-3, 3, -3, 0],
+    x: [-5, 5, -5, 5, -5, 0],
+    rotate: [-5, 5, -5, 5, -5, 0],
     transition: {
-      duration: 0.5,
+      duration: 0.8,
       repeat: Infinity,
       ease: 'easeInOut',
     },

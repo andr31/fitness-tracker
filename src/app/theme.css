@@ -1,0 +1,63 @@
+:root {
+  --color-bg-primary: rgb(17, 24, 39);
+  --color-bg-secondary: rgb(31, 41, 55);
+  --color-accent-primary: rgb(250, 204, 21);
+  --color-accent-secondary: rgb(249, 115, 22);
+  --color-button-primary: rgb(34, 197, 94);
+  --color-button-primary-hover: rgb(22, 163, 74);
+  --color-border: rgb(55, 65, 81);
+  --color-card-bg: rgba(31, 41, 55, 0.4);
+  --color-dumbbell: rgb(250, 204, 21);
+}
+
+[data-theme='christmas'] {
+  --color-bg-primary: rgb(127, 29, 29);
+  --color-bg-secondary: rgb(153, 27, 27);
+  --color-accent-primary: rgb(253, 230, 138);
+  --color-accent-secondary: rgb(239, 68, 68);
+  --color-button-primary: rgb(220, 38, 38);
+  --color-button-primary-hover: rgb(185, 28, 28);
+  --color-border: rgb(159, 18, 57);
+  --color-card-bg: rgba(153, 27, 27, 0.6);
+  --color-dumbbell: rgb(253, 230, 138);
+}
+
+body {
+  background: linear-gradient(
+    to bottom right,
+    var(--color-bg-primary),
+    var(--color-bg-secondary),
+    rgb(0, 0, 0)
+  );
+  color: white;
+}
+
+.header {
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border);
+}
+
+.btn-primary {
+  background-color: var(--color-button-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-button-primary-hover);
+}
+
+.card {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-border);
+}
+
+.text-accent {
+  color: var(--color-accent-primary);
+}
+
+.text-accent-secondary {
+  color: var(--color-accent-secondary);
+}
+
+.dumbbell-icon {
+  color: var(--color-dumbbell);
+}

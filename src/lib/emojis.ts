@@ -1,25 +1,64 @@
-// Fun fitness-related emojis
-export const PLAYER_EMOJIS = [
-  '🦾',
-  '💪',
-  '🏋️',
-  '🤸',
-  '🧘',
-  '🤾',
-  '🏃',
-  '🚴',
-  '⛹️',
-  '🤺',
-  '🏊',
-  '🧗',
-];
+// Theme emoji sets
+export const THEMES = {
+  cartoon: [
+    '🤖',
+    '👽',
+    '🤡',
+    '🦸',
+    '🧙',
+    '🧚',
+    '🧛',
+    '🤠',
+    '🥸',
+    '😸',
+    '😹',
+    '😺',
+    '😻',
+    '😼',
+    '😽',
+    '😾',
+    '😿',
+    '🙀',
+    '👾',
+    '🎃',
+    '👹',
+    '👺',
+  ],
+  christmas: [
+    '🎅',
+    '🤶',
+    '🎄',
+    '⛄',
+    '🎁',
+    '🔔',
+    '❄️',
+    '⛸️',
+    '🦌',
+    '🕯️',
+    '🍪',
+    '🥛',
+    '🍷',
+    '🎿',
+    '⛷️',
+    '🧥',
+    '🧤',
+    '🧣',
+    '👢',
+    '🎊',
+    '🎉',
+    '✨',
+  ],
+} as const;
 
-// Get emoji based on player name (deterministic)
-export function getPlayerEmoji(name: string): string {
+export type Theme = keyof typeof THEMES;
+
+// Get emoji based on player name and theme (deterministic)
+export function getPlayerEmoji(name: string, theme: Theme = 'cartoon'): string {
+  const emojis = THEMES[theme];
   const hash = name
     .split('')
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return PLAYER_EMOJIS[hash % PLAYER_EMOJIS.length];
+  return emojis[hash % emojis.length];
 }
 
 // Animation types

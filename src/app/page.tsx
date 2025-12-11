@@ -6,6 +6,9 @@ import { Dumbbell, Plus } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
+import ChristmasBackground from '@/components/ChristmasBackground';
+import { Theme } from '@/lib/emojis';
+import './theme.css';
 
 interface Player {
   id: number;
@@ -18,6 +21,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState<Theme>('christmas');
 
   // Fetch players on mount
   useEffect(() => {
@@ -103,38 +107,133 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div
+      data-theme={theme}
+      className="min-h-screen bg-gradient-to-br"
+      style={{
+        backgroundImage:
+          theme === 'christmas'
+            ? 'linear-gradient(to bottom right, rgb(127, 29, 29), rgb(20, 83, 45), rgb(15, 35, 60))'
+            : 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))',
+      }}
+    >
+      {/* Christmas decorations */}
+      {theme === 'christmas' && <ChristmasBackground />}
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-30"
+        className="backdrop-blur-sm border-b sticky top-0 z-30"
+        style={{
+          backgroundColor:
+            theme === 'christmas'
+              ? 'rgba(100, 35, 35, 0.8)'
+              : 'rgba(31, 41, 55, 0.5)',
+          borderColor:
+            theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
+        }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="flex items-center gap-3"
-          >
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 2 }}
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-3"
             >
-              <Dumbbell className="w-8 h-8 text-yellow-400" />
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <Dumbbell
+                  className="w-8 h-8"
+                  style={{
+                    color:
+                      theme === 'christmas'
+                        ? 'rgb(253, 224, 71)'
+                        : 'rgb(250, 204, 21)',
+                  }}
+                />
+              </motion.div>
+              <h1
+                className="text-4xl font-bold text-transparent bg-clip-text"
+                style={{
+                  backgroundImage:
+                    theme === 'christmas'
+                      ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
+                      : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                }}
+              >
+                PushUp Battle
+              </h1>
             </motion.div>
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-              PushUp Battle
-            </h1>
-          </motion.div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsModalOpen(true)}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg"
-          >
-            <Plus className="w-5 h-5" />
-            Add Player
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsModalOpen(true)}
+              className="text-white font-bold px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+              style={{
+                backgroundColor:
+                  theme === 'christmas'
+                    ? 'rgb(34, 197, 94)'
+                    : 'rgb(34, 197, 94)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  theme === 'christmas'
+                    ? 'rgb(22, 163, 74)'
+                    : 'rgb(22, 163, 74)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor =
+                  theme === 'christmas'
+                    ? 'rgb(34, 197, 94)'
+                    : 'rgb(34, 197, 94)';
+              }}
+            >
+              <Plus className="w-5 h-5" />
+              Add Player
+            </motion.button>
+          </div>
+
+          {/* Theme Switcher */}
+          <div className="flex gap-2">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTheme('cartoon')}
+              className="px-4 py-2 rounded-lg font-semibold transition-all"
+              style={{
+                backgroundColor:
+                  theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                color: 'white',
+                boxShadow:
+                  theme === 'cartoon'
+                    ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    : 'none',
+              }}
+            >
+              🤖 Cartoon
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTheme('christmas')}
+              className="px-4 py-2 rounded-lg font-semibold transition-all"
+              style={{
+                backgroundColor:
+                  theme === 'christmas'
+                    ? 'rgb(34, 197, 94)'
+                    : 'rgb(55, 65, 81)',
+                color: 'white',
+                boxShadow:
+                  theme === 'christmas'
+                    ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    : 'none',
+              }}
+            >
+              🎄 Christmas
+            </motion.button>
+          </div>
         </div>
       </motion.header>
 
@@ -144,7 +243,22 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-500/20 border border-red-500/50 text-red-300 rounded-lg"
+            className="mb-6 p-4 rounded-lg"
+            style={{
+              backgroundColor:
+                theme === 'christmas'
+                  ? 'rgba(239, 68, 68, 0.2)'
+                  : 'rgba(239, 68, 68, 0.2)',
+              borderColor:
+                theme === 'christmas'
+                  ? 'rgba(239, 68, 68, 0.5)'
+                  : 'rgba(239, 68, 68, 0.5)',
+              borderWidth: '1px',
+              color:
+                theme === 'christmas'
+                  ? 'rgb(254, 226, 226)'
+                  : 'rgb(254, 226, 226)',
+            }}
           >
             {error}
           </motion.div>
@@ -173,7 +287,13 @@ export default function Home() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-center py-8 text-gray-400"
+                    className="text-center py-8"
+                    style={{
+                      color:
+                        theme === 'christmas'
+                          ? 'rgb(254, 226, 226)'
+                          : 'rgb(156, 163, 175)',
+                    }}
                   >
                     <p className="mb-4">No players yet!</p>
                     <p className="text-sm">
@@ -185,6 +305,7 @@ export default function Home() {
                     <PlayerCard
                       key={player.id}
                       player={player}
+                      theme={theme}
                       onAddPushups={(amount) =>
                         handleAddPushups(player.id, amount)
                       }
@@ -209,6 +330,7 @@ export default function Home() {
       {/* Add Player Modal */}
       <AddPlayerModal
         isOpen={isModalOpen}
+        theme={theme}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddPlayer}
       />

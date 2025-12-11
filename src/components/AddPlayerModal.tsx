@@ -3,17 +3,20 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
+import { Theme } from '@/lib/emojis';
 
 interface AddPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (name: string) => void;
+  theme?: Theme;
 }
 
 export default function AddPlayerModal({
   isOpen,
   onClose,
   onAdd,
+  theme = 'cartoon',
 }: AddPlayerModalProps) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -47,14 +50,26 @@ export default function AddPlayerModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 rounded-lg p-8 shadow-2xl border border-gray-700 z-50 max-w-sm w-full mx-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg p-8 shadow-2xl border z-50 max-w-sm w-full mx-4"
+            style={{
+              backgroundColor:
+                theme === 'christmas' ? 'rgb(100, 35, 35)' : 'rgb(31, 41, 55)',
+              borderColor:
+                theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
+            }}
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">Add Player</h2>
               <motion.button
                 whileHover={{ rotate: 90 }}
                 onClick={onClose}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="transition-colors"
+                style={{
+                  color:
+                    theme === 'christmas'
+                      ? 'rgb(186, 230, 253)'
+                      : 'rgb(156, 163, 175)',
+                }}
               >
                 <X className="w-6 h-6" />
               </motion.button>
@@ -70,8 +85,18 @@ export default function AddPlayerModal({
                     if (error) setError('');
                   }}
                   placeholder="Enter player name"
-                  className="w-full bg-gray-700 text-white rounded px-4 py-3 border border-gray-600 focus:border-blue-400 outline-none transition-colors placeholder-gray-500"
-                  autoFocus
+                  className="w-full rounded px-4 py-3 border outline-none transition-colors"
+                  style={{
+                    backgroundColor:
+                      theme === 'christmas'
+                        ? 'rgb(60, 20, 20)'
+                        : 'rgb(55, 65, 81)',
+                    borderColor:
+                      theme === 'christmas'
+                        ? 'rgb(220, 38, 38)'
+                        : 'rgb(75, 85, 99)',
+                    color: 'white',
+                  }}
                 />
               </div>
 
@@ -79,7 +104,13 @@ export default function AddPlayerModal({
                 <motion.p
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-red-400 text-sm"
+                  className="text-sm"
+                  style={{
+                    color:
+                      theme === 'christmas'
+                        ? 'rgb(186, 230, 253)'
+                        : 'rgb(248, 113, 113)',
+                  }}
                 >
                   {error}
                 </motion.p>
@@ -89,7 +120,13 @@ export default function AddPlayerModal({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 rounded transition-colors flex items-center justify-center gap-2"
+                className="w-full text-white font-bold py-3 rounded transition-colors flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgb(34, 197, 94)'
+                      : 'rgb(59, 130, 246)',
+                }}
               >
                 <Plus className="w-5 h-5" />
                 Add Player
