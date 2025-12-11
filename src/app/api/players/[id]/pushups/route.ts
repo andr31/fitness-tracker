@@ -58,7 +58,7 @@ export async function POST(
   } catch (error) {
     console.error('Error updating pushups:', error);
     return NextResponse.json(
-      { error: 'Failed to update pushups' },
+      { error: 'Failed to update pushups', details: String(error) },
       { status: 500 }
     );
   }
