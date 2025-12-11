@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET() {
   try {
     const result = await sql`
-      SELECT id, name, totalPushups, createdAt, updatedAt 
+      SELECT id, name, "totalPushups", "createdAt", "updatedAt" 
       FROM players 
-      ORDER BY totalPushups DESC
+      ORDER BY "totalPushups" DESC
     `;
 
     return NextResponse.json(result.rows);
@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
     const trimmedName = name.trim();
 
     const result = await sql`
-      INSERT INTO players (name, totalPushups) 
+      INSERT INTO players (name, "totalPushups") 
       VALUES (${trimmedName}, 0)
-      RETURNING id, name, totalPushups, createdAt, updatedAt
+      RETURNING id, name, "totalPushups", "createdAt", "updatedAt"
     `;
 
     return NextResponse.json(result.rows[0], { status: 201 });

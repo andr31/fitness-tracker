@@ -6,23 +6,18 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  console.log('Raw id from params:', { id, typeof: typeof id });
-  
   try {
     if (!id || id === 'undefined') {
-      console.error('ID is missing or undefined');
       return NextResponse.json({ error: 'Player ID is required' }, { status: 400 });
     }
 
     const playerId = parseInt(id, 10);
-    console.log('Parsed playerId:', { id, playerId, isNaN: isNaN(playerId) });
 
     if (isNaN(playerId)) {
       return NextResponse.json({ error: 'Invalid player ID format' }, { status: 400 });
     }
 
     const { amount } = await request.json();
-    console.log('Request body amount:', { amount, typeof: typeof amount });
 
     if (typeof amount !== 'number' || !Number.isInteger(amount)) {
       return NextResponse.json(
@@ -31,18 +26,10 @@ export async function POST(
       );
     }
 
-    console.log('After validation amount:', { amount });
-
     // Check if player exists and get current total
     const playerResult = await sql`
-      SELECT id, totalPushups FROM players WHERE id = ${playerId}
+      SELECT id, "totalPushups" FROM players WHERE id = ${playerId}
     `;
-
-    console.log('Player query result:', { 
-      playerResult,
-      rows: playerResult.rows,
-      firstRow: playerResult.rows ? playerResult.rows[0] : null
-    });
 
     if (!playerResult.rows || playerResult.rows.length === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
@@ -50,12 +37,6 @@ export async function POST(
 
     const player = playerResult.rows[0];
     const newTotal = player.totalPushups + amount;
-    console.log('Calculation:', { 
-      playerTotal: player.totalPushups, 
-      amount, 
-      newTotal, 
-      isNewTotalNaN: isNaN(newTotal) 
-    });
 
     if (newTotal < 0) {
       return NextResponse.json(
@@ -73,9 +54,9 @@ export async function POST(
     // Update player total
     const result = await sql`
       UPDATE players 
-      SET totalPushups = ${newTotal}, updatedAt = CURRENT_TIMESTAMP 
+      SET "totalPushups" = ${newTotal}, "updatedAt" = CURRENT_TIMESTAMP 
       WHERE id = ${playerId}
-      RETURNING id, name, totalPushups, updatedAt
+      RETURNING id, name, "totalPushups", "updatedAt"
     `;
 
     if (!result.rows || result.rows.length === 0) {
@@ -86,7 +67,7 @@ export async function POST(
   } catch (error) {
     console.error('Error updating pushups:', error);
     return NextResponse.json(
-      { error: 'Failed to update pushups', details: String(error) },
+      { error: 'Failed to update pushups' },
       { status: 500 }
     );
   }
