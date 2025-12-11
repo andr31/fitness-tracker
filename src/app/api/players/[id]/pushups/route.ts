@@ -22,6 +22,7 @@ export async function POST(
     }
 
     const { amount } = await request.json();
+    console.log('Request body amount:', { amount, typeof: typeof amount });
 
     if (typeof amount !== 'number' || !Number.isInteger(amount)) {
       return NextResponse.json(
@@ -29,6 +30,8 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    console.log('After validation amount:', { amount });
 
     // Check if player exists and get current total
     const playerResult = await sql`
@@ -41,6 +44,12 @@ export async function POST(
 
     const player = playerResult.rows[0];
     const newTotal = player.totalPushups + amount;
+    console.log('Calculation:', { 
+      playerTotal: player.totalPushups, 
+      amount, 
+      newTotal, 
+      isNewTotalNaN: isNaN(newTotal) 
+    });
 
     if (newTotal < 0) {
       return NextResponse.json(
