@@ -8,13 +8,19 @@ export async function POST(
   const { id } = await params;
   try {
     if (!id || id === 'undefined') {
-      return NextResponse.json({ error: 'Player ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Player ID is required' },
+        { status: 400 }
+      );
     }
 
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
-      return NextResponse.json({ error: 'Invalid player ID format' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid player ID format' },
+        { status: 400 }
+      );
     }
 
     const { amount } = await request.json();
@@ -28,7 +34,7 @@ export async function POST(
 
     // Check if player exists and get current total
     const playerResult = await sql`
-      SELECT id, "totalPushups" FROM players WHERE id = ${playerId}
+      SELECT id, totalpushups FROM players WHERE id = ${playerId}
     `;
 
     if (!playerResult.rows || playerResult.rows.length === 0) {
@@ -36,7 +42,7 @@ export async function POST(
     }
 
     const player = playerResult.rows[0];
-    const newTotal = player.totalPushups + amount;
+    const newTotal = player.totalpushups + amount;
 
     if (newTotal < 0) {
       return NextResponse.json(
@@ -54,13 +60,16 @@ export async function POST(
     // Update player total
     const result = await sql`
       UPDATE players 
-      SET "totalPushups" = ${newTotal}, "updatedAt" = CURRENT_TIMESTAMP 
+      SET totalpushups = ${newTotal}, updatedat = CURRENT_TIMESTAMP 
       WHERE id = ${playerId}
-      RETURNING id, name, "totalPushups", "updatedAt"
+      RETURNING id, name, totalpushups, updatedat
     `;
 
     if (!result.rows || result.rows.length === 0) {
-      return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to update player' },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json(result.rows[0]);
