@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Trash2 } from 'lucide-react';
+import { Plus, Minus, Trash2, Calendar } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
+import DailyHistoryModal from './DailyHistoryModal';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 
 interface Player {
@@ -28,6 +29,29 @@ export default function PlayerCard({
   theme = 'cartoon',
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
+  const [todayTotal, setTodayTotal] = useState<number>(0);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    fetchTodayTotal();
+  }, [player.totalPushups]);
+
+  const fetchTodayTotal = async () => {
+    try {
+      const response = await fetch(`/api/players/${player.id}/history`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const todayData = data.find(
+          (d: any) => d.date.split('T')[0] === today
+        );
+        setTodayTotal(todayData?.total || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching today total:', error);
+    }
+  };
 
   const handleQuickAdd = (amount: number) => {
     onAddPushups(amount);
@@ -77,31 +101,75 @@ export default function PlayerCard({
             >
               {player.totalPushups}
             </motion.p>
+            {todayTotal > 0 && (
+              <motion.button
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setIsHistoryOpen(true)}
+                className="text-sm mt-1 px-2 py-0.5 rounded flex items-center gap-1"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgba(34, 197, 94, 0.3)'
+                      : 'rgba(59, 130, 246, 0.3)',
+                  color: theme === 'christmas' ? 'rgb(134, 239, 172)' : 'rgb(147, 197, 253)',
+                }}
+              >
+                <Calendar className="w-3 h-3" />
+                Today: {todayTotal}
+              </motion.button>
+            )}
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onDelete}
-          className="p-2 rounded-lg transition-colors"
-          style={{
-            backgroundColor:
-              theme === 'christmas'
-                ? 'rgba(239, 68, 68, 0.2)'
-                : 'rgba(239, 68, 68, 0.2)',
-          }}
-        >
-          <Trash2
-            className="w-5 h-5"
+        <div className="flex gap-2">
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsHistoryOpen(true)}
+            className="p-2 rounded-lg transition-colors"
             style={{
-              color:
+              backgroundColor:
                 theme === 'christmas'
-                  ? 'rgb(252, 165, 165)'
-                  : 'rgb(248, 113, 113)',
+                  ? 'rgba(34, 197, 94, 0.2)'
+                  : 'rgba(59, 130, 246, 0.2)',
             }}
-          />
-        </motion.button>
+            title="View daily history"
+          >
+            <Calendar
+              className="w-5 h-5"
+              style={{
+                color:
+                  theme === 'christmas'
+                    ? 'rgb(134, 239, 172)'
+                    : 'rgb(147, 197, 253)',
+              }}
+            />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onDelete}
+            className="p-2 rounded-lg transition-colors"
+            style={{
+              backgroundColor:
+                theme === 'christmas'
+                  ? 'rgba(239, 68, 68, 0.2)'
+                  : 'rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <Trash2
+              className="w-5 h-5"
+              style={{
+                color:
+                  theme === 'christmas'
+                    ? 'rgb(252, 165, 165)'
+                    : 'rgb(248, 113, 113)',
+              }}
+            />
+          </motion.button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -177,6 +245,15 @@ export default function PlayerCard({
           Remove 1
         </motion.button>
       </div>
+
+      {/* Daily History Modal */}
+      <DailyHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        playerId={player.id}
+        playerName={player.name}
+        theme={theme}
+      />
     </motion.div>
   );
 }
