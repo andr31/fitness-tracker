@@ -20,8 +20,8 @@ const animationVariants = {
     y: [0, -30, 0],
     transition: {
       duration: 1.2,
-      repeat: Infinity,
-      ease: 'easeInOut',
+      repeat: Infinity as number,
+      ease: 'easeInOut' as const,
     },
   },
   wiggle: {
@@ -29,8 +29,8 @@ const animationVariants = {
     scale: [1, 1.1, 1, 1.1, 1],
     transition: {
       duration: 1,
-      repeat: Infinity,
-      ease: 'easeInOut',
+      repeat: Infinity as number,
+      ease: 'easeInOut' as const,
     },
   },
   spin: {
@@ -38,16 +38,16 @@ const animationVariants = {
     scale: [1, 1.2, 1],
     transition: {
       duration: 3,
-      repeat: Infinity,
-      ease: 'linear',
+      repeat: Infinity as number,
+      ease: 'linear' as const,
     },
   },
   pulse: {
     scale: [1, 1.3, 0.95, 1.2, 1],
     transition: {
       duration: 1.6,
-      repeat: Infinity,
-      ease: 'easeInOut',
+      repeat: Infinity as number,
+      ease: 'easeInOut' as const,
     },
   },
   float: {
@@ -56,8 +56,8 @@ const animationVariants = {
     rotate: [0, 10, -10, 0],
     transition: {
       duration: 4,
-      repeat: Infinity,
-      ease: 'easeInOut',
+      repeat: Infinity as number,
+      ease: 'easeInOut' as const,
     },
   },
   shake: {
@@ -65,8 +65,8 @@ const animationVariants = {
     rotate: [-5, 5, -5, 5, -5, 0],
     transition: {
       duration: 0.8,
-      repeat: Infinity,
-      ease: 'easeInOut',
+      repeat: Infinity as number,
+      ease: 'easeInOut' as const,
     },
   },
 };

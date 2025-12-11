@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 const Snowflake = ({
   delay,
@@ -48,13 +49,25 @@ const ChristmasLight = ({ delay, color }: { delay: number; color: string }) => {
 };
 
 export default function ChristmasBackground() {
-  const snowflakes = Array.from({ length: 30 }).map((_, i) => ({
-    id: i,
-    delay: Math.random() * 5,
-    duration: Math.random() * 10 + 10,
-    left: `${Math.random() * 100}%`,
-    size: Math.random() * 20 + 10,
-  }));
+  const [snowflakes, setSnowflakes] = useState<Array<{
+    id: number;
+    delay: number;
+    duration: number;
+    left: string;
+    size: number;
+  }>>([]);
+
+  useEffect(() => {
+    setSnowflakes(
+      Array.from({ length: 30 }).map((_, i) => ({
+        id: i,
+        delay: Math.random() * 5,
+        duration: Math.random() * 10 + 10,
+        left: `${Math.random() * 100}%`,
+        size: Math.random() * 20 + 10,
+      }))
+    );
+  }, []);
 
   const lights = [
     '#FF0000',
