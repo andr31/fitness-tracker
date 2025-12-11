@@ -65,6 +65,12 @@ export default function PlayerCard({
     }
   };
 
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete ${player.name}? This will remove all their pushup history.`)) {
+      onDelete();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -150,7 +156,7 @@ export default function PlayerCard({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onDelete}
+            onClick={handleDelete}
             className="p-2 rounded-lg transition-colors"
             style={{
               backgroundColor:
