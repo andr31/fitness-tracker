@@ -1,6 +1,16 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Helper to transform lowercase column names to camelCase
+function transformRow(row: any) {
+  return {
+    id: row.id,
+    name: row.name,
+    totalPushups: row.totalpushups,
+    updatedAt: row.updatedat,
+  };
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -72,7 +82,7 @@ export async function POST(
       );
     }
 
-    return NextResponse.json(result.rows[0]);
+    return NextResponse.json(transformRow(result.rows[0]));
   } catch (error) {
     console.error('Error updating pushups:', error);
     return NextResponse.json(
