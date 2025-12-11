@@ -7,12 +7,14 @@ export async function POST(
 ) {
   const { id } = await params;
   try {
-    const playerId = parseInt(id);
-    const { amount } = await request.json();
+    const playerId = parseInt(id, 10);
 
-    if (isNaN(playerId)) {
+    if (isNaN(playerId) || !id) {
+      console.error('Invalid playerId:', { id, playerId });
       return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
     }
+
+    const { amount } = await request.json();
 
     if (typeof amount !== 'number' || !Number.isInteger(amount)) {
       return NextResponse.json(
@@ -26,7 +28,7 @@ export async function POST(
       SELECT id, totalPushups FROM players WHERE id = ${playerId}
     `;
 
-    if (playerResult.rows.length === 0) {
+    if (!playerResult.rows || playerResult.rows.length === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
@@ -53,6 +55,10 @@ export async function POST(
       WHERE id = ${playerId}
       RETURNING id, name, totalPushups, updatedAt
     `;
+
+    if (!result.rows || result.rows.length === 0) {
+      return NextResponse.json({ error: 'Failed to update player' }, { status: 500 });
+    }
 
     return NextResponse.json(result.rows[0]);
   } catch (error) {

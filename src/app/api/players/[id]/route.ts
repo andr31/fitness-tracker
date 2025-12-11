@@ -7,9 +7,9 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    const playerId = parseInt(id);
+    const playerId = parseInt(id, 10);
 
-    if (isNaN(playerId)) {
+    if (isNaN(playerId) || !id) {
       return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
     }
 
@@ -17,7 +17,7 @@ export async function DELETE(
       DELETE FROM players WHERE id = ${playerId}
     `;
 
-    if (result.rowCount === 0) {
+    if (!result.rowCount || result.rowCount === 0) {
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
