@@ -19,13 +19,13 @@ export async function GET(
     // Get daily aggregated pushup history
     const result = await sql`
       SELECT 
-        DATE(timestamp) as date,
-        SUM(amount) as total,
-        COUNT(*) as entries
+        TO_CHAR(timestamp, 'YYYY-MM-DD') as date,
+        SUM(amount)::integer as total,
+        COUNT(*)::integer as entries
       FROM pushupHistory
       WHERE playerId = ${playerId}
-      GROUP BY DATE(timestamp)
-      ORDER BY DATE(timestamp) DESC
+      GROUP BY TO_CHAR(timestamp, 'YYYY-MM-DD')
+      ORDER BY TO_CHAR(timestamp, 'YYYY-MM-DD') DESC
       LIMIT 30
     `;
 

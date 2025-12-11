@@ -51,16 +51,25 @@ export default function DailyHistoryModal({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse the date string and normalize to just the date part
+    const datePart = dateString.split('T')[0];
     const today = new Date();
+    const todayStr = today.getFullYear() + '-' + 
+                     String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(today.getDate()).padStart(2, '0');
+    
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.getFullYear() + '-' + 
+                         String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + 
+                         String(yesterday.getDate()).padStart(2, '0');
 
-    if (date.toDateString() === today.toDateString()) {
+    if (datePart === todayStr) {
       return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (datePart === yesterdayStr) {
       return 'Yesterday';
     } else {
+      const date = new Date(dateString);
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
