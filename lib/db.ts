@@ -27,6 +27,21 @@ export async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_player_pushups ON pushupHistory(playerId);
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS competition_settings (
+        id SERIAL PRIMARY KEY,
+        endDate TIMESTAMP NOT NULL,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    // Insert default end date if table is empty
+    await sql`
+      INSERT INTO competition_settings (endDate)
+      SELECT '2025-12-24 00:00:00'
+      WHERE NOT EXISTS (SELECT 1 FROM competition_settings);
+    `;
+
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);

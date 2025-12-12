@@ -7,6 +7,7 @@ import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
+import CountdownTimer from '@/components/CountdownTimer';
 import { Theme } from '@/lib/emojis';
 import './theme.css';
 
@@ -344,6 +345,11 @@ export default function Home() {
           </div>
         </div>
       </motion.header>
+
+      {/* Countdown Timer */}
+      <div className="max-w-7xl mx-auto px-4 mt-4">
+        <CountdownTimer theme={theme} />
+      </div>
 
       {/* Champions Banner */}
       {players.filter((p) => p.totalPushups >= milestone).length > 0 && (
