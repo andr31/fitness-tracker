@@ -14,7 +14,6 @@ interface Player {
   id: number;
   name: string;
   totalPushups: number;
-  dailyTarget?: number;
 }
 
 export default function Home() {
@@ -23,15 +22,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<Theme>('christmas');
-  const [milestone, setMilestone] = useState(0);
-  const [milestoneInput, setMilestoneInput] = useState('');
-  const [todayPushups, setTodayPushups] = useState<Record<number, number>>({});
 
   // Fetch players on mount
   useEffect(() => {
     fetchPlayers();
-    fetchTodayPushups();
-    fetchSettings();
   }, []);
 
   const fetchPlayers = async () => {
@@ -47,64 +41,6 @@ export default function Home() {
       console.error(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchTodayPushups = async () => {
-    try {
-      const response = await fetch('/api/players');
-      if (!response.ok) return;
-      const allPlayers = await response.json();
-      
-      const todayData: Record<number, number> = {};
-      
-      for (const player of allPlayers) {
-        const historyResponse = await fetch(`/api/players/${player.id}/history`);
-        if (historyResponse.ok) {
-          const history = await historyResponse.json();
-          const today = new Date().toISOString().split('T')[0];
-          const todayEntry = history.find((h: any) => h.date === today);
-          todayData[player.id] = todayEntry ? todayEntry.total : 0;
-        }
-      }
-      
-      setTodayPushups(todayData);
-    } catch (err) {
-      console.error('Failed to fetch today\'s pushups', err);
-    }
-  };
-
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch('/api/settings?key=milestone');
-      if (!response.ok) return;
-      const data = await response.json();
-      
-      if (data.value) {
-        const milestoneValue = parseInt(data.value);
-        setMilestone(milestoneValue);
-        setMilestoneInput(milestoneValue.toString());
-      }
-    } catch (err) {
-      console.error('Failed to fetch settings', err);
-    }
-  };
-
-  const updateMilestone = async (newMilestone: number) => {
-    try {
-      const response = await fetch('/api/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'milestone', value: newMilestone.toString() }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update milestone');
-
-      setMilestone(newMilestone);
-      setMilestoneInput(newMilestone.toString());
-    } catch (err) {
-      setError('Failed to update milestone');
-      console.error(err);
     }
   };
 
@@ -140,20 +76,8 @@ export default function Home() {
 
       if (!response.ok) throw new Error('Failed to update pushups');
 
-      // Refetch all players to ensure proper sorting and fresh data
-      await fetchPlayers();
-      
-      // Refetch today's pushups for this player to ensure accuracy
-      const historyResponse = await fetch(`/api/players/${playerId}/history`);
-      if (historyResponse.ok) {
-        const history = await historyResponse.json();
-        const today = new Date().toISOString().split('T')[0];
-        const todayEntry = history.find((h: any) => h.date === today);
-        setTodayPushups((prev) => ({
-          ...prev,
-          [playerId]: todayEntry ? todayEntry.total : 0,
-        }));
-      }
+      const updatedPlayer = await response.json();
+      setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
     } catch (err) {
       setError('Failed to update pushups');
       console.error(err);
@@ -178,24 +102,6 @@ export default function Home() {
       setPlayers(players.filter((p) => p.id !== playerId));
     } catch (err) {
       setError('Failed to delete player');
-      console.error(err);
-    }
-  };
-
-  const handleUpdateTarget = async (playerId: number, target: number) => {
-    try {
-      const response = await fetch(`/api/players/${playerId}/target`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dailyTarget: target }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update target');
-
-      const updatedPlayer = await response.json();
-      setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
-    } catch (err) {
-      setError('Failed to update target');
       console.error(err);
     }
   };
@@ -334,120 +240,8 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Milestone Winners Banner */}
-      {players.some(p => p.totalPushups >= milestone) && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-7xl mx-auto px-4 pt-6"
-        >
-          <div
-            className="rounded-lg p-6 border-2 shadow-xl"
-            style={{
-              background:
-                theme === 'christmas'
-                  ? 'linear-gradient(to right, rgba(253, 224, 71, 0.2), rgba(220, 38, 38, 0.2), rgba(253, 224, 71, 0.2))'
-                  : 'linear-gradient(to right, rgba(250, 204, 21, 0.2), rgba(249, 115, 22, 0.2), rgba(250, 204, 21, 0.2))',
-              borderColor:
-                theme === 'christmas'
-                  ? 'rgb(253, 224, 71)'
-                  : 'rgb(250, 204, 21)',
-            }}
-          >
-            <h2 className="text-2xl font-bold text-center mb-4" style={{ color: theme === 'christmas' ? 'rgb(253, 224, 71)' : 'rgb(250, 204, 21)' }}>
-              🏆 Milestone Champions! 🏆
-            </h2>
-            <div className="flex flex-wrap justify-center gap-4">
-              {players.filter(p => p.totalPushups >= milestone).map(player => (
-                <motion.div
-                  key={player.id}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg"
-                  style={{
-                    backgroundColor:
-                      theme === 'christmas'
-                        ? 'rgba(34, 197, 94, 0.3)'
-                        : 'rgba(250, 204, 21, 0.3)',
-                  }}
-                >
-                  <span className="text-3xl">👑</span>
-                  <span className="text-white font-bold">{player.name}</span>
-                  <span className="text-yellow-300">{player.totalPushups}</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Milestone Input */}
-        <div className="mb-6">
-          <div
-            className="rounded-lg p-4 flex items-center justify-between gap-4"
-            style={{
-              backgroundColor:
-                theme === 'christmas'
-                  ? 'rgba(100, 35, 35, 0.6)'
-                  : 'rgba(31, 41, 55, 0.6)',
-              border:
-                theme === 'christmas'
-                  ? '1px solid rgb(220, 38, 38)'
-                  : '1px solid rgb(55, 65, 81)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🎯</span>
-              <div>
-                <h3 className="text-white font-bold">Team Milestone</h3>
-                <p className="text-gray-300 text-sm">
-                  Current goal: <span className="font-bold text-yellow-400">{milestone}</span> pushups
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                value={milestoneInput}
-                onChange={(e) => setMilestoneInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    const newMilestone = parseInt(milestoneInput) || 500;
-                    updateMilestone(newMilestone);
-                  }
-                }}
-                placeholder="New goal"
-                className="w-24 px-3 py-2 rounded border outline-none text-white"
-                style={{
-                  backgroundColor:
-                    theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
-                  borderColor:
-                    theme === 'christmas' ? 'rgb(34, 197, 94)' : 'rgb(75, 85, 99)',
-                }}
-              />
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  const newMilestone = parseInt(milestoneInput) || 500;
-                  updateMilestone(newMilestone);
-                }}
-                className="px-4 py-2 rounded font-semibold text-white"
-                style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgb(34, 197, 94)'
-                      : 'rgb(59, 130, 246)',
-                }}
-              >
-                Set
-              </motion.button>
-            </div>
-          </div>
-        </div>
-
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -515,8 +309,6 @@ export default function Home() {
                       key={player.id}
                       player={player}
                       theme={theme}
-                      todayPushups={todayPushups[player.id] || 0}
-                      milestone={milestone}
                       onAddPushups={(amount) =>
                         handleAddPushups(player.id, amount)
                       }
@@ -524,9 +316,6 @@ export default function Home() {
                         handleRemovePushups(player.id, amount)
                       }
                       onDelete={() => handleDeletePlayer(player.id)}
-                      onUpdateTarget={(target) =>
-                        handleUpdateTarget(player.id, target)
-                      }
                     />
                   ))
                 )}

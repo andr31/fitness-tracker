@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, Trash2, Calendar } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
@@ -11,7 +11,6 @@ interface Player {
   id: number;
   name: string;
   totalPushups: number;
-  dailyTarget?: number;
 }
 
 interface PlayerCardProps {
@@ -19,9 +18,6 @@ interface PlayerCardProps {
   onAddPushups: (amount: number) => void;
   onRemovePushups: (amount: number) => void;
   onDelete: () => void;
-  onUpdateTarget: (target: number) => void;
-  todayPushups: number;
-  milestone: number;
   theme?: Theme;
 }
 
@@ -30,18 +26,33 @@ export default function PlayerCard({
   onAddPushups,
   onRemovePushups,
   onDelete,
-  onUpdateTarget,
-  todayPushups,
-  milestone,
   theme = 'cartoon',
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
-  const [targetInput, setTargetInput] = useState('');
+  const [todayTotal, setTodayTotal] = useState<number>(0);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  
-  const isDailyTargetReached = !!(player.dailyTarget && player.dailyTarget > 0 && todayPushups >= player.dailyTarget);
-  const isMilestoneReached = milestone > 0 && player.totalPushups >= milestone;
+
+  useEffect(() => {
+    fetchTodayTotal();
+  }, [player.totalPushups]);
+
+  const fetchTodayTotal = async () => {
+    try {
+      const response = await fetch(`/api/players/${player.id}/history`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.length > 0) {
+        const today = new Date().toISOString().split('T')[0];
+        const todayData = data.find(
+          (d: any) => d.date.split('T')[0] === today
+        );
+        setTodayTotal(todayData?.total || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching today total:', error);
+    }
+  };
 
   const handleQuickAdd = (amount: number) => {
     onAddPushups(amount);
@@ -69,62 +80,21 @@ export default function PlayerCard({
     }
   };
 
-  const handleSetTarget = () => {
-    const target = parseInt(targetInput);
-    if (!isNaN(target) && target >= 0) {
-      onUpdateTarget(target);
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="rounded-lg p-6 shadow-lg border hover:border-opacity-75 transition-all relative"
+      className="rounded-lg p-6 shadow-lg border hover:border-opacity-75 transition-all"
       style={{
         background:
           theme === 'christmas'
             ? 'linear-gradient(to bottom right, rgba(127, 29, 29, 0.6), rgba(20, 83, 45, 0.4), rgba(15, 35, 60, 0.3))'
             : 'linear-gradient(to bottom right, rgb(31, 41, 55), rgb(17, 24, 39))',
         borderColor:
-          isMilestoneReached
-            ? 'rgb(253, 224, 71)'
-            : theme === 'christmas'
-            ? 'rgb(239, 68, 68)'
-            : 'rgb(55, 65, 81)',
-        borderWidth: isMilestoneReached ? '3px' : '1px',
-        boxShadow: isMilestoneReached
-          ? '0 0 30px rgba(253, 224, 71, 0.5)'
-          : isDailyTargetReached
-          ? '0 0 20px rgba(34, 197, 94, 0.4)'
-          : undefined,
+          theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
       }}
     >
-      {/* Trophy Indicators */}
-      {isMilestoneReached && (
-        <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          className="absolute -top-4 -right-4 text-6xl"
-        >
-          👑
-        </motion.div>
-      )}
-      {isDailyTargetReached && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute top-2 left-2 px-2 py-1 rounded-full font-bold text-xs flex items-center gap-1 shadow-lg z-10"
-          style={{
-            backgroundColor: 'rgb(253, 224, 71)',
-            color: 'rgb(20, 83, 45)',
-            boxShadow: '0 0 20px rgba(253, 224, 71, 0.6)',
-          }}
-        >
-          ⭐ Daily Goal!
-        </motion.div>
-      )}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <AnimatedIcon
@@ -142,12 +112,11 @@ export default function PlayerCard({
               }}
               animate={{ scale: 1, color: '#FFFFFF' }}
               transition={{ duration: 0.4 }}
-              className="text-2xl font-bold flex items-center gap-2"
+              className="text-2xl font-bold"
             >
               {player.totalPushups}
-              {isMilestoneReached && <span className="text-xl">👑</span>}
             </motion.p>
-            {todayPushups > 0 && (
+            {todayTotal > 0 && (
               <motion.button
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -163,7 +132,7 @@ export default function PlayerCard({
                 }}
               >
                 <Calendar className="w-3 h-3" />
-                Today: {todayPushups}
+                Today: {todayTotal}
               </motion.button>
             )}
           </div>
@@ -219,50 +188,6 @@ export default function PlayerCard({
       </div>
 
       <div className="space-y-4">
-        {/* Daily Target */}
-        <div className="flex gap-2 items-center">
-          <input
-            type="number"
-            value={targetInput}
-            onChange={(e) => setTargetInput(e.target.value)}
-            placeholder="Daily Target"
-            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
-            style={{
-              backgroundColor:
-                theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
-              borderColor:
-                theme === 'christmas' ? 'rgb(253, 224, 71)' : 'rgb(253, 224, 71)',
-              color: 'white',
-            }}
-          />
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSetTarget}
-            className="font-bold px-4 py-2 rounded transition-colors flex items-center gap-2"
-            style={{
-              backgroundColor: 'rgb(253, 224, 71)',
-              color: 'rgb(20, 83, 45)',
-            }}
-          >
-            🎯 Set
-          </motion.button>
-        </div>
-        {player.dailyTarget && player.dailyTarget > 0 ? (
-          <div className="text-sm text-gray-300 font-semibold">
-            <span className="text-gray-400">Today: </span>
-            <span className={isDailyTargetReached ? 'text-yellow-400' : ''}>
-              {todayPushups}
-            </span>
-            <span className="text-gray-400"> / </span>
-            <span className="text-yellow-400">{player.dailyTarget}</span>
-          </div>
-        ) : (
-          <div className="text-sm text-gray-400 italic">
-            No daily target set
-          </div>
-        )}
-
         {/* Quick buttons */}
         <div className="grid grid-cols-4 gap-2">
           {[10, 20, 30, 50].map((amount) => (
