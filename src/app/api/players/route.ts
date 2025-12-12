@@ -7,7 +7,6 @@ function transformRow(row: any) {
     id: row.id,
     name: row.name,
     totalPushups: row.totalpushups,
-    dailyTarget: row.dailytarget,
     createdAt: row.createdat,
     updatedAt: row.updatedat,
   };
@@ -16,7 +15,7 @@ function transformRow(row: any) {
 export async function GET() {
   try {
     const result = await sql`
-      SELECT id, name, totalpushups, dailytarget, createdat, updatedat 
+      SELECT id, name, totalpushups, createdat, updatedat 
       FROM players 
       ORDER BY totalpushups DESC, updatedat ASC
     `;
