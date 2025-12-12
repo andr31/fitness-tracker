@@ -19,6 +19,7 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
   });
   const [editingEndDate, setEditingEndDate] = useState(false);
   const [dateInput, setDateInput] = useState('');
+  const [mounted, setMounted] = useState(false);
 
   const fetchEndDate = async () => {
     try {
@@ -53,6 +54,7 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
   };
 
   useEffect(() => {
+    setMounted(true);
     fetchEndDate();
   }, []);
 
@@ -195,15 +197,14 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
             </div>
           )}
           <p className="text-center text-sm text-white opacity-70 mt-4">
-            Ends: {endDate.toLocaleString('en-US', {
+            {mounted ? endDate.toLocaleString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
               year: 'numeric',
               hour: '2-digit',
               minute: '2-digit',
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            })}
+            }) : 'Loading...'}
           </p>
         </>
       )}
