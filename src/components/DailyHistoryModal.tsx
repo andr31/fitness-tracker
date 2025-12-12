@@ -42,37 +42,7 @@ export default function DailyHistoryModal({
       const response = await fetch(`/api/players/${playerId}/history`);
       if (!response.ok) throw new Error('Failed to fetch history');
       const data = await response.json();
-      
-      // Merge today's entries if they're split across UTC dates
-      const today = new Date();
-      const todayStr = today.getFullYear() + '-' + 
-                       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                       String(today.getDate()).padStart(2, '0');
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.getFullYear() + '-' + 
-                          String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(tomorrow.getDate()).padStart(2, '0');
-      
-      const todayEntry = data.find((d: DailyHistory) => d.date.split('T')[0] === todayStr);
-      const tomorrowEntry = data.find((d: DailyHistory) => d.date.split('T')[0] === tomorrowStr);
-      
-      let mergedData = [...data];
-      
-      // If both exist, merge them into today's entry and remove tomorrow's
-      if (todayEntry && tomorrowEntry) {
-        mergedData = data.filter((d: DailyHistory) => d.date.split('T')[0] !== tomorrowStr);
-        const todayIndex = mergedData.findIndex((d: DailyHistory) => d.date.split('T')[0] === todayStr);
-        if (todayIndex !== -1) {
-          mergedData[todayIndex] = {
-            ...todayEntry,
-            total: todayEntry.total + tomorrowEntry.total,
-            entries: todayEntry.entries + tomorrowEntry.entries
-          };
-        }
-      }
-      
-      setHistory(mergedData);
+      setHistory(data);
     } catch (error) {
       console.error('Error fetching history:', error);
     } finally {
@@ -81,19 +51,10 @@ export default function DailyHistoryModal({
   };
 
   const formatDate = (dateString: string) => {
-    // Parse the date string and normalize to just the date part
-    const datePart = dateString.split('T')[0];
     const today = new Date();
     const todayStr = today.getFullYear() + '-' + 
                      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
                      String(today.getDate()).padStart(2, '0');
-    
-    // Also check tomorrow's date for late-night entries stored in UTC
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.getFullYear() + '-' + 
-                        String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + 
-                        String(tomorrow.getDate()).padStart(2, '0');
     
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -101,12 +62,12 @@ export default function DailyHistoryModal({
                          String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + 
                          String(yesterday.getDate()).padStart(2, '0');
 
-    if (datePart === todayStr || datePart === tomorrowStr) {
+    if (dateString === todayStr) {
       return 'Today';
-    } else if (datePart === yesterdayStr) {
+    } else if (dateString === yesterdayStr) {
       return 'Yesterday';
     } else {
-      const date = new Date(dateString);
+      const date = new Date(dateString + 'T00:00:00');
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',

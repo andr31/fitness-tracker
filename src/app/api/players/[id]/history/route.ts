@@ -16,16 +16,16 @@ export async function GET(
       );
     }
 
-    // Get daily aggregated pushup history
+    // Get daily aggregated pushup history using localDate (PST timezone)
     const result = await sql`
       SELECT 
-        TO_CHAR(timestamp, 'YYYY-MM-DD') as date,
+        localDate::TEXT as date,
         SUM(amount)::integer as total,
         COUNT(*)::integer as entries
       FROM pushupHistory
       WHERE playerId = ${playerId}
-      GROUP BY TO_CHAR(timestamp, 'YYYY-MM-DD')
-      ORDER BY TO_CHAR(timestamp, 'YYYY-MM-DD') DESC
+      GROUP BY localDate
+      ORDER BY localDate DESC
       LIMIT 30
     `;
 

@@ -61,10 +61,14 @@ export async function POST(
       );
     }
 
-    // Insert history
+    // Insert history with auto-calculated PST date
     await sql`
-      INSERT INTO pushupHistory (playerId, amount) 
-      VALUES (${playerId}, ${amount})
+      INSERT INTO pushupHistory (playerId, amount, localDate) 
+      VALUES (
+        ${playerId}, 
+        ${amount}, 
+        (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles')::DATE
+      )
     `;
 
     // Update player total

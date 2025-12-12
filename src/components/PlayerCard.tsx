@@ -44,17 +44,8 @@ export default function PlayerCard({
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         
-        // Also check tomorrow's UTC date since late-night entries might be stored with tomorrow's date in UTC
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-        
-        // Sum both today's and tomorrow's entries (if they exist) to handle UTC timezone split
-        const total = data.reduce((sum: number, d: { date: string; total: number }) => {
-          return (d.date === today || d.date === tomorrowStr) ? sum + d.total : sum;
-        }, 0);
-        
-        setTodayTotal(total);
+        const todayEntry = data.find((d: { date: string; total: number }) => d.date === today);
+        setTodayTotal(todayEntry ? todayEntry.total : 0);
       } else {
         setTodayTotal(0);
       }
