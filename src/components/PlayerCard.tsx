@@ -36,6 +36,13 @@ export default function PlayerCard({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  // Daily Goal states
+  const [dailyGoal, setDailyGoal] = useState<number>(100);
+  const [dailyGoalProgress, setDailyGoalProgress] = useState<number>(0);
+  const [dailyGoalInput, setDailyGoalInput] = useState('');
+  const [editingDailyGoal, setEditingDailyGoal] = useState(false);
+  const [showDailyGoalSection, setShowDailyGoalSection] = useState(false);
 
   const fetchTodayTotal = async () => {
     try {
@@ -57,8 +64,74 @@ export default function PlayerCard({
     }
   };
 
+  const fetchDailyGoal = async () => {
+    try {
+      const response = await fetch(`/api/players/${player.id}/daily-goal-settings`);
+      if (!response.ok) return;
+      const data = await response.json();
+      setDailyGoal(data.dailyGoal);
+    } catch (error) {
+      console.error('Error fetching daily goal:', error);
+    }
+  };
+
+  const fetchDailyGoalProgress = async () => {
+    try {
+      const response = await fetch(`/api/players/${player.id}/daily-goal`);
+      if (!response.ok) return;
+      const data = await response.json();
+      setDailyGoalProgress(data.total);
+    } catch (error) {
+      console.error('Error fetching daily goal progress:', error);
+    }
+  };
+
+  const handleSaveDailyGoal = async () => {
+    const newGoal = parseInt(dailyGoalInput);
+    if (!isNaN(newGoal) && newGoal > 0) {
+      try {
+        const response = await fetch(`/api/players/${player.id}/daily-goal-settings`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dailyGoal: newGoal }),
+        });
+        if (response.ok) {
+          setDailyGoal(newGoal);
+          setEditingDailyGoal(false);
+        }
+      } catch (error) {
+        console.error('Error saving daily goal:', error);
+      }
+    }
+  };
+
+  const handleAddDailyGoal = async (amount: number) => {
+    try {
+      const response = await fetch(`/api/players/${player.id}/daily-goal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+      if (response.ok) {
+        fetchDailyGoalProgress();
+      }
+    } catch (error) {
+      console.error('Error adding daily goal:', error);
+    }
+  };
+
+  const handleRemoveDailyGoal = async (amount: number) => {
+    if (dailyGoalProgress > 0) {
+      // Don't remove more than current progress (prevent negative values)
+      const amountToRemove = Math.min(amount, dailyGoalProgress);
+      await handleAddDailyGoal(-amountToRemove);
+    }
+  };
+
   useEffect(() => {
     fetchTodayTotal();
+    fetchDailyGoal();
+    fetchDailyGoalProgress();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.totalPushups]);
 
@@ -111,7 +184,7 @@ export default function PlayerCard({
           theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
       }}
     >
-      {/* Crown Badge */}
+      {/* Crown Badge (Milestone) */}
       {player.totalPushups >= milestone && (
         <motion.div
           initial={{ scale: 0, rotate: -180, opacity: 0 }}
@@ -124,6 +197,22 @@ export default function PlayerCard({
           title={`🎉 Milestone reached: ${milestone}!`}
         >
           👑
+        </motion.div>
+      )}
+
+      {/* Daily Goal Badge */}
+      {dailyGoalProgress >= dailyGoal && (
+        <motion.div
+          initial={{ scale: 0, rotate: 180, opacity: 0 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.2 }}
+          className="absolute -top-3 -left-3 text-4xl"
+          style={{
+            filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
+          }}
+          title={`🎯 Daily goal reached: ${dailyGoal}!`}
+        >
+          ⭐
         </motion.div>
       )}
       
@@ -359,6 +448,145 @@ export default function PlayerCard({
             Remove
           </motion.button>
         </div>
+      </div>
+
+      {/* Daily Goal Section */}
+      <div className="mt-6 pt-6 border-t" style={{ borderColor: theme === 'christmas' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(75, 85, 99, 0.3)' }}>
+        <button
+          onClick={() => setShowDailyGoalSection(!showDailyGoalSection)}
+          className="w-full flex items-center justify-between text-white mb-3"
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">🎯 Daily Goal</span>
+            {!editingDailyGoal && (
+              <span className="text-sm opacity-70">({dailyGoalProgress}/{dailyGoal})</span>
+            )}
+            {dailyGoalProgress >= dailyGoal && <span className="text-xl">⭐</span>}
+          </div>
+          <motion.div
+            animate={{ rotate: showDailyGoalSection ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            ▼
+          </motion.div>
+        </button>
+
+        {showDailyGoalSection && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-3"
+          >
+            <p className="text-xs text-white opacity-50 italic">
+              ℹ️ Main entries do not count for daily goals
+            </p>
+            
+            {/* Goal Setting */}
+            <div className="flex items-center gap-2">
+              {!editingDailyGoal ? (
+                <>
+                  <span className="text-sm text-white opacity-70">Target: {dailyGoal}</span>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setEditingDailyGoal(true);
+                      setDailyGoalInput(dailyGoal.toString());
+                    }}
+                    className="text-white hover:text-yellow-300 transition-colors text-sm"
+                  >
+                    ✏️ Edit
+                  </motion.button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 w-full">
+                  <input
+                    type="number"
+                    value={dailyGoalInput}
+                    onChange={(e) => setDailyGoalInput(e.target.value)}
+                    className="w-24 px-2 py-1 rounded text-sm bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                    min="1"
+                    autoFocus
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleSaveDailyGoal}
+                    className="text-green-400 hover:text-green-300"
+                  >
+                    ✓
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setEditingDailyGoal(false)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    ✕
+                  </motion.button>
+                </div>
+              )}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min((dailyGoalProgress / dailyGoal) * 100, 100)}%` }}
+                transition={{ duration: 0.5 }}
+                className="h-full rounded-full"
+                style={{
+                  background: dailyGoalProgress >= dailyGoal
+                    ? 'linear-gradient(to right, rgb(34, 197, 94), rgb(22, 163, 74))'
+                    : 'linear-gradient(to right, rgb(59, 130, 246), rgb(37, 99, 235))',
+                }}
+              />
+            </div>
+
+            {/* Quick Add Buttons */}
+            <div className="grid grid-cols-4 gap-2">
+              {[10, 20, 30, 50].map((amount) => (
+                <motion.button
+                  key={`daily-add-${amount}`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleAddDailyGoal(amount)}
+                  className="font-bold py-2 rounded transition-colors border text-sm"
+                  style={{
+                    backgroundColor: theme === 'christmas' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                    color: 'rgb(147, 197, 253)',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                  }}
+                >
+                  +{amount}
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Remove Buttons */}
+            {dailyGoalProgress > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {[10, 20, 30, 50].map((amount) => (
+                  <motion.button
+                    key={`daily-remove-${amount}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleRemoveDailyGoal(amount)}
+                    className="font-bold py-2 rounded transition-colors border text-sm"
+                    style={{
+                      backgroundColor: theme === 'christmas' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      color: 'rgb(252, 165, 165)',
+                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                    }}
+                  >
+                    -{amount}
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
       </div>
 
       {/* Daily History Modal */}
