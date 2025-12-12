@@ -42,7 +42,37 @@ export default function DailyHistoryModal({
       const response = await fetch(`/api/players/${playerId}/history`);
       if (!response.ok) throw new Error('Failed to fetch history');
       const data = await response.json();
-      setHistory(data);
+      
+      // Merge today's entries if they're split across UTC dates
+      const today = new Date();
+      const todayStr = today.getFullYear() + '-' + 
+                       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(today.getDate()).padStart(2, '0');
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.getFullYear() + '-' + 
+                          String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(tomorrow.getDate()).padStart(2, '0');
+      
+      const todayEntry = data.find((d: DailyHistory) => d.date.split('T')[0] === todayStr);
+      const tomorrowEntry = data.find((d: DailyHistory) => d.date.split('T')[0] === tomorrowStr);
+      
+      let mergedData = [...data];
+      
+      // If both exist, merge them into today's entry and remove tomorrow's
+      if (todayEntry && tomorrowEntry) {
+        mergedData = data.filter((d: DailyHistory) => d.date.split('T')[0] !== tomorrowStr);
+        const todayIndex = mergedData.findIndex((d: DailyHistory) => d.date.split('T')[0] === todayStr);
+        if (todayIndex !== -1) {
+          mergedData[todayIndex] = {
+            ...todayEntry,
+            total: todayEntry.total + tomorrowEntry.total,
+            entries: todayEntry.entries + tomorrowEntry.entries
+          };
+        }
+      }
+      
+      setHistory(mergedData);
     } catch (error) {
       console.error('Error fetching history:', error);
     } finally {

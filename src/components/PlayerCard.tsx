@@ -47,10 +47,12 @@ export default function PlayerCard({
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
         
-        const todayData = data.find(
-          (d: { date: string; total: number }) => d.date === today || d.date === tomorrowStr
-        );
-        setTodayTotal(todayData?.total || 0);
+        // Sum both today's and tomorrow's entries (if they exist) to handle UTC timezone split
+        const total = data.reduce((sum: number, d: { date: string; total: number }) => {
+          return (d.date === today || d.date === tomorrowStr) ? sum + d.total : sum;
+        }, 0);
+        
+        setTodayTotal(total);
       } else {
         setTodayTotal(0);
       }
