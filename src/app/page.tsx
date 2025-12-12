@@ -30,6 +30,15 @@ export default function Home() {
   useEffect(() => {
     fetchPlayers();
     fetchSettings();
+
+    // Auto-refresh every 5 minutes
+    const intervalId = setInterval(() => {
+      fetchPlayers();
+      fetchSettings();
+    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchPlayers = async () => {
