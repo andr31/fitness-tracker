@@ -33,26 +33,37 @@ export default function PlayerCard({
   const [todayTotal, setTodayTotal] = useState<number>(0);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  useEffect(() => {
-    fetchTodayTotal();
-  }, [player.totalPushups]);
-
   const fetchTodayTotal = async () => {
     try {
       const response = await fetch(`/api/players/${player.id}/history`);
       if (!response.ok) return;
       const data = await response.json();
       if (data.length > 0) {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        // Also check tomorrow's UTC date since late-night entries might be stored with tomorrow's date in UTC
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+        
         const todayData = data.find(
-          (d: any) => d.date.split('T')[0] === today
+          (d: { date: string; total: number }) => d.date === today || d.date === tomorrowStr
         );
         setTodayTotal(todayData?.total || 0);
+      } else {
+        setTodayTotal(0);
       }
     } catch (error) {
       console.error('Error fetching today total:', error);
+      setTodayTotal(0);
     }
   };
+
+  useEffect(() => {
+    fetchTodayTotal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.totalPushups]);
 
   const handleQuickAdd = (amount: number) => {
     onAddPushups(amount);

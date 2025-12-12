@@ -58,13 +58,20 @@ export default function DailyHistoryModal({
                      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
                      String(today.getDate()).padStart(2, '0');
     
+    // Also check tomorrow's date for late-night entries stored in UTC
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.getFullYear() + '-' + 
+                        String(tomorrow.getMonth() + 1).padStart(2, '0') + '-' + 
+                        String(tomorrow.getDate()).padStart(2, '0');
+    
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.getFullYear() + '-' + 
                          String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + 
                          String(yesterday.getDate()).padStart(2, '0');
 
-    if (datePart === todayStr) {
+    if (datePart === todayStr || datePart === tomorrowStr) {
       return 'Today';
     } else if (datePart === yesterdayStr) {
       return 'Yesterday';
