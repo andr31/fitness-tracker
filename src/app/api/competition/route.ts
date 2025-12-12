@@ -15,9 +15,8 @@ export async function GET() {
       );
     }
 
-    // Return as ISO string but treat as local time (no timezone conversion)
-    const dateStr = result.rows[0].enddate;
-    return NextResponse.json({ endDate: dateStr });
+    // Return endDate as-is (stored as local datetime string without timezone)
+    return NextResponse.json({ endDate: result.rows[0].enddate });
   } catch (error) {
     console.error('Error fetching competition end date:', error);
     return NextResponse.json(

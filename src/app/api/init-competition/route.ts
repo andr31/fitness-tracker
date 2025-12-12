@@ -3,20 +3,22 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // Create competition_settings table
+    // Drop old table if it exists and recreate with TEXT column
+    await sql`DROP TABLE IF EXISTS competition_settings;`;
+    
+    // Create competition_settings table with TEXT endDate (no timezone)
     await sql`
-      CREATE TABLE IF NOT EXISTS competition_settings (
+      CREATE TABLE competition_settings (
         id SERIAL PRIMARY KEY,
-        endDate TIMESTAMP NOT NULL,
+        endDate TEXT NOT NULL,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
 
-    // Insert default end date if table is empty
+    // Insert default end date as local datetime string (without timezone)
     await sql`
       INSERT INTO competition_settings (endDate)
-      SELECT '2025-12-24 00:00:00'
-      WHERE NOT EXISTS (SELECT 1 FROM competition_settings);
+      VALUES ('2025-12-25T00:00:00');
     `;
 
     return NextResponse.json({ success: true, message: 'Competition settings initialized' });

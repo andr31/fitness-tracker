@@ -30,15 +30,15 @@ export async function initializeDatabase() {
     await sql`
       CREATE TABLE IF NOT EXISTS competition_settings (
         id SERIAL PRIMARY KEY,
-        endDate TIMESTAMP NOT NULL,
+        endDate TEXT NOT NULL,
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
 
-    // Insert default end date if table is empty
+    // Insert default end date if table is empty (as local datetime string)
     await sql`
       INSERT INTO competition_settings (endDate)
-      SELECT '2025-12-24 00:00:00'
+      SELECT '2025-12-25T00:00:00'
       WHERE NOT EXISTS (SELECT 1 FROM competition_settings);
     `;
 
