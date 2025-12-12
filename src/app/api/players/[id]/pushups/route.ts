@@ -33,13 +33,24 @@ export async function POST(
       );
     }
 
-    const { amount } = await request.json();
+    const { amount, date } = await request.json();
 
     if (typeof amount !== 'number' || !Number.isInteger(amount)) {
       return NextResponse.json(
         { error: 'Amount must be an integer' },
         { status: 400 }
       );
+    }
+
+    // Validate date if provided (format: YYYY-MM-DD)
+    if (date !== undefined && date !== null) {
+      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+      if (!datePattern.test(date)) {
+        return NextResponse.json(
+          { error: 'Date must be in YYYY-MM-DD format' },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if player exists and get current total
@@ -61,15 +72,22 @@ export async function POST(
       );
     }
 
-    // Insert history with auto-calculated PST date
-    await sql`
-      INSERT INTO pushupHistory (playerId, amount, localDate) 
-      VALUES (
-        ${playerId}, 
-        ${amount}, 
-        (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
-      )
-    `;
+    // Insert history with either provided date or auto-calculated PST date
+    if (date) {
+      await sql`
+        INSERT INTO pushupHistory (playerId, amount, localDate) 
+        VALUES (${playerId}, ${amount}, ${date}::DATE)
+      `;
+    } else {
+      await sql`
+        INSERT INTO pushupHistory (playerId, amount, localDate) 
+        VALUES (
+          ${playerId}, 
+          ${amount}, 
+          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
+        )
+      `;
+    }
 
     // Update player total
     const result = await sql`

@@ -110,12 +110,15 @@ export default function Home() {
     }
   };
 
-  const handleAddPushups = async (playerId: number, amount: number) => {
+  const handleAddPushups = async (playerId: number, amount: number, date?: string) => {
     try {
+      const body: { amount: number; date?: string } = { amount };
+      if (date) body.date = date;
+      
       const response = await fetch(`/api/players/${playerId}/pushups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) throw new Error('Failed to update pushups');
@@ -455,8 +458,8 @@ export default function Home() {
                       player={player}
                       theme={theme}
                       milestone={milestone}
-                      onAddPushups={(amount) =>
-                        handleAddPushups(player.id, amount)
+                      onAddPushups={(amount, date) =>
+                        handleAddPushups(player.id, amount, date)
                       }
                       onRemovePushups={(amount) =>
                         handleRemovePushups(player.id, amount)

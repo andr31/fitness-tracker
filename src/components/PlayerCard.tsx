@@ -15,7 +15,7 @@ interface Player {
 
 interface PlayerCardProps {
   player: Player;
-  onAddPushups: (amount: number) => void;
+  onAddPushups: (amount: number, date?: string) => void;
   onRemovePushups: (amount: number) => void;
   onDelete: () => void;
   theme?: Theme;
@@ -34,6 +34,8 @@ export default function PlayerCard({
   const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const fetchTodayTotal = async () => {
     try {
@@ -61,14 +63,22 @@ export default function PlayerCard({
   }, [player.totalPushups]);
 
   const handleQuickAdd = (amount: number) => {
-    onAddPushups(amount);
+    onAddPushups(amount, selectedDate || undefined);
+    if (selectedDate) {
+      setSelectedDate('');
+      setShowDatePicker(false);
+    }
   };
 
   const handleCustomAdd = () => {
     const amount = parseInt(inputValue);
     if (!isNaN(amount) && amount > 0) {
-      onAddPushups(amount);
+      onAddPushups(amount, selectedDate || undefined);
       setInputValue('');
+      if (selectedDate) {
+        setSelectedDate('');
+        setShowDatePicker(false);
+      }
     }
   };
 
@@ -210,6 +220,53 @@ export default function PlayerCard({
       </div>
 
       <div className="space-y-4">
+        {/* Date Picker Toggle */}
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setShowDatePicker(!showDatePicker);
+              if (showDatePicker) setSelectedDate('');
+            }}
+            className="px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-2"
+            style={{
+              backgroundColor: showDatePicker
+                ? theme === 'christmas'
+                  ? 'rgba(34, 197, 94, 0.3)'
+                  : 'rgba(59, 130, 246, 0.3)'
+                : theme === 'christmas'
+                ? 'rgba(55, 65, 81, 0.5)'
+                : 'rgba(55, 65, 81, 0.5)',
+              color: 'white',
+            }}
+          >
+            <Calendar className="w-4 h-4" />
+            {showDatePicker ? 'Cancel' : 'Pick Date'}
+          </motion.button>
+          {showDatePicker && (
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="px-3 py-1.5 rounded text-sm outline-none"
+              style={{
+                backgroundColor:
+                  theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
+                borderColor:
+                  theme === 'christmas' ? 'rgb(34, 197, 94)' : 'rgb(75, 85, 99)',
+                color: 'white',
+              }}
+            />
+          )}
+          {selectedDate && (
+            <span className="text-xs text-white opacity-70">
+              Adding to: {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          )}
+        </div>
+
         {/* Quick buttons */}
         <div className="grid grid-cols-4 gap-2">
           {[10, 20, 30, 50].map((amount) => (
