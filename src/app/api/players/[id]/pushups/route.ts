@@ -67,7 +67,7 @@ export async function POST(
       VALUES (
         ${playerId}, 
         ${amount}, 
-        (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles')::DATE
+        (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
       )
     `;
 
