@@ -20,6 +20,8 @@ interface PlayerCardProps {
   onDelete: () => void;
   theme?: Theme;
   milestone?: number;
+  allPlayers?: Player[];
+  onCoachMessage?: (message: string) => void;
 }
 
 export default function PlayerCard({
@@ -29,6 +31,8 @@ export default function PlayerCard({
   onDelete,
   theme = 'cartoon',
   milestone = 1000,
+  allPlayers = [],
+  onCoachMessage,
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
@@ -43,6 +47,11 @@ export default function PlayerCard({
   const [dailyGoalInput, setDailyGoalInput] = useState('');
   const [editingDailyGoal, setEditingDailyGoal] = useState(false);
   const [showDailyGoalSection, setShowDailyGoalSection] = useState(false);
+  
+  // AI Coach states (local to card)
+  const [aiCoachMessage, setAiCoachMessage] = useState('');
+  const [showAiCoach, setShowAiCoach] = useState(false);
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
   const fetchTodayTotal = async () => {
     try {
@@ -135,8 +144,45 @@ export default function PlayerCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.totalPushups]);
 
+  const generateAiCoachMessage = async (amount: number, isNegative: boolean = false) => {
+    setIsAiThinking(true); // Show "thinking" immediately
+    try {
+      const response = await fetch('/api/ai/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerName: player.name,
+          amount: Math.abs(amount),
+          totalPushups: player.totalPushups + amount,
+          milestone,
+          allPlayers,
+          isNegative,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Show locally on this card - set these BEFORE clearing thinking state
+        setAiCoachMessage(data.message);
+        setShowAiCoach(true);
+        setIsAiThinking(false); // Clear thinking state after message is ready
+        setTimeout(() => setShowAiCoach(false), 10000); // 10 seconds
+        // Also notify parent if callback exists
+        if (onCoachMessage) onCoachMessage(data.message);
+      } else {
+        console.warn('AI Coach unavailable');
+        setIsAiThinking(false);
+      }
+    } catch (error) {
+      console.warn('AI Coach unavailable:', error);
+      setIsAiThinking(false);
+    }
+  };
+
   const handleQuickAdd = (amount: number) => {
     onAddPushups(amount, selectedDate || undefined);
+    if (!selectedDate) {
+      generateAiCoachMessage(amount);
+    }
     if (selectedDate) {
       setSelectedDate('');
       setShowDatePicker(false);
@@ -147,6 +193,9 @@ export default function PlayerCard({
     const amount = parseInt(inputValue);
     if (!isNaN(amount) && amount > 0) {
       onAddPushups(amount, selectedDate || undefined);
+      if (!selectedDate) {
+        generateAiCoachMessage(amount);
+      }
       setInputValue('');
       if (selectedDate) {
         setSelectedDate('');
@@ -184,6 +233,82 @@ export default function PlayerCard({
           theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
       }}
     >
+      {/* AI Coach Balloon - appears on card */}
+      {(isAiThinking || showAiCoach) && (
+        <motion.div
+          initial={{ opacity: 0, y: -20, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.8 }}
+          className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-xs"
+        >
+          <motion.div
+            className="rounded-xl p-3 shadow-xl backdrop-blur-sm border-2"
+            style={{
+              background:
+                theme === 'christmas'
+                  ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.95), rgba(251, 191, 36, 0.95))'
+                  : 'linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.95))',
+              borderColor: 'rgba(255, 255, 255, 0.4)',
+            }}
+            animate={{
+              y: [0, -5, 0],
+            }}
+            transition={{
+              y: {
+                repeat: Infinity,
+                duration: 2,
+                ease: 'easeInOut',
+              },
+            }}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <motion.span
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  rotate: isAiThinking ? [0, 360] : 0
+                }}
+                transition={{
+                  scale: {
+                    repeat: Infinity,
+                    duration: 1.5,
+                    ease: 'easeInOut',
+                  },
+                  rotate: {
+                    repeat: Infinity,
+                    duration: 1,
+                    ease: 'linear',
+                  }
+                }}
+                className="text-2xl"
+              >
+                🤖
+              </motion.span>
+              <span className="text-white font-bold text-xs uppercase tracking-wide">
+                AI Coach
+              </span>
+            </div>
+            <p
+              className="text-white font-semibold text-sm leading-tight"
+              style={{
+                textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+              }}
+            >
+              {isAiThinking ? 'Thinking...' : aiCoachMessage}
+            </p>
+          </motion.div>
+          {/* Arrow pointing down to card */}
+          <div
+            className="w-4 h-4 transform rotate-45 mx-auto -mt-2"
+            style={{
+              background:
+                theme === 'christmas'
+                  ? 'rgba(234, 179, 8, 0.95)'
+                  : 'rgba(251, 191, 36, 0.95)',
+            }}
+          />
+        </motion.div>
+      )}
+
       {/* Crown Badge (Milestone) */}
       {player.totalPushups >= milestone && (
         <motion.div
@@ -237,6 +362,7 @@ export default function PlayerCard({
             >
               {player.totalPushups}
             </motion.p>
+            
             {todayTotal > 0 && (
               <motion.button
                 initial={{ opacity: 0, y: -5 }}

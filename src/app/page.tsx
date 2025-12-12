@@ -7,6 +7,7 @@ import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
+import FloatingAIBalloon from '@/components/FloatingAIBalloon';
 import { Theme } from '@/lib/emojis';
 import './theme.css';
 
@@ -25,6 +26,35 @@ export default function Home() {
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
+  const [commentary, setCommentary] = useState<string>('');
+  const [showCommentary, setShowCommentary] = useState(false);
+  const [coachMessage, setCoachMessage] = useState<string>('');
+  const [showCoachMessage, setShowCoachMessage] = useState(false);
+
+  const generateCommentary = async () => {
+    if (players.length === 0) return;
+    try {
+      const response = await fetch('/api/ai/commentator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ players, milestone }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCommentary(data.commentary);
+        setShowCommentary(true);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.details?.includes('Quota exceeded')) {
+          console.log('⏳ AI quota reached - keeping last message until quota resets');
+        }
+        // Keep showing last message on error (don't hide)
+      }
+    } catch (error) {
+      console.warn('AI Commentary unavailable - keeping last message:', error);
+      // Keep showing last message on error (don't hide)
+    }
+  };
 
   // Fetch players and settings on mount
   useEffect(() => {
@@ -37,9 +67,31 @@ export default function Home() {
       fetchSettings();
     }, 5 * 60 * 1000); // 5 minutes in milliseconds
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
+    // Cleanup intervals on unmount
+    return () => {
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // Generate new commentary every 2 minutes when players exist
+  useEffect(() => {
+    if (players.length === 0) return;
+    
+    // Generate immediately on mount or when players change
+    generateCommentary();
+    
+    // Then generate every 2 minutes (to avoid Gemini quota limits)
+    const commentaryInterval = setInterval(() => {
+      generateCommentary();
+    }, 120 * 1000);
+
+    return () => {
+      clearInterval(commentaryInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [players.length]);
+
 
   const fetchPlayers = async () => {
     try {
@@ -467,6 +519,7 @@ export default function Home() {
                       player={player}
                       theme={theme}
                       milestone={milestone}
+                      allPlayers={players}
                       onAddPushups={(amount, date) =>
                         handleAddPushups(player.id, amount, date)
                       }
@@ -474,6 +527,11 @@ export default function Home() {
                         handleRemovePushups(player.id, amount)
                       }
                       onDelete={() => handleDeletePlayer(player.id)}
+                      onCoachMessage={(message) => {
+                        setCoachMessage(message);
+                        setShowCoachMessage(true);
+                        setTimeout(() => setShowCoachMessage(false), 10000);
+                      }}
                     />
                   ))
                 )}
@@ -494,6 +552,20 @@ export default function Home() {
         theme={theme}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddPlayer}
+      />
+
+      {/* Floating AI Balloons */}
+      <FloatingAIBalloon
+        message={commentary}
+        type="commentator"
+        isVisible={showCommentary}
+        theme={theme}
+      />
+      <FloatingAIBalloon
+        message={coachMessage}
+        type="coach"
+        isVisible={showCoachMessage}
+        theme={theme}
       />
     </div>
   );
