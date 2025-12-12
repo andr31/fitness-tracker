@@ -19,6 +19,7 @@ interface PlayerCardProps {
   onRemovePushups: (amount: number) => void;
   onDelete: () => void;
   theme?: Theme;
+  milestone?: number;
 }
 
 export default function PlayerCard({
@@ -27,6 +28,7 @@ export default function PlayerCard({
   onRemovePushups,
   onDelete,
   theme = 'cartoon',
+  milestone = 1000,
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
@@ -98,7 +100,7 @@ export default function PlayerCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="rounded-lg p-6 shadow-lg border hover:border-opacity-75 transition-all"
+      className="rounded-lg p-6 shadow-lg border hover:border-opacity-75 transition-all relative"
       style={{
         background:
           theme === 'christmas'
@@ -108,6 +110,22 @@ export default function PlayerCard({
           theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
       }}
     >
+      {/* Crown Badge */}
+      {player.totalPushups >= milestone && (
+        <motion.div
+          initial={{ scale: 0, rotate: -180, opacity: 0 }}
+          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.2 }}
+          className="absolute -top-3 -right-3 text-4xl"
+          style={{
+            filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
+          }}
+          title={`🎉 Milestone reached: ${milestone}!`}
+        >
+          👑
+        </motion.div>
+      )}
+      
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <AnimatedIcon

@@ -22,10 +22,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<Theme>('christmas');
+  const [milestone, setMilestone] = useState<number>(1000);
+  const [editingMilestone, setEditingMilestone] = useState(false);
+  const [milestoneInput, setMilestoneInput] = useState('1000');
 
-  // Fetch players on mount
+  // Fetch players and settings on mount
   useEffect(() => {
     fetchPlayers();
+    fetchSettings();
   }, []);
 
   const fetchPlayers = async () => {
@@ -41,6 +45,46 @@ export default function Home() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/settings');
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      const data = await response.json();
+      if (data.milestone) {
+        const milestoneValue = parseInt(data.milestone);
+        setMilestone(milestoneValue);
+        setMilestoneInput(milestoneValue.toString());
+      }
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    }
+  };
+
+  const handleSaveMilestone = async () => {
+    const value = parseInt(milestoneInput);
+    if (isNaN(value) || value <= 0) {
+      setError('Please enter a valid milestone');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'milestone', value: value.toString() }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save milestone');
+
+      setMilestone(value);
+      setEditingMilestone(false);
+      setError('');
+    } catch (err) {
+      setError('Failed to save milestone');
+      console.error(err);
     }
   };
 
@@ -167,6 +211,55 @@ export default function Home() {
               </h1>
             </motion.div>
 
+            {/* Milestone Display */}
+            <div className="flex items-center gap-3">
+              {!editingMilestone ? (
+                <>
+                  <span className="text-lg font-semibold text-white">
+                    🎯 Milestone: {milestone}
+                  </span>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setEditingMilestone(true);
+                      setMilestoneInput(milestone.toString());
+                    }}
+                    className="text-white hover:text-yellow-300 transition-colors"
+                  >
+                    ✏️
+                  </motion.button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={milestoneInput}
+                    onChange={(e) => setMilestoneInput(e.target.value)}
+                    className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                    min="1"
+                    autoFocus
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleSaveMilestone}
+                    className="text-green-400 hover:text-green-300 text-xl"
+                  >
+                    ✓
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setEditingMilestone(false)}
+                    className="text-red-400 hover:text-red-300 text-xl"
+                  >
+                    ✕
+                  </motion.button>
+                </div>
+              )}
+            </div>
+
             {/* Theme Switcher and Add Button */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Theme Buttons */}
@@ -240,6 +333,58 @@ export default function Home() {
         </div>
       </motion.header>
 
+      {/* Champions Banner */}
+      {players.filter((p) => p.totalPushups >= milestone).length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-7xl mx-auto px-4 mt-4"
+        >
+          <div
+            className="rounded-lg p-6 backdrop-blur-md border"
+            style={{
+              background:
+                theme === 'christmas'
+                  ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(220, 38, 38, 0.2))'
+                  : 'linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(249, 115, 22, 0.2))',
+              borderColor:
+                theme === 'christmas'
+                  ? 'rgba(34, 197, 94, 0.3)'
+                  : 'rgba(250, 204, 21, 0.3)',
+            }}
+          >
+            <h2 className="text-2xl font-bold text-white mb-4 text-center">
+              🏆 Champions - Milestone Reached! 🏆
+            </h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              {players
+                .filter((p) => p.totalPushups >= milestone)
+                .map((champion) => (
+                  <motion.div
+                    key={champion.id}
+                    whileHover={{ scale: 1.05 }}
+                    className="px-6 py-3 rounded-lg font-semibold text-lg backdrop-blur-sm"
+                    style={{
+                      background:
+                        theme === 'christmas'
+                          ? 'rgba(34, 197, 94, 0.3)'
+                          : 'rgba(250, 204, 21, 0.3)',
+                      color: 'white',
+                      border: '2px solid',
+                      borderColor:
+                        theme === 'christmas'
+                          ? 'rgb(34, 197, 94)'
+                          : 'rgb(250, 204, 21)',
+                    }}
+                  >
+                    🎖️ {champion.name} - {champion.totalPushups} pushups
+                  </motion.div>
+                ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {error && (
@@ -309,6 +454,7 @@ export default function Home() {
                       key={player.id}
                       player={player}
                       theme={theme}
+                      milestone={milestone}
                       onAddPushups={(amount) =>
                         handleAddPushups(player.id, amount)
                       }
