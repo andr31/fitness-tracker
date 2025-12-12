@@ -43,6 +43,7 @@ export default function PlayerCard({
   const [dailyGoalInput, setDailyGoalInput] = useState('');
   const [editingDailyGoal, setEditingDailyGoal] = useState(false);
   const [showDailyGoalSection, setShowDailyGoalSection] = useState(false);
+  const [sliderValue, setSliderValue] = useState<number>(10);
 
   const fetchTodayTotal = async () => {
     try {
@@ -544,24 +545,36 @@ export default function PlayerCard({
               />
             </div>
 
-            {/* Quick Add Buttons */}
-            <div className="grid grid-cols-4 gap-2">
-              {[10, 20, 30, 50].map((amount) => (
-                <motion.button
-                  key={`daily-add-${amount}`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleAddDailyGoal(amount)}
-                  className="font-bold py-2 rounded transition-colors border text-sm"
-                  style={{
-                    backgroundColor: theme === 'christmas' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                    color: 'rgb(147, 197, 253)',
-                    borderColor: 'rgba(59, 130, 246, 0.3)',
-                  }}
-                >
-                  +{amount}
-                </motion.button>
-              ))}
+            {/* Slider Add Control */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-white opacity-70">
+                <span>Add:</span>
+                <span className="font-bold" style={{ color: 'rgb(147, 197, 253)' }}>+{sliderValue}</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="70"
+                value={sliderValue}
+                onChange={(e) => setSliderValue(Number(e.target.value))}
+                className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(sliderValue / 70) * 100}%, rgb(55, 65, 81) ${(sliderValue / 70) * 100}%, rgb(55, 65, 81) 100%)`,
+                }}
+              />
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleAddDailyGoal(sliderValue)}
+                className="w-full font-bold py-2 rounded transition-colors border text-sm"
+                style={{
+                  backgroundColor: theme === 'christmas' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                  color: 'rgb(147, 197, 253)',
+                  borderColor: 'rgba(59, 130, 246, 0.3)',
+                }}
+              >
+                Add +{sliderValue}
+              </motion.button>
             </div>
 
             {/* Remove Buttons */}
