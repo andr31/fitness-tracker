@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus } from 'lucide-react';
+import { Dumbbell, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
@@ -26,6 +26,7 @@ export default function Home() {
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
+  const [headerExpanded, setHeaderExpanded] = useState(false);
 
   // Fetch players and settings on mount
   useEffect(() => {
@@ -190,157 +191,345 @@ export default function Home() {
             theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            {/* Title and Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-3"
-            >
-              <motion.div
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 2 }}
-              >
-                <Dumbbell
-                  className="w-8 h-8"
-                  style={{
-                    color:
-                      theme === 'christmas'
-                        ? 'rgb(253, 224, 71)'
-                        : 'rgb(250, 204, 21)',
-                  }}
-                />
-              </motion.div>
-              <h1
-                className="text-4xl font-bold text-transparent bg-clip-text"
-                style={{
-                  backgroundImage:
-                    theme === 'christmas'
-                      ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
-                      : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
-                }}
-              >
-                PushUp Battle
-              </h1>
-            </motion.div>
-
-            {/* Milestone Display */}
-            <div className="flex items-center gap-3">
-              {!editingMilestone ? (
-                <>
-                  <span className="text-lg font-semibold text-white">
-                    🎯 Milestone: {milestone}
-                  </span>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => {
-                      setEditingMilestone(true);
-                      setMilestoneInput(milestone.toString());
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          {/* Mobile: Compact header with toggle */}
+          <div className="lg:hidden">
+            <div className="flex items-center justify-between">
+              {/* Logo, Title, and Milestone in one line */}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  <Dumbbell
+                    className="w-6 h-6 flex-shrink-0"
+                    style={{
+                      color:
+                        theme === 'christmas'
+                          ? 'rgb(253, 224, 71)'
+                          : 'rgb(250, 204, 21)',
                     }}
-                    className="text-white hover:text-yellow-300 transition-colors"
-                  >
-                    ✏️
-                  </motion.button>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    value={milestoneInput}
-                    onChange={(e) => setMilestoneInput(e.target.value)}
-                    className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
-                    min="1"
-                    autoFocus
                   />
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={handleSaveMilestone}
-                    className="text-green-400 hover:text-green-300 text-xl"
-                  >
-                    ✓
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setEditingMilestone(false)}
-                    className="text-red-400 hover:text-red-300 text-xl"
-                  >
-                    ✕
-                  </motion.button>
-                </div>
-              )}
+                </motion.div>
+                <h1
+                  className="text-xl font-bold text-transparent bg-clip-text flex-shrink truncate"
+                  style={{
+                    backgroundImage:
+                      theme === 'christmas'
+                        ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
+                        : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                  }}
+                >
+                  PushUp Battle
+                </h1>
+                {!editingMilestone && (
+                  <span className="text-sm font-semibold text-white whitespace-nowrap flex-shrink-0">
+                    🎯 M:{milestone}
+                  </span>
+                )}
+              </div>
+
+              {/* Toggle button */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setHeaderExpanded(!headerExpanded)}
+                className="ml-2 text-white flex-shrink-0"
+              >
+                {headerExpanded ? (
+                  <ChevronUp className="w-6 h-6" />
+                ) : (
+                  <ChevronDown className="w-6 h-6" />
+                )}
+              </motion.button>
             </div>
 
-            {/* Theme Switcher and Add Button */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Theme Buttons */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setTheme('cartoon')}
-                className="px-4 py-2 rounded-lg font-semibold transition-all"
-                style={{
-                  backgroundColor:
-                    theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
-                  color: 'white',
-                  boxShadow:
-                    theme === 'cartoon'
-                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                      : 'none',
-                }}
-              >
-                🤖 Cartoon
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setTheme('christmas')}
-                className="px-4 py-2 rounded-lg font-semibold transition-all"
-                style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgb(34, 197, 94)'
-                      : 'rgb(55, 65, 81)',
-                  color: 'white',
-                  boxShadow:
-                    theme === 'christmas'
-                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                      : 'none',
-                }}
-              >
-                🎄 Christmas
-              </motion.button>
+            {/* Expandable section */}
+            <AnimatePresence>
+              {headerExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-4 space-y-3">
+                    {/* Milestone Edit */}
+                    <div className="flex items-center gap-2">
+                      {!editingMilestone ? (
+                        <>
+                          <span className="text-base font-semibold text-white">
+                            🎯 Milestone: {milestone}
+                          </span>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              setEditingMilestone(true);
+                              setMilestoneInput(milestone.toString());
+                            }}
+                            className="text-white hover:text-yellow-300 transition-colors"
+                          >
+                            ✏️
+                          </motion.button>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={milestoneInput}
+                            onChange={(e) => setMilestoneInput(e.target.value)}
+                            className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                            min="1"
+                            autoFocus
+                          />
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={handleSaveMilestone}
+                            className="text-green-400 hover:text-green-300 text-xl"
+                          >
+                            ✓
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setEditingMilestone(false)}
+                            className="text-red-400 hover:text-red-300 text-xl"
+                          >
+                            ✕
+                          </motion.button>
+                        </div>
+                      )}
+                    </div>
 
-              {/* Add Player Button */}
-              <motion.button
+                    {/* Theme Buttons */}
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setTheme('cartoon')}
+                        className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
+                        style={{
+                          backgroundColor:
+                            theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                          color: 'white',
+                          boxShadow:
+                            theme === 'cartoon'
+                              ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                              : 'none',
+                        }}
+                      >
+                        🤖 Cartoon
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setTheme('christmas')}
+                        className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
+                        style={{
+                          backgroundColor:
+                            theme === 'christmas'
+                              ? 'rgb(34, 197, 94)'
+                              : 'rgb(55, 65, 81)',
+                          color: 'white',
+                          boxShadow:
+                            theme === 'christmas'
+                              ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                              : 'none',
+                        }}
+                      >
+                        🎄 Christmas
+                      </motion.button>
+                    </div>
+
+                    {/* Add Player Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsModalOpen(true)}
+                      className="w-full text-white font-bold px-6 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
+                      style={{
+                        backgroundColor:
+                          theme === 'christmas'
+                            ? 'rgb(34, 197, 94)'
+                            : 'rgb(34, 197, 94)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          theme === 'christmas'
+                            ? 'rgb(22, 163, 74)'
+                            : 'rgb(22, 163, 74)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          theme === 'christmas'
+                            ? 'rgb(34, 197, 94)'
+                            : 'rgb(34, 197, 94)';
+                      }}
+                    >
+                      <Plus className="w-5 h-5" />
+                      Add Player
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Desktop: Original layout */}
+          <div className="hidden lg:block">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              {/* Title and Logo */}
+              <motion.div
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsModalOpen(true)}
-                className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
-                style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgb(34, 197, 94)'
-                      : 'rgb(34, 197, 94)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    theme === 'christmas'
-                      ? 'rgb(22, 163, 74)'
-                      : 'rgb(22, 163, 74)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    theme === 'christmas'
-                      ? 'rgb(34, 197, 94)'
-                      : 'rgb(34, 197, 94)';
-                }}
+                className="flex items-center gap-3"
               >
-                <Plus className="w-5 h-5" />
-                Add Player
-              </motion.button>
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  <Dumbbell
+                    className="w-8 h-8"
+                    style={{
+                      color:
+                        theme === 'christmas'
+                          ? 'rgb(253, 224, 71)'
+                          : 'rgb(250, 204, 21)',
+                    }}
+                  />
+                </motion.div>
+                <h1
+                  className="text-4xl font-bold text-transparent bg-clip-text"
+                  style={{
+                    backgroundImage:
+                      theme === 'christmas'
+                        ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
+                        : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                  }}
+                >
+                  PushUp Battle
+                </h1>
+              </motion.div>
+
+              {/* Milestone Display */}
+              <div className="flex items-center gap-3">
+                {!editingMilestone ? (
+                  <>
+                    <span className="text-lg font-semibold text-white">
+                      🎯 Milestone: {milestone}
+                    </span>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        setEditingMilestone(true);
+                        setMilestoneInput(milestone.toString());
+                      }}
+                      className="text-white hover:text-yellow-300 transition-colors"
+                    >
+                      ✏️
+                    </motion.button>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={milestoneInput}
+                      onChange={(e) => setMilestoneInput(e.target.value)}
+                      className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                      min="1"
+                      autoFocus
+                    />
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleSaveMilestone}
+                      className="text-green-400 hover:text-green-300 text-xl"
+                    >
+                      ✓
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setEditingMilestone(false)}
+                      className="text-red-400 hover:text-red-300 text-xl"
+                    >
+                      ✕
+                    </motion.button>
+                  </div>
+                )}
+              </div>
+
+              {/* Theme Switcher and Add Button */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Theme Buttons */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setTheme('cartoon')}
+                  className="px-4 py-2 rounded-lg font-semibold transition-all"
+                  style={{
+                    backgroundColor:
+                      theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                    color: 'white',
+                    boxShadow:
+                      theme === 'cartoon'
+                        ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        : 'none',
+                  }}
+                >
+                  🤖 Cartoon
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setTheme('christmas')}
+                  className="px-4 py-2 rounded-lg font-semibold transition-all"
+                  style={{
+                    backgroundColor:
+                      theme === 'christmas'
+                        ? 'rgb(34, 197, 94)'
+                        : 'rgb(55, 65, 81)',
+                    color: 'white',
+                    boxShadow:
+                      theme === 'christmas'
+                        ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        : 'none',
+                  }}
+                >
+                  🎄 Christmas
+                </motion.button>
+
+                {/* Add Player Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsModalOpen(true)}
+                  className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+                  style={{
+                    backgroundColor:
+                      theme === 'christmas'
+                        ? 'rgb(34, 197, 94)'
+                        : 'rgb(34, 197, 94)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      theme === 'christmas'
+                        ? 'rgb(22, 163, 74)'
+                        : 'rgb(22, 163, 74)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      theme === 'christmas'
+                        ? 'rgb(34, 197, 94)'
+                        : 'rgb(34, 197, 94)';
+                  }}
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Player
+                </motion.button>
+              </div>
             </div>
           </div>
         </div>
