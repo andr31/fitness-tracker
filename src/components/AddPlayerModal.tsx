@@ -50,7 +50,7 @@ export default function AddPlayerModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg p-8 shadow-2xl border z-50 max-w-sm w-full mx-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-2xl border z-50 w-[calc(100%-2rem)] sm:w-full max-w-sm p-6 sm:p-8"
             style={{
               backgroundColor:
                 theme === 'christmas' ? 'rgb(100, 35, 35)' : 'rgb(31, 41, 55)',
@@ -58,12 +58,12 @@ export default function AddPlayerModal({
                 theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
             }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">Add Player</h2>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-white">Add Player</h2>
               <motion.button
                 whileHover={{ rotate: 90 }}
                 onClick={onClose}
-                className="transition-colors"
+                className="transition-colors flex-shrink-0 ml-2"
                 style={{
                   color:
                     theme === 'christmas'
