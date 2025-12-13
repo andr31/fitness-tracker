@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Plus, Minus, Trash2, Calendar } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
 import DailyHistoryModal from './DailyHistoryModal';
+import DailyGoalStatsModal from './DailyGoalStatsModal';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 
 interface Player {
@@ -44,6 +45,8 @@ export default function PlayerCard({
   const [editingDailyGoal, setEditingDailyGoal] = useState(false);
   const [showDailyGoalSection, setShowDailyGoalSection] = useState(false);
   const [sliderValue, setSliderValue] = useState<number>(10);
+  const [dailyGoalsMet, setDailyGoalsMet] = useState<number>(0);
+  const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
 
   const fetchTodayTotal = async () => {
     try {
@@ -90,6 +93,17 @@ export default function PlayerCard({
     }
   };
 
+  const fetchDailyGoalStats = async () => {
+    try {
+      const response = await fetch(`/api/players/${player.id}/daily-goal-stats`);
+      if (!response.ok) return;
+      const data = await response.json();
+      setDailyGoalsMet(data.goalsMet);
+    } catch (error) {
+      console.error('Error fetching daily goal stats:', error);
+    }
+  };
+
   const handleSaveDailyGoal = async () => {
     const newGoal = parseInt(dailyGoalInput);
     if (!isNaN(newGoal) && newGoal > 0) {
@@ -118,6 +132,7 @@ export default function PlayerCard({
       });
       if (response.ok) {
         fetchDailyGoalProgress();
+        fetchDailyGoalStats();
       }
     } catch (error) {
       console.error('Error adding daily goal:', error);
@@ -136,6 +151,7 @@ export default function PlayerCard({
     fetchTodayTotal();
     fetchDailyGoal();
     fetchDailyGoalProgress();
+    fetchDailyGoalStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.totalPushups]);
 
@@ -475,6 +491,23 @@ export default function PlayerCard({
           </motion.div>
         </button>
 
+        {/* Goals Met Pill */}
+        {dailyGoalsMet > 0 && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsGoalStatsModalOpen(true)}
+            className="mb-3 px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2"
+            style={{
+              backgroundColor: theme === 'christmas' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+              color: theme === 'christmas' ? 'rgb(134, 239, 172)' : 'rgb(147, 197, 253)',
+              border: `1px solid ${theme === 'christmas' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+            }}
+          >
+            🏆 {dailyGoalsMet} {dailyGoalsMet === 1 ? 'day' : 'days'} goal met
+          </motion.button>
+        )}
+
         {showDailyGoalSection && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -609,6 +642,15 @@ export default function PlayerCard({
       <DailyHistoryModal
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
+        playerId={player.id}
+        playerName={player.name}
+        theme={theme}
+      />
+
+      {/* Daily Goal Stats Modal */}
+      <DailyGoalStatsModal
+        isOpen={isGoalStatsModalOpen}
+        onClose={() => setIsGoalStatsModalOpen(false)}
         playerId={player.id}
         playerName={player.name}
         theme={theme}
