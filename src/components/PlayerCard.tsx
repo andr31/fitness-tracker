@@ -128,7 +128,7 @@ export default function PlayerCard({
       const response = await fetch(`/api/players/${player.id}/daily-goal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, dailyGoalTarget: dailyGoal }),
       });
       if (response.ok) {
         fetchDailyGoalProgress();

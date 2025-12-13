@@ -8,6 +8,7 @@ import { Theme } from '@/lib/emojis';
 interface DayGoalMet {
   date: string;
   total: number;
+  target: number;
 }
 
 interface DailyGoalStatsModalProps {
@@ -201,7 +202,7 @@ export default function DailyGoalStatsModal({
                           </div>
                           <div className="text-right">
                             <div className="text-lg font-bold text-green-400">
-                              {day.total}
+                              {day.total} / {day.target}
                             </div>
                             <div className="text-xs text-white opacity-50">
                               pushups

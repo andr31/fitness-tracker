@@ -16,11 +16,18 @@ export async function POST(
       );
     }
 
-    const { amount, date } = await request.json();
+    const { amount, date, dailyGoalTarget } = await request.json();
 
     if (typeof amount !== 'number' || !Number.isInteger(amount)) {
       return NextResponse.json(
         { error: 'Amount must be an integer' },
+        { status: 400 }
+      );
+    }
+
+    if (typeof dailyGoalTarget !== 'number' || !Number.isInteger(dailyGoalTarget) || dailyGoalTarget <= 0) {
+      return NextResponse.json(
+        { error: 'Daily goal target must be a positive integer' },
         { status: 400 }
       );
     }
@@ -39,16 +46,17 @@ export async function POST(
     // Insert daily goal history entry
     if (date) {
       await sql`
-        INSERT INTO dailyGoalHistory (playerId, amount, localDate) 
-        VALUES (${playerId}, ${amount}, ${date}::DATE)
+        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
+        VALUES (${playerId}, ${amount}, ${date}::DATE, ${dailyGoalTarget})
       `;
     } else {
       await sql`
-        INSERT INTO dailyGoalHistory (playerId, amount, localDate) 
+        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
         VALUES (
           ${playerId}, 
           ${amount}, 
-          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
+          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
+          ${dailyGoalTarget}
         )
       `;
     }
