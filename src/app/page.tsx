@@ -8,6 +8,7 @@ import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
 import CountdownTimer from '@/components/CountdownTimer';
+import CelebrationEffect from '@/components/CelebrationEffect';
 import { Theme } from '@/lib/emojis';
 import './theme.css';
 
@@ -27,6 +28,8 @@ export default function Home() {
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
   const [headerExpanded, setHeaderExpanded] = useState(false);
+  const [celebratingPlayer, setCelebratingPlayer] = useState<string | null>(null);
+  const [playersReachedMilestone, setPlayersReachedMilestone] = useState<Set<number>>(new Set());
 
   // Fetch players and settings on mount
   useEffect(() => {
@@ -135,6 +138,22 @@ export default function Home() {
       if (!response.ok) throw new Error('Failed to update pushups');
 
       const updatedPlayer = await response.json();
+      const previousPlayer = players.find(p => p.id === playerId);
+      
+      // Check if player just reached milestone
+      if (previousPlayer && 
+          previousPlayer.totalPushups < milestone && 
+          updatedPlayer.totalPushups >= milestone &&
+          !playersReachedMilestone.has(playerId)) {
+        setCelebratingPlayer(updatedPlayer.name);
+        setPlayersReachedMilestone(prev => new Set(prev).add(playerId));
+        
+        // Auto-stop celebration after 2 minutes
+        setTimeout(() => {
+          setCelebratingPlayer(null);
+        }, 120000);
+      }
+      
       setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
     } catch (err) {
       setError('Failed to update pushups');
@@ -689,6 +708,12 @@ export default function Home() {
         theme={theme}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddPlayer}
+      />
+
+      {/* Celebration Effect */}
+      <CelebrationEffect 
+        isActive={celebratingPlayer !== null} 
+        playerName={celebratingPlayer || undefined}
       />
     </div>
   );
