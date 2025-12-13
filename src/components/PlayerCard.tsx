@@ -78,7 +78,10 @@ export default function PlayerCard({
 
   const fetchDailyGoalProgress = async () => {
     try {
-      const response = await fetch(`/api/players/${player.id}/daily-goal`);
+      // Pass the client's local date to avoid timezone issues
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const response = await fetch(`/api/players/${player.id}/daily-goal?date=${todayStr}`);
       if (!response.ok) return;
       const data = await response.json();
       setDailyGoalProgress(data.total);

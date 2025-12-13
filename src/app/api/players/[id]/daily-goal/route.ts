@@ -78,9 +78,19 @@ export async function GET(
       );
     }
 
-    // Get today's total
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // Get date from query parameter (client's local date) or use server's date as fallback
+    const url = new URL(request.url);
+    const dateParam = url.searchParams.get('date');
+    
+    let todayStr: string;
+    if (dateParam) {
+      // Use the date provided by the client (their local date)
+      todayStr = dateParam;
+    } else {
+      // Fallback to server's date (but this may be wrong timezone)
+      const today = new Date();
+      todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    }
 
     const result = await sql`
       SELECT 
