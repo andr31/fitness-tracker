@@ -6,6 +6,7 @@ import { Plus, Minus, Trash2, Calendar } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
 import DailyHistoryModal from './DailyHistoryModal';
 import DailyGoalStatsModal from './DailyGoalStatsModal';
+import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 
 interface Player {
@@ -47,6 +48,7 @@ export default function PlayerCard({
   const [sliderValue, setSliderValue] = useState<number>(10);
   const [dailyGoalsMet, setDailyGoalsMet] = useState<number>(0);
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
+  const [showEncouragement, setShowEncouragement] = useState(false);
 
   const fetchTodayTotal = async () => {
     try {
@@ -155,8 +157,14 @@ export default function PlayerCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.totalPushups]);
 
+  const showEncouragementAnimation = () => {
+    setShowEncouragement(true);
+    setTimeout(() => setShowEncouragement(false), 2000);
+  };
+
   const handleQuickAdd = (amount: number) => {
     onAddPushups(amount, selectedDate || undefined);
+    showEncouragementAnimation();
     if (selectedDate) {
       setSelectedDate('');
       setShowDatePicker(false);
@@ -167,6 +175,7 @@ export default function PlayerCard({
     const amount = parseInt(inputValue);
     if (!isNaN(amount) && amount > 0) {
       onAddPushups(amount, selectedDate || undefined);
+      showEncouragementAnimation();
       setInputValue('');
       if (selectedDate) {
         setSelectedDate('');
@@ -235,6 +244,12 @@ export default function PlayerCard({
           ⭐
         </motion.div>
       )}
+
+      {/* Encouragement Animation */}
+      <EncouragementAnimation
+        show={showEncouragement}
+        theme={theme}
+      />
       
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
