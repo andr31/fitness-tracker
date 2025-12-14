@@ -16,16 +16,17 @@ export async function GET(
       );
     }
 
-    // Get all days where the daily goal was met (comparing against the target stored on that day)
+    // Get all days where the daily goal was met (comparing against the last target set that day)
+    // We use ARRAY_AGG with ORDER BY timestamp DESC to get the most recent target
     const result = await sql`
       SELECT 
         localDate::text as date,
         SUM(amount) as total,
-        MAX(dailyGoalTarget) as dailyGoalTarget
+        (ARRAY_AGG(dailyGoalTarget ORDER BY timestamp DESC))[1] as dailyGoalTarget
       FROM dailyGoalHistory
       WHERE playerId = ${playerId}
       GROUP BY localDate
-      HAVING SUM(amount) >= MAX(dailyGoalTarget)
+      HAVING SUM(amount) >= (ARRAY_AGG(dailyGoalTarget ORDER BY timestamp DESC))[1]
       ORDER BY localDate DESC
     `;
 
