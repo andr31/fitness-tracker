@@ -2,6 +2,7 @@ import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Helper to transform lowercase column names to camelCase
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformRow(row: any) {
   return {
     id: row.id,
@@ -72,12 +73,46 @@ export async function POST(
       );
     }
 
+    // Get player's current daily goal setting
+    const dailyGoalResult = await sql`
+      SELECT dailyGoal FROM dailyGoalSettings WHERE playerId = ${playerId}
+    `;
+    const dailyGoalTarget = dailyGoalResult.rows.length > 0 
+      ? dailyGoalResult.rows[0].dailygoal 
+      : 100;
+
+    // For removals (negative amounts), check current daily goal progress to prevent negative values
+    let dailyGoalAmount = amount;
+    if (amount < 0) {
+      const progressResult = date
+        ? await sql`
+            SELECT COALESCE(SUM(amount), 0) as total
+            FROM dailyGoalHistory
+            WHERE playerId = ${playerId} AND localDate = ${date}::DATE
+          `
+        : await sql`
+            SELECT COALESCE(SUM(amount), 0) as total
+            FROM dailyGoalHistory
+            WHERE playerId = ${playerId} AND localDate = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
+          `;
+      const currentProgress = progressResult.rows[0]?.total || 0;
+      // Only remove up to current progress (don't go below 0)
+      dailyGoalAmount = Math.max(amount, -currentProgress);
+    }
+
     // Insert history with either provided date or auto-calculated PST date
     if (date) {
       await sql`
         INSERT INTO pushupHistory (playerId, amount, localDate) 
         VALUES (${playerId}, ${amount}, ${date}::DATE)
       `;
+      // Also update daily goal history with the same date, but cap removal at 0
+      if (dailyGoalAmount !== 0) {
+        await sql`
+          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
+          VALUES (${playerId}, ${dailyGoalAmount}, ${date}::DATE, ${dailyGoalTarget})
+        `;
+      }
     } else {
       await sql`
         INSERT INTO pushupHistory (playerId, amount, localDate) 
@@ -87,6 +122,18 @@ export async function POST(
           (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
         )
       `;
+      // Also update daily goal history, but cap removal at 0
+      if (dailyGoalAmount !== 0) {
+        await sql`
+          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
+          VALUES (
+            ${playerId}, 
+            ${dailyGoalAmount}, 
+            (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
+            ${dailyGoalTarget}
+          )
+        `;
+      }
     }
 
     // Update player total
