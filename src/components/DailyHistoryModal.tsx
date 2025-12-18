@@ -8,7 +8,8 @@ import { Theme } from '@/lib/emojis';
 interface DailyHistory {
   date: string;
   total: number;
-  entries: number;
+  additions: number;
+  removals: number;
 }
 
 interface DailyHistoryModalProps {
@@ -203,8 +204,11 @@ export default function DailyHistoryModal({
                         <div className="font-semibold text-white">
                           {formatDate(day.date)}
                         </div>
-                        <div className="text-sm text-gray-400">
-                          {day.entries} {day.entries === 1 ? 'entry' : 'entries'}
+                        <div className="text-sm text-gray-400 flex items-center gap-2">
+                          <span className="text-green-400">+{day.additions}</span>
+                          {day.removals > 0 && (
+                            <span className="text-red-400">-{day.removals}</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
