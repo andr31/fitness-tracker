@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dumbbell, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
@@ -30,6 +30,7 @@ export default function Home() {
   const [headerExpanded, setHeaderExpanded] = useState(false);
   const [celebratingPlayer, setCelebratingPlayer] = useState<string | null>(null);
   const [playersReachedMilestone, setPlayersReachedMilestone] = useState<Set<number>>(new Set());
+  const playerCardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   // Fetch players and settings on mount
   useEffect(() => {
@@ -74,6 +75,18 @@ export default function Home() {
       }
     } catch (err) {
       console.error('Failed to load settings:', err);
+    }
+  };
+
+  const scrollToPlayer = (playerId: number) => {
+    const element = playerCardRefs.current[playerId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add a brief highlight effect
+      element.style.transform = 'scale(1.02)';
+      setTimeout(() => {
+        element.style.transform = 'scale(1)';
+      }, 300);
     }
   };
 
@@ -589,7 +602,9 @@ export default function Home() {
                   <motion.div
                     key={champion.id}
                     whileHover={{ scale: 1.05 }}
-                    className="px-6 py-3 rounded-lg font-semibold text-lg backdrop-blur-sm"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => scrollToPlayer(champion.id)}
+                    className="px-6 py-3 rounded-lg font-semibold text-lg backdrop-blur-sm cursor-pointer"
                     style={{
                       background:
                         theme === 'christmas'
@@ -676,19 +691,24 @@ export default function Home() {
                   </motion.div>
                 ) : (
                   players.map((player) => (
-                    <PlayerCard
+                    <div
                       key={player.id}
-                      player={player}
-                      theme={theme}
-                      milestone={milestone}
-                      onAddPushups={(amount, date) =>
-                        handleAddPushups(player.id, amount, date)
-                      }
-                      onRemovePushups={(amount) =>
-                        handleRemovePushups(player.id, amount)
-                      }
-                      onDelete={() => handleDeletePlayer(player.id)}
-                    />
+                      ref={(el) => { playerCardRefs.current[player.id] = el; }}
+                      style={{ transition: 'transform 0.3s ease' }}
+                    >
+                      <PlayerCard
+                        player={player}
+                        theme={theme}
+                        milestone={milestone}
+                        onAddPushups={(amount, date) =>
+                          handleAddPushups(player.id, amount, date)
+                        }
+                        onRemovePushups={(amount) =>
+                          handleRemovePushups(player.id, amount)
+                        }
+                        onDelete={() => handleDeletePlayer(player.id)}
+                      />
+                    </div>
                   ))
                 )}
               </AnimatePresence>
