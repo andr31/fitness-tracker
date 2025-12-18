@@ -16,12 +16,14 @@ export async function GET(
       );
     }
 
+
     // Get daily aggregated pushup history using localDate (PST timezone)
+    // Only count positive (addition) entries for 'entries'
     const result = await sql`
       SELECT 
         localDate::TEXT as date,
         SUM(amount)::integer as total,
-        COUNT(*)::integer as entries
+        COUNT(*) FILTER (WHERE amount > 0)::integer as entries
       FROM pushupHistory
       WHERE playerId = ${playerId}
       GROUP BY localDate
