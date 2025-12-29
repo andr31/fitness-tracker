@@ -32,19 +32,10 @@ export default function Home() {
   const [playersReachedMilestone, setPlayersReachedMilestone] = useState<Set<number>>(new Set());
   const playerCardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
-  // Fetch players and settings on mount
+  // Fetch players and settings on mount (no auto-refresh)
   useEffect(() => {
     fetchPlayers();
     fetchSettings();
-
-    // Auto-refresh every 5 minutes
-    const intervalId = setInterval(() => {
-      fetchPlayers();
-      fetchSettings();
-    }, 5 * 60 * 1000); // 5 minutes in milliseconds
-
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
   }, []);
 
   const fetchPlayers = async () => {
