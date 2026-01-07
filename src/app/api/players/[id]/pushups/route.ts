@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 // Helper to transform lowercase column names to camelCase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,6 +19,15 @@ export async function POST(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     if (!id || id === 'undefined') {
       return NextResponse.json(
         { error: 'Player ID is required' },
@@ -56,7 +66,7 @@ export async function POST(
 
     // Check if player exists and get current total
     const playerResult = await sql`
-      SELECT id, totalpushups FROM players WHERE id = ${playerId}
+      SELECT id, totalpushups FROM players WHERE id = ${playerId} AND sessionId = ${sessionId}
     `;
 
     if (!playerResult.rows || playerResult.rows.length === 0) {
@@ -75,7 +85,7 @@ export async function POST(
 
     // Get player's current daily goal setting
     const dailyGoalResult = await sql`
-      SELECT dailyGoal FROM dailyGoalSettings WHERE playerId = ${playerId}
+      SELECT dailyGoal FROM dailyGoalSettings WHERE playerId = ${playerId} AND sessionId = ${sessionId}
     `;
     const dailyGoalTarget = dailyGoalResult.rows.length > 0 
       ? dailyGoalResult.rows[0].dailygoal 
@@ -88,12 +98,12 @@ export async function POST(
         ? await sql`
             SELECT COALESCE(SUM(amount), 0) as total
             FROM dailyGoalHistory
-            WHERE playerId = ${playerId} AND localDate = ${date}::DATE
+            WHERE playerId = ${playerId} AND sessionId = ${sessionId} AND localDate = ${date}::DATE
           `
         : await sql`
             SELECT COALESCE(SUM(amount), 0) as total
             FROM dailyGoalHistory
-            WHERE playerId = ${playerId} AND localDate = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
+            WHERE playerId = ${playerId} AND sessionId = ${sessionId} AND localDate = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
           `;
       const currentProgress = progressResult.rows[0]?.total || 0;
       // Only remove up to current progress (don't go below 0)
@@ -103,34 +113,36 @@ export async function POST(
     // Insert history with either provided date or auto-calculated PST date
     if (date) {
       await sql`
-        INSERT INTO pushupHistory (playerId, amount, localDate) 
-        VALUES (${playerId}, ${amount}, ${date}::DATE)
+        INSERT INTO pushupHistory (playerId, amount, localDate, sessionId) 
+        VALUES (${playerId}, ${amount}, ${date}::DATE, ${sessionId})
       `;
       // Also update daily goal history with the same date, but cap removal at 0
       if (dailyGoalAmount !== 0) {
         await sql`
-          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
-          VALUES (${playerId}, ${dailyGoalAmount}, ${date}::DATE, ${dailyGoalTarget})
+          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
+          VALUES (${playerId}, ${dailyGoalAmount}, ${date}::DATE, ${dailyGoalTarget}, ${sessionId})
         `;
       }
     } else {
       await sql`
-        INSERT INTO pushupHistory (playerId, amount, localDate) 
+        INSERT INTO pushupHistory (playerId, amount, localDate, sessionId) 
         VALUES (
           ${playerId}, 
           ${amount}, 
-          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
+          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
+          ${sessionId}
         )
       `;
       // Also update daily goal history, but cap removal at 0
       if (dailyGoalAmount !== 0) {
         await sql`
-          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
+          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
           VALUES (
             ${playerId}, 
             ${dailyGoalAmount}, 
             (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
-            ${dailyGoalTarget}
+            ${dailyGoalTarget},
+            ${sessionId}
           )
         `;
       }

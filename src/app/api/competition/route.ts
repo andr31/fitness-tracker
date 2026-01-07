@@ -1,11 +1,23 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 // GET competition end date
 export async function GET() {
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const result = await sql`
-      SELECT endDate FROM competition_settings ORDER BY id DESC LIMIT 1;
+      SELECT endDate FROM competition_settings 
+      WHERE sessionId = ${sessionId}
+      ORDER BY id DESC LIMIT 1;
     `;
     
     if (result.rows.length === 0) {
@@ -29,6 +41,15 @@ export async function GET() {
 // PUT update competition end date
 export async function PUT(request: NextRequest) {
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const { endDate } = await request.json();
 
     if (!endDate) {
@@ -38,11 +59,25 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    await sql`
-      UPDATE competition_settings 
-      SET endDate = ${endDate}, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = (SELECT id FROM competition_settings ORDER BY id DESC LIMIT 1);
+    // Check if competition_settings exists for this session
+    const existing = await sql`
+      SELECT id FROM competition_settings WHERE sessionId = ${sessionId} LIMIT 1;
     `;
+
+    if (existing.rows.length === 0) {
+      // Create new entry for this session
+      await sql`
+        INSERT INTO competition_settings (endDate, sessionId)
+        VALUES (${endDate}, ${sessionId});
+      `;
+    } else {
+      // Update existing entry
+      await sql`
+        UPDATE competition_settings 
+        SET endDate = ${endDate}, updatedAt = CURRENT_TIMESTAMP
+        WHERE sessionId = ${sessionId};
+      `;
+    }
 
     return NextResponse.json({ success: true, endDate });
   } catch (error) {

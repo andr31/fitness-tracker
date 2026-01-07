@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Dumbbell, Plus, ChevronDown, ChevronUp, History } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
+import SessionSelectorModal from '@/components/SessionSelectorModal';
+import CreateSessionModal from '@/components/CreateSessionModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
 import CountdownTimer from '@/components/CountdownTimer';
 import CelebrationEffect from '@/components/CelebrationEffect';
@@ -21,6 +23,8 @@ interface Player {
 export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
+  const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<Theme>('christmas');
@@ -42,7 +46,15 @@ export default function Home() {
     try {
       setLoading(true);
       const response = await fetch('/api/players');
-      if (!response.ok) throw new Error('Failed to fetch players');
+      if (!response.ok) {
+        if (response.status === 401) {
+          // No active session, show session selector
+          setIsSessionSelectorOpen(true);
+          setLoading(false);
+          return;
+        }
+        throw new Error('Failed to fetch players');
+      }
       const data = await response.json();
       setPlayers(data);
       setError('');
@@ -185,6 +197,33 @@ export default function Home() {
       setError('Failed to delete player');
       console.error(err);
     }
+  };
+
+  const handleCreateSession = async (name: string, password: string) => {
+    try {
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, password }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create session');
+      }
+
+      setError('');
+      setIsCreateSessionOpen(false);
+      setIsSessionSelectorOpen(true);
+    } catch (err: any) {
+      throw new Error(err.message || 'Failed to create session');
+    }
+  };
+
+  const handleSessionChange = () => {
+    // Reload data after session change
+    fetchPlayers();
+    fetchSettings();
   };
 
   return (
@@ -394,6 +433,26 @@ export default function Home() {
                       <Plus className="w-5 h-5" />
                       Add Player
                     </motion.button>
+
+                    {/* Session Management Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsSessionSelectorOpen(true)}
+                      className="w-full text-white font-bold px-6 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
+                      style={{
+                        backgroundColor: 'rgb(59, 130, 246)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgb(37, 99, 235)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgb(59, 130, 246)';
+                      }}
+                    >
+                      <History className="w-5 h-5" />
+                      Sessions
+                    </motion.button>
                   </div>
                 </motion.div>
               )}
@@ -551,6 +610,26 @@ export default function Home() {
                 >
                   <Plus className="w-5 h-5" />
                   Add Player
+                </motion.button>
+
+                {/* Session Management Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsSessionSelectorOpen(true)}
+                  className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+                  style={{
+                    backgroundColor: 'rgb(59, 130, 246)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgb(37, 99, 235)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgb(59, 130, 246)';
+                  }}
+                >
+                  <History className="w-5 h-5" />
+                  Sessions
                 </motion.button>
               </div>
             </div>
@@ -719,6 +798,23 @@ export default function Home() {
         theme={theme}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddPlayer}
+      />
+
+      {/* Session Management Modals */}
+      <SessionSelectorModal
+        isOpen={isSessionSelectorOpen}
+        onClose={() => setIsSessionSelectorOpen(false)}
+        onCreateNew={() => {
+          setIsSessionSelectorOpen(false);
+          setIsCreateSessionOpen(true);
+        }}
+        onSessionChange={handleSessionChange}
+      />
+
+      <CreateSessionModal
+        isOpen={isCreateSessionOpen}
+        onClose={() => setIsCreateSessionOpen(false)}
+        onCreateSession={handleCreateSession}
       />
 
       {/* Celebration Effect */}
