@@ -27,7 +27,8 @@ export default function Home() {
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [theme, setTheme] = useState<Theme>('christmas');
+  const [activeSessionName, setActiveSessionName] = useState<string>('');
+  const [theme, setTheme] = useState<Theme>('cartoon');
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
@@ -40,7 +41,23 @@ export default function Home() {
   useEffect(() => {
     fetchPlayers();
     fetchSettings();
+    fetchActiveSession();
   }, []);
+
+  const fetchActiveSession = async () => {
+    try {
+      const response = await fetch('/api/sessions');
+      if (response.ok) {
+        const sessions = await response.json();
+        const activeSession = sessions.find((s: any) => s.isActive);
+        if (activeSession) {
+          setActiveSessionName(activeSession.name);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch active session:', err);
+    }
+  };
 
   const fetchPlayers = async () => {
     try {
@@ -224,6 +241,7 @@ export default function Home() {
     // Reload data after session change
     fetchPlayers();
     fetchSettings();
+    fetchActiveSession();
   };
 
   return (
@@ -366,7 +384,7 @@ export default function Home() {
                     </div>
 
                     {/* Theme Buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" hidden>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -494,6 +512,17 @@ export default function Home() {
                 </h1>
               </motion.div>
 
+              {/* Active Session Name */}
+              {activeSessionName && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg border" style={{
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  borderColor: 'rgba(59, 130, 246, 0.3)',
+                }}>
+                  <span className="text-sm font-medium text-blue-300">Session:</span>
+                  <span className="text-sm font-semibold text-white">{activeSessionName}</span>
+                </div>
+              )}
+
               {/* Milestone Display */}
               <div className="flex items-center gap-3">
                 {!editingMilestone ? (
@@ -546,42 +575,44 @@ export default function Home() {
               {/* Theme Switcher and Add Button */}
               <div className="flex flex-wrap items-center gap-2">
                 {/* Theme Buttons */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setTheme('cartoon')}
-                  className="px-4 py-2 rounded-lg font-semibold transition-all"
-                  style={{
-                    backgroundColor:
-                      theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
-                    color: 'white',
-                    boxShadow:
-                      theme === 'cartoon'
-                        ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                        : 'none',
-                  }}
-                >
-                  🤖 Cartoon
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setTheme('christmas')}
-                  className="px-4 py-2 rounded-lg font-semibold transition-all"
-                  style={{
-                    backgroundColor:
-                      theme === 'christmas'
-                        ? 'rgb(34, 197, 94)'
-                        : 'rgb(55, 65, 81)',
-                    color: 'white',
-                    boxShadow:
-                      theme === 'christmas'
-                        ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                        : 'none',
-                  }}
-                >
-                  🎄 Christmas
-                </motion.button>
+                <div className="flex gap-2" hidden>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setTheme('cartoon')}
+                    className="px-4 py-2 rounded-lg font-semibold transition-all"
+                    style={{
+                      backgroundColor:
+                        theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                      color: 'white',
+                      boxShadow:
+                        theme === 'cartoon'
+                          ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                          : 'none',
+                    }}
+                  >
+                    🤖 Cartoon
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setTheme('christmas')}
+                    className="px-4 py-2 rounded-lg font-semibold transition-all"
+                    style={{
+                      backgroundColor:
+                        theme === 'christmas'
+                          ? 'rgb(34, 197, 94)'
+                          : 'rgb(55, 65, 81)',
+                      color: 'white',
+                      boxShadow:
+                        theme === 'christmas'
+                          ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                          : 'none',
+                    }}
+                  >
+                    🎄 Christmas
+                  </motion.button>
+                </div>
 
                 {/* Add Player Button */}
                 <motion.button
@@ -739,7 +770,9 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left side - Players */}
             <div className="lg:col-span-1 space-y-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Players</h2>
+              {players.length > 0 && (
+                <h2 className="text-2xl font-bold text-white mb-4">Players</h2>
+              )}
               <AnimatePresence>
                 {players.length === 0 ? (
                   <motion.div

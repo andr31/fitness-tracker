@@ -14,7 +14,7 @@ export async function getActiveSessionId(): Promise<number | null> {
 export async function GET() {
   try {
     const result = await sql`
-      SELECT id, name, isActive, createdAt, updatedAt 
+      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate 
       FROM sessions 
       ORDER BY isActive DESC, createdAt DESC
     `;
@@ -25,6 +25,7 @@ export async function GET() {
       isActive: row.isactive,
       createdAt: row.createdat,
       updatedAt: row.updatedat,
+      createdAtLocalDate: row.createdatlocaldate,
     })));
   } catch (error) {
     console.error('Error fetching sessions:', error);
@@ -51,6 +52,12 @@ export async function POST(request: NextRequest) {
     const trimmedName = name.trim();
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Get current local date in YYYY-MM-DD format
+    const now = new Date();
+    const localDate = now.getFullYear() + '-' + 
+                      String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                      String(now.getDate()).padStart(2, '0');
+
     // Check if session with this name already exists
     const existing = await sql`
       SELECT id FROM sessions WHERE name = ${trimmedName}
@@ -64,9 +71,9 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO sessions (name, passwordHash, isActive) 
-      VALUES (${trimmedName}, ${passwordHash}, false)
-      RETURNING id, name, isActive, createdAt, updatedAt
+      INSERT INTO sessions (name, passwordHash, isActive, createdAtLocalDate) 
+      VALUES (${trimmedName}, ${passwordHash}, false, ${localDate})
+      RETURNING id, name, isActive, createdAt, updatedAt, createdAtLocalDate
     `;
 
     const newSession = result.rows[0];
@@ -77,6 +84,7 @@ export async function POST(request: NextRequest) {
       isActive: newSession.isactive,
       createdAt: newSession.createdat,
       updatedAt: newSession.updatedat,
+      createdAtLocalDate: newSession.createdatlocaldate,
     }, { status: 201 });
   } catch (error: unknown) {
     console.error('Error creating session:', error);

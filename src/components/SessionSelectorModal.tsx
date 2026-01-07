@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, History, Archive } from 'lucide-react';
+import { X, Plus, History, Archive, Trash2 } from 'lucide-react';
 
 interface Session {
   id: number;
@@ -10,6 +10,7 @@ interface Session {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  createdAtLocalDate?: string;
 }
 
 interface SessionSelectorModalProps {
@@ -32,6 +33,8 @@ export default function SessionSelectorModal({
   const [password, setPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [archiving, setArchiving] = useState<number | null>(null);
+  const [deletingSession, setDeletingSession] = useState<number | null>(null);
+  const [adminPassword, setAdminPassword] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -112,6 +115,47 @@ export default function SessionSelectorModal({
     }
   };
 
+  const handleDeleteSession = async (sessionId: number) => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    if (session.isActive) {
+      alert('Cannot delete active session. Please switch to another session first.');
+      return;
+    }
+
+    setSelectedSession(null); // Clear selection when deleting
+    setDeletingSession(sessionId);
+  };
+
+  const confirmDeleteSession = async () => {
+    if (!deletingSession || !adminPassword) {
+      setError('Admin password is required to delete a session');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/sessions/${deletingSession}/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminPassword }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete session');
+      }
+
+      alert('Session deleted successfully!');
+      setDeletingSession(null);
+      setAdminPassword('');
+      fetchSessions();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete session';
+      setError(errorMessage);
+    }
+  };
+
   if (!isOpen) return null;
 
   const activeSession = sessions.find(s => s.isActive);
@@ -184,7 +228,12 @@ export default function SessionSelectorModal({
                         ? 'rgba(34, 197, 94, 0.1)'
                         : 'rgb(55, 65, 81)',
                     }}
-                    onClick={() => !session.isActive && setSelectedSession(session.id)}
+                    onClick={() => {
+                      if (!session.isActive) {
+                        setDeletingSession(null); // Clear deleting state when selecting
+                        setSelectedSession(session.id);
+                      }
+                    }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -197,26 +246,52 @@ export default function SessionSelectorModal({
                           )}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          Created: {new Date(session.createdAt).toLocaleDateString()}
+                          Created: {(() => {
+                            const dateStr = session.createdAtLocalDate || session.createdAt.split('T')[0];
+                            const date = new Date(dateStr + 'T00:00:00');
+                            return date.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            });
+                          })()}
                         </p>
                       </div>
-                      {session.isActive && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleArchiveSession(session.id);
-                          }}
-                          disabled={archiving === session.id}
-                          className="ml-4 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-colors disabled:opacity-50 border text-gray-300 hover:bg-gray-600"
-                          style={{
-                            backgroundColor: 'rgb(75, 85, 99)',
-                            borderColor: 'rgb(107, 114, 128)',
-                          }}
-                        >
-                          <Archive size={14} />
-                          {archiving === session.id ? 'Archiving...' : 'Archive'}
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {session.isActive && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleArchiveSession(session.id);
+                            }}
+                            disabled={archiving === session.id}
+                            className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-colors disabled:opacity-50 border text-gray-300 hover:bg-gray-600"
+                            style={{
+                              backgroundColor: 'rgb(75, 85, 99)',
+                              borderColor: 'rgb(107, 114, 128)',
+                            }}
+                          >
+                            <Archive size={14} />
+                            {archiving === session.id ? 'Archiving...' : 'Archive'}
+                          </button>
+                        )}
+                        {!session.isActive && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSession(session.id);
+                            }}
+                            className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-colors border text-red-300 hover:bg-red-900/30"
+                            style={{
+                              backgroundColor: 'rgb(75, 85, 99)',
+                              borderColor: 'rgb(127, 29, 29)',
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -253,6 +328,52 @@ export default function SessionSelectorModal({
                 >
                   {isActivating ? 'Activating...' : 'Activate Session'}
                 </button>
+              </div>
+            )}
+
+            {deletingSession && (
+              <div className="mt-6 p-4 rounded-lg border" style={{
+                backgroundColor: 'rgb(75, 29, 29)',
+                borderColor: 'rgb(127, 29, 29)',
+              }}>
+                <label htmlFor="adminPassword" className="block text-sm font-medium text-red-200 mb-2">
+                  Enter admin password to delete session
+                </label>
+                <input
+                  id="adminPassword"
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmDeleteSession()}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-colors"
+                  style={{
+                    backgroundColor: 'rgb(95, 40, 40)',
+                    borderColor: 'rgb(127, 29, 29)',
+                    color: 'white',
+                  }}
+                  placeholder="Admin password"
+                />
+                <div className="flex gap-3 mt-3">
+                  <button
+                    onClick={() => {
+                      setDeletingSession(null);
+                      setAdminPassword('');
+                    }}
+                    className="flex-1 px-4 py-2 border rounded-lg transition-colors text-gray-300"
+                    style={{
+                      borderColor: 'rgb(127, 29, 29)',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteSession}
+                    disabled={!adminPassword}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
+                  >
+                    Delete Session
+                  </button>
+                </div>
               </div>
             )}
 

@@ -28,9 +28,13 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
         const data = await response.json();
         // Parse the UTC date and use it directly (JS Date handles timezone conversion)
         setEndDate(new Date(data.endDate));
+      } else {
+        // Clear competition date if not found (e.g., new session)
+        setEndDate(null);
       }
     } catch (error) {
       console.error('Error fetching competition end date:', error);
+      setEndDate(null);
     }
   };
 
@@ -89,8 +93,6 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
 
     return () => clearInterval(interval);
   }, [endDate]);
-
-  if (!endDate) return null;
 
   return (
     <motion.div
@@ -151,7 +153,12 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
         </div>
       ) : (
         <>
-          {timeRemaining.isExpired ? (
+          {!endDate ? (
+            <div className="text-center py-4">
+              <p className="text-lg text-gray-300">No competition end date set</p>
+              <p className="text-sm text-gray-400 mt-2">Click the ✏️ to set a deadline!</p>
+            </div>
+          ) : timeRemaining.isExpired ? (
             <div className="text-center">
               <p className="text-3xl font-bold mb-2">🎉</p>
               <p className="text-xl font-bold text-white">Competition Ended!</p>
@@ -196,16 +203,18 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
               ))}
             </div>
           )}
-          <p className="text-center text-sm text-white opacity-70 mt-4">
-            {mounted ? endDate.toLocaleString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            }) : 'Loading...'}
-          </p>
+          {endDate && (
+            <p className="text-center text-sm text-white opacity-70 mt-4">
+              {mounted ? endDate.toLocaleString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }) : 'Loading...'}
+            </p>
+          )}
         </>
       )}
     </motion.div>

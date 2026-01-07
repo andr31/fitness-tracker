@@ -32,10 +32,12 @@ export default function RaceTrack({ players }: RaceTrackProps) {
 
   return (
     <div className="w-full space-y-6 p-6">
-      <div className="flex items-center gap-2 mb-8">
-        <Trophy className="w-8 h-8 text-yellow-500" />
-        <h2 className="text-3xl font-bold text-white">Leaderboard</h2>
-      </div>
+      {players.length > 0 && (
+        <div className="flex items-center gap-2 mb-8">
+          <Trophy className="w-8 h-8 text-yellow-500" />
+          <h2 className="text-3xl font-bold text-white">Leaderboard</h2>
+        </div>
+      )}
 
       <div className="space-y-4">
         {sortedPlayers.map((player, index) => {
@@ -94,18 +96,6 @@ export default function RaceTrack({ players }: RaceTrackProps) {
           );
         })}
       </div>
-
-      {players.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-12"
-        >
-          <p className="text-gray-400 text-lg">
-            No players yet. Add your first competitor! 🏃
-          </p>
-        </motion.div>
-      )}
     </div>
   );
 }
