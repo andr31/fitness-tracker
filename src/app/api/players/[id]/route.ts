@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function DELETE(
   request: NextRequest,
@@ -7,6 +8,15 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId) || !id) {
@@ -14,7 +24,7 @@ export async function DELETE(
     }
 
     const result = await sql`
-      DELETE FROM players WHERE id = ${playerId}
+      DELETE FROM players WHERE id = ${playerId} AND sessionId = ${sessionId}
     `;
 
     if (!result.rowCount || result.rowCount === 0) {

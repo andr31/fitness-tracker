@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function POST(
   request: NextRequest,
@@ -7,6 +8,15 @@ export async function POST(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
@@ -46,17 +56,18 @@ export async function POST(
     // Insert daily goal history entry
     if (date) {
       await sql`
-        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
-        VALUES (${playerId}, ${amount}, ${date}::DATE, ${dailyGoalTarget})
+        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
+        VALUES (${playerId}, ${amount}, ${date}::DATE, ${dailyGoalTarget}, ${sessionId})
       `;
     } else {
       await sql`
-        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget) 
+        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
         VALUES (
           ${playerId}, 
           ${amount}, 
           (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
-          ${dailyGoalTarget}
+          ${dailyGoalTarget},
+          ${sessionId}
         )
       `;
     }
@@ -77,6 +88,15 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
@@ -104,7 +124,7 @@ export async function GET(
       SELECT 
         COALESCE(SUM(amount), 0)::integer as total
       FROM dailyGoalHistory
-      WHERE playerId = ${playerId} AND localDate = ${todayStr}::DATE
+      WHERE playerId = ${playerId} AND sessionId = ${sessionId} AND localDate = ${todayStr}::DATE
     `;
 
     return NextResponse.json({ total: result.rows[0].total });

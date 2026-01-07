@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,15 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
@@ -17,14 +27,14 @@ export async function GET(
     }
 
     const result = await sql`
-      SELECT dailyGoal FROM dailyGoalSettings WHERE playerId = ${playerId}
+      SELECT dailyGoal FROM dailyGoalSettings WHERE playerId = ${playerId} AND sessionId = ${sessionId}
     `;
 
     if (result.rows.length === 0) {
       // Create default if doesn't exist
       await sql`
-        INSERT INTO dailyGoalSettings (playerId, dailyGoal)
-        VALUES (${playerId}, 100)
+        INSERT INTO dailyGoalSettings (playerId, dailyGoal, sessionId)
+        VALUES (${playerId}, 100, ${sessionId})
       `;
       return NextResponse.json({ dailyGoal: 100 });
     }
@@ -45,6 +55,15 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
@@ -64,9 +83,9 @@ export async function PUT(
     }
 
     await sql`
-      INSERT INTO dailyGoalSettings (playerId, dailyGoal, updatedAt)
-      VALUES (${playerId}, ${dailyGoal}, CURRENT_TIMESTAMP)
-      ON CONFLICT (playerId) 
+      INSERT INTO dailyGoalSettings (playerId, dailyGoal, updatedAt, sessionId)
+      VALUES (${playerId}, ${dailyGoal}, CURRENT_TIMESTAMP, ${sessionId})
+      ON CONFLICT (playerId, sessionId) 
       DO UPDATE SET dailyGoal = ${dailyGoal}, updatedAt = CURRENT_TIMESTAMP
     `;
 

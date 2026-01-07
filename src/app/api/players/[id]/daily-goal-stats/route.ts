@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,15 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
@@ -24,7 +34,7 @@ export async function GET(
         SUM(amount) as total,
         (ARRAY_AGG(dailyGoalTarget ORDER BY timestamp DESC))[1] as dailyGoalTarget
       FROM dailyGoalHistory
-      WHERE playerId = ${playerId}
+      WHERE playerId = ${playerId} AND sessionId = ${sessionId}
       GROUP BY localDate
       HAVING SUM(amount) >= (ARRAY_AGG(dailyGoalTarget ORDER BY timestamp DESC))[1]
       ORDER BY localDate DESC
@@ -34,7 +44,7 @@ export async function GET(
     const goalResult = await sql`
       SELECT dailyGoal 
       FROM dailyGoalSettings 
-      WHERE playerId = ${playerId}
+      WHERE playerId = ${playerId} AND sessionId = ${sessionId}
     `;
     
     const currentDailyGoal = goalResult.rows.length > 0 ? goalResult.rows[0].dailygoal : 100;

@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,15 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
+    const sessionId = await getActiveSessionId();
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No active session. Please select a session first.' },
+        { status: 401 }
+      );
+    }
+
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
@@ -26,7 +36,7 @@ export async function GET(
         COUNT(*) FILTER (WHERE amount > 0)::integer as additions,
         COUNT(*) FILTER (WHERE amount < 0)::integer as removals
       FROM pushupHistory
-      WHERE playerId = ${playerId}
+      WHERE playerId = ${playerId} AND sessionId = ${sessionId}
       GROUP BY localDate
       ORDER BY localDate DESC
       LIMIT 30
