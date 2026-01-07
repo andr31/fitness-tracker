@@ -676,7 +676,7 @@ export default function Home() {
 
       {/* Countdown Timer */}
       <div className="max-w-7xl mx-auto px-4 mt-4">
-        <CountdownTimer theme={theme} />
+        <CountdownTimer key={activeSessionName} theme={theme} />
       </div>
 
       {/* Champions Banner */}

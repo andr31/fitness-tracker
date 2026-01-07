@@ -43,19 +43,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
     }
 
-    // Deactivate all other sessions
-    await sql`
-      UPDATE sessions SET isActive = false WHERE id != ${sessionId}
-    `;
-
-    // Activate this session
-    await sql`
-      UPDATE sessions 
-      SET isActive = true, updatedAt = CURRENT_TIMESTAMP 
-      WHERE id = ${sessionId}
-    `;
-
-    // Set cookie with session ID
+    // Set cookie with session ID (no database isActive update needed - each user has their own cookie)
     const cookieStore = await cookies();
     cookieStore.set('activeSessionId', sessionId.toString(), {
       httpOnly: true,

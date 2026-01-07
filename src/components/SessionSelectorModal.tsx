@@ -29,6 +29,7 @@ export default function SessionSelectorModal({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [selectedSession, setSelectedSession] = useState<number | null>(null);
   const [password, setPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
@@ -39,8 +40,23 @@ export default function SessionSelectorModal({
   useEffect(() => {
     if (isOpen) {
       fetchSessions();
+      fetchActiveSession();
     }
   }, [isOpen]);
+
+  const fetchActiveSession = async () => {
+    try {
+      const response = await fetch('/api/sessions/active');
+      if (response.ok) {
+        const session = await response.json();
+        setActiveSessionId(session.id);
+      } else {
+        setActiveSessionId(null);
+      }
+    } catch (err) {
+      setActiveSessionId(null);
+    }
+  };
 
   const fetchSessions = async () => {
     try {
@@ -79,6 +95,7 @@ export default function SessionSelectorModal({
 
       setPassword('');
       setSelectedSession(null);
+      await fetchActiveSession(); // Refresh active session indicator
       onSessionChange();
       onClose();
     } catch (err: unknown) {
@@ -119,7 +136,7 @@ export default function SessionSelectorModal({
     const session = sessions.find(s => s.id === sessionId);
     if (!session) return;
 
-    if (session.isActive) {
+    if (activeSessionId === sessionId) {
       alert('Cannot delete active session. Please switch to another session first.');
       return;
     }
@@ -219,17 +236,17 @@ export default function SessionSelectorModal({
                     style={{
                       borderColor: selectedSession === session.id
                         ? 'rgb(59, 130, 246)'
-                        : session.isActive
+                        : activeSessionId === session.id
                         ? 'rgb(34, 197, 94)'
                         : 'rgb(75, 85, 99)',
                       backgroundColor: selectedSession === session.id
                         ? 'rgba(59, 130, 246, 0.1)'
-                        : session.isActive
+                        : activeSessionId === session.id
                         ? 'rgba(34, 197, 94, 0.1)'
                         : 'rgb(55, 65, 81)',
                     }}
                     onClick={() => {
-                      if (!session.isActive) {
+                      if (activeSessionId !== session.id) {
                         setDeletingSession(null); // Clear deleting state when selecting
                         setSelectedSession(session.id);
                       }
@@ -239,7 +256,7 @@ export default function SessionSelectorModal({
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-white">{session.name}</h3>
-                          {session.isActive && (
+                          {activeSessionId === session.id && (
                             <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
                               Active
                             </span>
@@ -258,7 +275,7 @@ export default function SessionSelectorModal({
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {session.isActive && (
+                        {activeSessionId === session.id && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -275,7 +292,7 @@ export default function SessionSelectorModal({
                             {archiving === session.id ? 'Archiving...' : 'Archive'}
                           </button>
                         )}
-                        {!session.isActive && (
+                        {activeSessionId !== session.id && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -298,7 +315,7 @@ export default function SessionSelectorModal({
               </div>
             )}
 
-            {selectedSession && !sessions.find(s => s.id === selectedSession)?.isActive && (
+            {selectedSession && activeSessionId !== selectedSession && (
               <div className="mt-6 p-4 rounded-lg border" style={{
                 backgroundColor: 'rgb(55, 65, 81)',
                 borderColor: 'rgb(75, 85, 99)',
