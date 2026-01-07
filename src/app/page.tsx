@@ -303,6 +303,11 @@ export default function Home() {
                 >
                   PushUp Battle
                 </h1>
+                {activeSessionName && (
+                  <span className="text-xs font-medium text-blue-300 whitespace-nowrap flex-shrink-0 truncate max-w-[100px]">
+                    {activeSessionName}
+                  </span>
+                )}
                 {!editingMilestone && (
                   <span className="text-sm font-semibold text-white whitespace-nowrap flex-shrink-0">
                     🎯 M:{milestone}
