@@ -46,16 +46,17 @@ export default function Home() {
 
   const fetchActiveSession = async () => {
     try {
-      const response = await fetch('/api/sessions');
+      const response = await fetch('/api/sessions/active');
       if (response.ok) {
-        const sessions = await response.json();
-        const activeSession = sessions.find((s: any) => s.isActive);
-        if (activeSession) {
-          setActiveSessionName(activeSession.name);
-        }
+        const session = await response.json();
+        setActiveSessionName(session.name);
+      } else {
+        // No active session
+        setActiveSessionName('');
       }
     } catch (err) {
       console.error('Failed to fetch active session:', err);
+      setActiveSessionName('');
     }
   };
 
