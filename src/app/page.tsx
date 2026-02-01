@@ -28,13 +28,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeSessionName, setActiveSessionName] = useState<string>('');
+  const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
+    'pushups',
+  );
   const [theme, setTheme] = useState<Theme>('cartoon');
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
   const [headerExpanded, setHeaderExpanded] = useState(false);
-  const [celebratingPlayer, setCelebratingPlayer] = useState<string | null>(null);
-  const [playersReachedMilestone, setPlayersReachedMilestone] = useState<Set<number>>(new Set());
+  const [celebratingPlayer, setCelebratingPlayer] = useState<string | null>(
+    null,
+  );
+  const [playersReachedMilestone, setPlayersReachedMilestone] = useState<
+    Set<number>
+  >(new Set());
   const playerCardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   // Fetch players and settings on mount (no auto-refresh)
@@ -50,13 +57,16 @@ export default function Home() {
       if (response.ok) {
         const session = await response.json();
         setActiveSessionName(session.name);
+        setSessionType(session.sessionType || 'pushups');
       } else {
         // No active session
         setActiveSessionName('');
+        setSessionType('pushups');
       }
     } catch (err) {
       console.error('Failed to fetch active session:', err);
       setActiveSessionName('');
+      setSessionType('pushups');
     }
   };
 
@@ -158,36 +168,48 @@ export default function Home() {
     }
   };
 
-  const handleAddPushups = async (playerId: number, amount: number, date?: string) => {
+  const handleAddPushups = async (
+    playerId: number,
+    amount: number,
+    date?: string,
+  ) => {
     try {
       const body: { amount: number; date?: string } = { amount };
       if (date) body.date = date;
-      
+
       const response = await fetch(`/api/players/${playerId}/pushups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) throw new Error('Failed to update pushups');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(
+          errorData.details || errorData.error || 'Failed to update pushups',
+        );
+      }
 
       const updatedPlayer = await response.json();
-      const previousPlayer = players.find(p => p.id === playerId);
-      
+      const previousPlayer = players.find((p) => p.id === playerId);
+
       // Check if player just reached milestone
-      if (previousPlayer && 
-          previousPlayer.totalPushups < milestone && 
-          updatedPlayer.totalPushups >= milestone &&
-          !playersReachedMilestone.has(playerId)) {
+      if (
+        previousPlayer &&
+        previousPlayer.totalPushups < milestone &&
+        updatedPlayer.totalPushups >= milestone &&
+        !playersReachedMilestone.has(playerId)
+      ) {
         setCelebratingPlayer(updatedPlayer.name);
-        setPlayersReachedMilestone(prev => new Set(prev).add(playerId));
-        
+        setPlayersReachedMilestone((prev) => new Set(prev).add(playerId));
+
         // Auto-stop celebration after 2 minutes
         setTimeout(() => {
           setCelebratingPlayer(null);
         }, 120000);
       }
-      
+
       setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
     } catch (err) {
       setError('Failed to update pushups');
@@ -217,12 +239,16 @@ export default function Home() {
     }
   };
 
-  const handleCreateSession = async (name: string, password: string) => {
+  const handleCreateSession = async (
+    name: string,
+    password: string,
+    sessionType: 'pushups' | 'plank',
+  ) => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, password }),
+        body: JSON.stringify({ name, password, sessionType }),
       });
 
       if (!response.ok) {
@@ -301,7 +327,9 @@ export default function Home() {
                         : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
-                  PushUp Battle
+                  {sessionType === 'plank'
+                    ? 'Plank Pos Battle'
+                    : 'PushUp Battle'}
                 </h1>
                 {activeSessionName && (
                   <span className="text-xs font-medium text-blue-300 whitespace-nowrap flex-shrink-0 truncate max-w-[100px]">
@@ -398,7 +426,9 @@ export default function Home() {
                         className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
                         style={{
                           backgroundColor:
-                            theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                            theme === 'cartoon'
+                              ? 'rgb(147, 51, 234)'
+                              : 'rgb(55, 65, 81)',
                           color: 'white',
                           boxShadow:
                             theme === 'cartoon'
@@ -468,10 +498,12 @@ export default function Home() {
                         backgroundColor: 'rgb(59, 130, 246)',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgb(37, 99, 235)';
+                        e.currentTarget.style.backgroundColor =
+                          'rgb(37, 99, 235)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgb(59, 130, 246)';
+                        e.currentTarget.style.backgroundColor =
+                          'rgb(59, 130, 246)';
                       }}
                     >
                       <History className="w-5 h-5" />
@@ -514,18 +546,27 @@ export default function Home() {
                         : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
-                  PushUp Battle
+                  {sessionType === 'plank'
+                    ? 'Plank Pos Battle'
+                    : 'PushUp Battle'}
                 </h1>
               </motion.div>
 
               {/* Active Session Name */}
               {activeSessionName && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg border" style={{
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  borderColor: 'rgba(59, 130, 246, 0.3)',
-                }}>
-                  <span className="text-sm font-medium text-blue-300">Session:</span>
-                  <span className="text-sm font-semibold text-white">{activeSessionName}</span>
+                <div
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                  }}
+                >
+                  <span className="text-sm font-medium text-blue-300">
+                    Session:
+                  </span>
+                  <span className="text-sm font-semibold text-white">
+                    {activeSessionName}
+                  </span>
                 </div>
               )}
 
@@ -589,7 +630,9 @@ export default function Home() {
                     className="px-4 py-2 rounded-lg font-semibold transition-all"
                     style={{
                       backgroundColor:
-                        theme === 'cartoon' ? 'rgb(147, 51, 234)' : 'rgb(55, 65, 81)',
+                        theme === 'cartoon'
+                          ? 'rgb(147, 51, 234)'
+                          : 'rgb(55, 65, 81)',
                       color: 'white',
                       boxShadow:
                         theme === 'cartoon'
@@ -802,13 +845,16 @@ export default function Home() {
                   players.map((player) => (
                     <div
                       key={player.id}
-                      ref={(el) => { playerCardRefs.current[player.id] = el; }}
+                      ref={(el) => {
+                        playerCardRefs.current[player.id] = el;
+                      }}
                       style={{ transition: 'transform 0.3s ease' }}
                     >
                       <PlayerCard
                         player={player}
                         theme={theme}
                         milestone={milestone}
+                        sessionType={sessionType}
                         onAddPushups={(amount, date) =>
                           handleAddPushups(player.id, amount, date)
                         }
@@ -857,8 +903,8 @@ export default function Home() {
       />
 
       {/* Celebration Effect */}
-      <CelebrationEffect 
-        isActive={celebratingPlayer !== null} 
+      <CelebrationEffect
+        isActive={celebratingPlayer !== null}
         playerName={celebratingPlayer || undefined}
       />
     </div>

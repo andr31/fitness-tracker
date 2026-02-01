@@ -3,6 +3,11 @@
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
 
+// Helper to format numbers: show decimals only if needed
+const formatNumber = (num: number): string => {
+  return num % 1 === 0 ? num.toString() : num.toFixed(2).replace(/\.?0+$/, '');
+};
+
 interface Player {
   id: number;
   name: string;
@@ -27,7 +32,7 @@ interface RaceTrackProps {
 export default function RaceTrack({ players }: RaceTrackProps) {
   const maxPushups = Math.max(...players.map((p) => p.totalPushups), 100);
   const sortedPlayers = [...players].sort(
-    (a, b) => b.totalPushups - a.totalPushups
+    (a, b) => b.totalPushups - a.totalPushups,
   );
 
   return (
@@ -69,7 +74,7 @@ export default function RaceTrack({ players }: RaceTrackProps) {
                     transition={{ duration: 0.3 }}
                     className="text-xl font-bold text-white"
                   >
-                    {player.totalPushups} 💪
+                    {formatNumber(player.totalPushups)} 💪
                   </motion.span>
                 </div>
 
