@@ -34,8 +34,10 @@ export default function SessionSelectorModal({
   const [password, setPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [archiving, setArchiving] = useState<number | null>(null);
+  const [archivingSession, setArchivingSession] = useState<number | null>(null);
   const [deletingSession, setDeletingSession] = useState<number | null>(null);
   const [adminPassword, setAdminPassword] = useState('');
+  const [archiveAdminPassword, setArchiveAdminPassword] = useState('');
   const [copiedSessionId, setCopiedSessionId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -115,6 +117,16 @@ export default function SessionSelectorModal({
   };
 
   const handleArchiveSession = async (sessionId: number) => {
+    setSelectedSession(null); // Clear selection when archiving
+    setArchivingSession(sessionId);
+  };
+
+  const confirmArchiveSession = async () => {
+    if (!archivingSession || !archiveAdminPassword) {
+      setError('Admin password is required to archive a session');
+      return;
+    }
+
     if (
       !confirm(
         'Archive current session data? This will create a backup before switching.',
@@ -124,10 +136,15 @@ export default function SessionSelectorModal({
     }
 
     try {
-      setArchiving(sessionId);
-      const response = await fetch(`/api/sessions/${sessionId}/archive`, {
-        method: 'POST',
-      });
+      setArchiving(archivingSession);
+      const response = await fetch(
+        `/api/sessions/${archivingSession}/archive`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adminPassword: archiveAdminPassword }),
+        },
+      );
 
       if (!response.ok) {
         const data = await response.json();
@@ -135,6 +152,8 @@ export default function SessionSelectorModal({
       }
 
       alert('Session archived successfully!');
+      setArchivingSession(null);
+      setArchiveAdminPassword('');
       fetchSessions();
     } catch (err: unknown) {
       const errorMessage =
@@ -437,6 +456,69 @@ export default function SessionSelectorModal({
                 >
                   {isActivating ? 'Activating...' : 'Activate Session'}
                 </button>
+              </div>
+            )}
+
+            {archivingSession && (
+              <div
+                className="mt-6 p-4 rounded-lg border"
+                style={{
+                  backgroundColor: 'rgb(55, 45, 29)',
+                  borderColor: 'rgb(120, 53, 15)',
+                }}
+              >
+                <label
+                  htmlFor="archiveAdminPassword"
+                  className="block text-sm font-medium text-amber-200 mb-2"
+                >
+                  Enter admin password to archive session
+                </label>
+                <input
+                  id="archiveAdminPassword"
+                  type="password"
+                  value={archiveAdminPassword}
+                  onChange={(e) => {
+                    setArchiveAdminPassword(e.target.value);
+                    setError(''); // Clear error when typing
+                  }}
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' && confirmArchiveSession()
+                  }
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
+                  style={{
+                    backgroundColor: 'rgb(70, 55, 35)',
+                    borderColor: 'rgb(120, 53, 15)',
+                    color: 'white',
+                  }}
+                  placeholder="Admin password"
+                />
+                {error && (
+                  <div className="mt-2 bg-amber-900/50 text-amber-200 px-3 py-2 rounded-lg text-sm border border-amber-800">
+                    {error}
+                  </div>
+                )}
+                <div className="flex gap-3 mt-3">
+                  <button
+                    onClick={() => {
+                      setArchivingSession(null);
+                      setArchiveAdminPassword('');
+                      setError(''); // Clear error when canceling
+                    }}
+                    className="flex-1 px-4 py-2 border rounded-lg transition-colors text-gray-300"
+                    style={{
+                      borderColor: 'rgb(120, 53, 15)',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmArchiveSession}
+                    disabled={!archiveAdminPassword || archiving !== null}
+                    className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all disabled:opacity-50"
+                  >
+                    {archiving ? 'Archiving...' : 'Archive Session'}
+                  </button>
+                </div>
               </div>
             )}
 
