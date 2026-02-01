@@ -316,34 +316,37 @@ export default function SessionSelectorModal({
                       }
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-white">
-                            {session.name}
-                          </h3>
-                          {activeSessionId === session.id && (
-                            <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
-                              Active
-                            </span>
-                          )}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-white">
+                              {session.name}
+                            </h3>
+                            {activeSessionId === session.id && (
+                              <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full flex-shrink-0">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Created:{' '}
+                            {(() => {
+                              const dateStr =
+                                session.createdAtLocalDate ||
+                                session.createdAt.split('T')[0];
+                              const date = new Date(dateStr + 'T00:00:00');
+                              return date.toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              });
+                            })()}
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Created:{' '}
-                          {(() => {
-                            const dateStr =
-                              session.createdAtLocalDate ||
-                              session.createdAt.split('T')[0];
-                            const date = new Date(dateStr + 'T00:00:00');
-                            return date.toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            });
-                          })()}
-                        </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      
+                      <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
