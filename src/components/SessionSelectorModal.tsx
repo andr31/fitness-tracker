@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, History, Archive, Trash2 } from 'lucide-react';
+import { X, Plus, History, Archive, Trash2, Share2, Check } from 'lucide-react';
 
 interface Session {
   id: number;
@@ -36,6 +36,7 @@ export default function SessionSelectorModal({
   const [archiving, setArchiving] = useState<number | null>(null);
   const [deletingSession, setDeletingSession] = useState<number | null>(null);
   const [adminPassword, setAdminPassword] = useState('');
+  const [copiedSessionId, setCopiedSessionId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -188,6 +189,23 @@ export default function SessionSelectorModal({
     }
   };
 
+  const handleShareSession = async (sessionId: number) => {
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/share-link`);
+      if (response.ok) {
+        const data = await response.json();
+        await navigator.clipboard.writeText(data.shareUrl);
+        setCopiedSessionId(sessionId);
+        setTimeout(() => setCopiedSessionId(null), 2000);
+      } else {
+        setError('Failed to generate share link');
+      }
+    } catch (err) {
+      console.error('Error sharing session:', err);
+      setError('Failed to copy share link');
+    }
+  };
+
   if (!isOpen) return null;
 
   const activeSession = sessions.find((s) => s.isActive);
@@ -307,6 +325,30 @@ export default function SessionSelectorModal({
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareSession(session.id);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-colors border text-blue-300 hover:bg-blue-900/30"
+                          style={{
+                            backgroundColor: 'rgb(75, 85, 99)',
+                            borderColor: 'rgb(59, 130, 246)',
+                          }}
+                          title="Copy share link"
+                        >
+                          {copiedSessionId === session.id ? (
+                            <>
+                              <Check size={14} />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Share2 size={14} />
+                              Share
+                            </>
+                          )}
+                        </button>
                         {activeSessionId === session.id && (
                           <button
                             onClick={(e) => {
