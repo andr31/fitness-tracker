@@ -6,25 +6,19 @@ import { getActiveSessionId } from '@/lib/sessionHelpers';
 export async function GET() {
   try {
     const sessionId = await getActiveSessionId();
-    
+
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'No active session' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No active session' }, { status: 401 });
     }
 
     const result = await sql`
-      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate 
+      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType 
       FROM sessions 
       WHERE id = ${sessionId}
     `;
 
     if (result.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Session not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     const session = result.rows[0];
@@ -36,12 +30,13 @@ export async function GET() {
       createdAt: session.createdat,
       updatedAt: session.updatedat,
       createdAtLocalDate: session.createdatlocaldate,
+      sessionType: session.sessiontype || 'pushups',
     });
   } catch (error) {
     console.error('Error fetching active session:', error);
     return NextResponse.json(
       { error: 'Failed to fetch active session' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

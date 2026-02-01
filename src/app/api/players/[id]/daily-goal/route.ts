@@ -4,16 +4,16 @@ import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
     const sessionId = await getActiveSessionId();
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'No active session. Please select a session first.' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -22,23 +22,38 @@ export async function POST(
     if (isNaN(playerId)) {
       return NextResponse.json(
         { error: 'Invalid player ID format' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { amount, date, dailyGoalTarget } = await request.json();
 
-    if (typeof amount !== 'number' || !Number.isInteger(amount)) {
+    // Validate amount - allow decimals, must be a number
+    if (typeof amount !== 'number' || isNaN(amount)) {
       return NextResponse.json(
-        { error: 'Amount must be an integer' },
-        { status: 400 }
+        { error: 'Amount must be a valid number' },
+        { status: 400 },
       );
     }
 
-    if (typeof dailyGoalTarget !== 'number' || !Number.isInteger(dailyGoalTarget) || dailyGoalTarget <= 0) {
+    // For decimal amounts, validate they are multiples of 0.25
+    if (!Number.isInteger(amount)) {
+      const remainder = (amount * 100) % 25;
+      if (remainder !== 0) {
+        return NextResponse.json(
+          {
+            error:
+              'Decimal amounts must be in quarter increments (0.25, 0.5, 0.75, etc.)',
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    if (typeof dailyGoalTarget !== 'number' || dailyGoalTarget <= 0) {
       return NextResponse.json(
-        { error: 'Daily goal target must be a positive integer' },
-        { status: 400 }
+        { error: 'Daily goal target must be a positive number' },
+        { status: 400 },
       );
     }
 
@@ -48,7 +63,7 @@ export async function POST(
       if (!datePattern.test(date)) {
         return NextResponse.json(
           { error: 'Date must be in YYYY-MM-DD format' },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -77,39 +92,36 @@ export async function POST(
     console.error('Error adding daily goal entry:', error);
     return NextResponse.json(
       { error: 'Failed to add daily goal entry' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
     const sessionId = await getActiveSessionId();
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'No active session. Please select a session first.' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
-      return NextResponse.json(
-        { error: 'Invalid player ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
     }
 
     // Get date from query parameter (client's local date) or use server's date as fallback
     const url = new URL(request.url);
     const dateParam = url.searchParams.get('date');
-    
+
     let todayStr: string;
     if (dateParam) {
       // Use the date provided by the client (their local date)
@@ -122,17 +134,17 @@ export async function GET(
 
     const result = await sql`
       SELECT 
-        COALESCE(SUM(amount), 0)::integer as total
+        COALESCE(SUM(amount), 0) as total
       FROM dailyGoalHistory
       WHERE playerId = ${playerId} AND sessionId = ${sessionId} AND localDate = ${todayStr}::DATE
     `;
 
-    return NextResponse.json({ total: result.rows[0].total });
+    return NextResponse.json({ total: parseFloat(result.rows[0]?.total) || 0 });
   } catch (error) {
     console.error('Error fetching daily goal progress:', error);
     return NextResponse.json(
       { error: 'Failed to fetch daily goal progress' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -14,7 +14,7 @@ function transformRow(row: any) {
   return {
     id: row.id,
     name: row.name,
-    totalPushups: row.totalpushups,
+    totalPushups: parseFloat(row.totalpushups) || 0,
     createdAt: row.createdat,
     updatedAt: row.updatedat,
   };
@@ -23,11 +23,11 @@ function transformRow(row: any) {
 export async function GET() {
   try {
     const sessionId = await getActiveSessionId();
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'No active session. Please select a session first.' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -43,7 +43,7 @@ export async function GET() {
     console.error('Error fetching players:', error);
     return NextResponse.json(
       { error: 'Failed to fetch players' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -51,11 +51,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const sessionId = await getActiveSessionId();
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'No active session. Please select a session first.' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -79,12 +79,12 @@ export async function POST(request: NextRequest) {
     if (error.message?.includes('duplicate key') || error.code === '23505') {
       return NextResponse.json(
         { error: 'Player name already exists in this session' },
-        { status: 409 }
+        { status: 409 },
       );
     }
     return NextResponse.json(
       { error: 'Failed to create player' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

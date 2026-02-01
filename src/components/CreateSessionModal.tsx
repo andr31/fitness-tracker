@@ -7,7 +7,11 @@ import { X, Lock } from 'lucide-react';
 interface CreateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateSession: (name: string, password: string) => Promise<void>;
+  onCreateSession: (
+    name: string,
+    password: string,
+    sessionType: 'pushups' | 'plank',
+  ) => Promise<void>;
 }
 
 export default function CreateSessionModal({
@@ -18,6 +22,9 @@ export default function CreateSessionModal({
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
+    'pushups',
+  );
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,13 +49,15 @@ export default function CreateSessionModal({
 
     try {
       setIsSubmitting(true);
-      await onCreateSession(name.trim(), password);
+      await onCreateSession(name.trim(), password, sessionType);
       setName('');
       setPassword('');
       setConfirmPassword('');
+      setSessionType('pushups');
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create session';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create session';
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -82,12 +91,17 @@ export default function CreateSessionModal({
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <Lock className="text-white" size={24} />
             </div>
-            <h2 className="text-2xl font-bold text-white">Create New Session</h2>
+            <h2 className="text-2xl font-bold text-white">
+              Create New Session
+            </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="sessionName" className="block text-sm font-medium text-gray-300 mb-1">
+              <label
+                htmlFor="sessionName"
+                className="block text-sm font-medium text-gray-300 mb-1"
+              >
                 Session Name
               </label>
               <input
@@ -107,7 +121,41 @@ export default function CreateSessionModal({
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+              <label
+                htmlFor="sessionType"
+                className="block text-sm font-medium text-gray-300 mb-1"
+              >
+                Session Type
+              </label>
+              <select
+                id="sessionType"
+                value={sessionType}
+                onChange={(e) =>
+                  setSessionType(e.target.value as 'pushups' | 'plank')
+                }
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                style={{
+                  backgroundColor: 'rgb(55, 65, 81)',
+                  borderColor: 'rgb(75, 85, 99)',
+                  color: 'white',
+                }}
+                disabled={isSubmitting}
+              >
+                <option value="pushups">Pushups Session</option>
+                <option value="plank">Plank Position Session</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-400">
+                {sessionType === 'pushups'
+                  ? 'Track pushup counts with whole numbers'
+                  : 'Track plank time in quarters (0.25, 0.5, 0.75, 1, etc.)'}
+              </p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-300 mb-1"
+              >
                 Password
               </label>
               <input
@@ -127,7 +175,10 @@ export default function CreateSessionModal({
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-300 mb-1"
+              >
                 Confirm Password
               </label>
               <input

@@ -9,6 +9,11 @@ import DailyGoalStatsModal from './DailyGoalStatsModal';
 import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 
+// Helper to format numbers: show decimals only if needed
+const formatNumber = (num: number): string => {
+  return num % 1 === 0 ? num.toString() : num.toFixed(2).replace(/\.?0+$/, '');
+};
+
 interface Player {
   id: number;
   name: string;
@@ -22,6 +27,7 @@ interface PlayerCardProps {
   onDelete: () => void;
   theme?: Theme;
   milestone?: number;
+  sessionType?: 'pushups' | 'plank';
 }
 
 export default function PlayerCard({
@@ -31,6 +37,7 @@ export default function PlayerCard({
   onDelete,
   theme = 'cartoon',
   milestone = 1000,
+  sessionType = 'pushups',
 }: PlayerCardProps) {
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
@@ -38,14 +45,16 @@ export default function PlayerCard({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  
+
   // Daily Goal states
   const [dailyGoal, setDailyGoal] = useState<number>(100);
   const [dailyGoalProgress, setDailyGoalProgress] = useState<number>(0);
   const [dailyGoalInput, setDailyGoalInput] = useState('');
   const [editingDailyGoal, setEditingDailyGoal] = useState(false);
   const [showDailyGoalSection, setShowDailyGoalSection] = useState(false);
-  const [sliderValue, setSliderValue] = useState<number>(10);
+  const [sliderValue, setSliderValue] = useState<number>(
+    sessionType === 'plank' ? 1.25 : 10,
+  );
   const [dailyGoalsMet, setDailyGoalsMet] = useState<number>(0);
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
@@ -58,8 +67,10 @@ export default function PlayerCard({
       if (data.length > 0) {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        
-        const todayEntry = data.find((d: { date: string; total: number }) => d.date === today);
+
+        const todayEntry = data.find(
+          (d: { date: string; total: number }) => d.date === today,
+        );
         setTodayTotal(todayEntry ? todayEntry.total : 0);
       } else {
         setTodayTotal(0);
@@ -72,7 +83,9 @@ export default function PlayerCard({
 
   const fetchDailyGoal = async () => {
     try {
-      const response = await fetch(`/api/players/${player.id}/daily-goal-settings`);
+      const response = await fetch(
+        `/api/players/${player.id}/daily-goal-settings`,
+      );
       if (!response.ok) return;
       const data = await response.json();
       setDailyGoal(data.dailyGoal);
@@ -86,7 +99,9 @@ export default function PlayerCard({
       // Pass the client's local date to avoid timezone issues
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      const response = await fetch(`/api/players/${player.id}/daily-goal?date=${todayStr}`);
+      const response = await fetch(
+        `/api/players/${player.id}/daily-goal?date=${todayStr}`,
+      );
       if (!response.ok) return;
       const data = await response.json();
       setDailyGoalProgress(data.total);
@@ -97,7 +112,9 @@ export default function PlayerCard({
 
   const fetchDailyGoalStats = async () => {
     try {
-      const response = await fetch(`/api/players/${player.id}/daily-goal-stats`);
+      const response = await fetch(
+        `/api/players/${player.id}/daily-goal-stats`,
+      );
       if (!response.ok) return;
       const data = await response.json();
       setDailyGoalsMet(data.goalsMet);
@@ -110,11 +127,14 @@ export default function PlayerCard({
     const newGoal = parseInt(dailyGoalInput);
     if (!isNaN(newGoal) && newGoal > 0) {
       try {
-        const response = await fetch(`/api/players/${player.id}/daily-goal-settings`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dailyGoal: newGoal }),
-        });
+        const response = await fetch(
+          `/api/players/${player.id}/daily-goal-settings`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dailyGoal: newGoal }),
+          },
+        );
         if (response.ok) {
           setDailyGoal(newGoal);
           setEditingDailyGoal(false);
@@ -172,8 +192,20 @@ export default function PlayerCard({
   };
 
   const handleCustomAdd = () => {
-    const amount = parseInt(inputValue);
+    const amount = parseFloat(inputValue);
     if (!isNaN(amount) && amount > 0) {
+      // For pushup sessions, only allow integers
+      if (sessionType === 'pushups' && !Number.isInteger(amount)) {
+        alert('For pushup sessions, please enter whole numbers only.');
+        return;
+      }
+      // For plank sessions, validate that the amount is a multiple of 0.25
+      if (sessionType === 'plank' && amount % 0.25 !== 0) {
+        alert(
+          'For plank sessions, please enter values in quarter increments (0.25, 0.5, 0.75, 1, 1.25, etc.)',
+        );
+        return;
+      }
       onAddPushups(amount, selectedDate || undefined);
       showEncouragementAnimation();
       setInputValue('');
@@ -185,14 +217,30 @@ export default function PlayerCard({
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete ${player.name}? This will remove all their pushup history.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete ${player.name}? This will remove all their pushup history.`,
+      )
+    ) {
       onDelete();
     }
   };
 
   const handleCustomRemove = () => {
-    const amount = parseInt(removeValue);
+    const amount = parseFloat(removeValue);
     if (!isNaN(amount) && amount > 0) {
+      // For pushup sessions, only allow integers
+      if (sessionType === 'pushups' && !Number.isInteger(amount)) {
+        alert('For pushup sessions, please enter whole numbers only.');
+        return;
+      }
+      // For plank sessions, validate that the amount is a multiple of 0.25
+      if (sessionType === 'plank' && amount % 0.25 !== 0) {
+        alert(
+          'For plank sessions, please enter values in quarter increments (0.25, 0.5, 0.75, 1, 1.25, etc.)',
+        );
+        return;
+      }
       onRemovePushups(amount);
       setRemoveValue('');
     }
@@ -218,7 +266,12 @@ export default function PlayerCard({
         <motion.div
           initial={{ scale: 0, rotate: -180, opacity: 0 }}
           animate={{ scale: 1, rotate: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.2 }}
+          transition={{
+            type: 'spring',
+            stiffness: 200,
+            damping: 10,
+            delay: 0.2,
+          }}
           className="absolute -top-3 -right-3 text-4xl"
           style={{
             filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
@@ -234,7 +287,12 @@ export default function PlayerCard({
         <motion.div
           initial={{ scale: 0, rotate: 180, opacity: 0 }}
           animate={{ scale: 1, rotate: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 10, delay: 0.2 }}
+          transition={{
+            type: 'spring',
+            stiffness: 200,
+            damping: 10,
+            delay: 0.2,
+          }}
           className="absolute -top-3 -left-3 text-4xl"
           style={{
             filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))',
@@ -246,11 +304,8 @@ export default function PlayerCard({
       )}
 
       {/* Encouragement Animation */}
-      <EncouragementAnimation
-        show={showEncouragement}
-        theme={theme}
-      />
-      
+      <EncouragementAnimation show={showEncouragement} theme={theme} />
+
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <AnimatedIcon
@@ -270,7 +325,7 @@ export default function PlayerCard({
               transition={{ duration: 0.4 }}
               className="text-2xl font-bold"
             >
-              {player.totalPushups}
+              {formatNumber(player.totalPushups)}
             </motion.p>
             {todayTotal > 0 && (
               <motion.button
@@ -284,7 +339,10 @@ export default function PlayerCard({
                     theme === 'christmas'
                       ? 'rgba(34, 197, 94, 0.3)'
                       : 'rgba(59, 130, 246, 0.3)',
-                  color: theme === 'christmas' ? 'rgb(134, 239, 172)' : 'rgb(147, 197, 253)',
+                  color:
+                    theme === 'christmas'
+                      ? 'rgb(134, 239, 172)'
+                      : 'rgb(147, 197, 253)',
                 }}
               >
                 <Calendar className="w-3 h-3" />
@@ -360,8 +418,8 @@ export default function PlayerCard({
                   ? 'rgba(34, 197, 94, 0.3)'
                   : 'rgba(59, 130, 246, 0.3)'
                 : theme === 'christmas'
-                ? 'rgba(55, 65, 81, 0.5)'
-                : 'rgba(55, 65, 81, 0.5)',
+                  ? 'rgba(55, 65, 81, 0.5)'
+                  : 'rgba(55, 65, 81, 0.5)',
               color: 'white',
             }}
           >
@@ -379,21 +437,30 @@ export default function PlayerCard({
                 backgroundColor:
                   theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
                 borderColor:
-                  theme === 'christmas' ? 'rgb(34, 197, 94)' : 'rgb(75, 85, 99)',
+                  theme === 'christmas'
+                    ? 'rgb(34, 197, 94)'
+                    : 'rgb(75, 85, 99)',
                 color: 'white',
               }}
             />
           )}
           {selectedDate && (
             <span className="text-xs text-white opacity-70">
-              Adding to: {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              Adding to:{' '}
+              {new Date(selectedDate + 'T00:00:00').toLocaleDateString(
+                'en-US',
+                { month: 'short', day: 'numeric' },
+              )}
             </span>
           )}
         </div>
 
         {/* Quick buttons */}
         <div className="grid grid-cols-4 gap-2">
-          {[10, 20, 30, 50].map((amount) => (
+          {(sessionType === 'plank'
+            ? [1.25, 1.5, 1.75, 2]
+            : [10, 20, 30, 50]
+          ).map((amount) => (
             <motion.button
               key={`add-${amount}`}
               whileHover={{ scale: 1.05 }}
@@ -420,10 +487,12 @@ export default function PlayerCard({
           ))}
         </div>
 
-        {/* Custom add input */}
+        {/* Custom add input - show for all session types */}
         <div className="flex gap-2">
           <input
             type="number"
+            step={sessionType === 'plank' ? '0.25' : '1'}
+            min="0"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => {
@@ -431,7 +500,11 @@ export default function PlayerCard({
                 handleCustomAdd();
               }
             }}
-            placeholder="Custom amount"
+            placeholder={
+              sessionType === 'plank'
+                ? 'Custom (quarters only)'
+                : 'Custom amount'
+            }
             className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
             style={{
               backgroundColor:
@@ -452,10 +525,36 @@ export default function PlayerCard({
           </motion.button>
         </div>
 
-        {/* Custom remove input */}
+        {/* Remove shortcuts for plank sessions */}
+        {sessionType === 'plank' && (
+          <div className="grid grid-cols-4 gap-2">
+            {[1.25, 1.5, 1.75, 2].map((amount) => (
+              <motion.button
+                key={`remove-${amount}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => onRemovePushups(amount)}
+                className="font-bold py-2 rounded transition-colors border text-sm"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgba(239, 68, 68, 0.2)'
+                      : 'rgba(239, 68, 68, 0.2)',
+                  color: 'rgb(252, 165, 165)',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                }}
+              >
+                -{amount}
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        {/* Custom remove input - show for all session types */}
         <div className="flex gap-2">
           <input
             type="number"
+            step={sessionType === 'plank' ? '0.25' : '1'}
             value={removeValue}
             onChange={(e) => setRemoveValue(e.target.value)}
             onKeyPress={(e) => {
@@ -463,7 +562,11 @@ export default function PlayerCard({
                 handleCustomRemove();
               }
             }}
-            placeholder="Remove amount"
+            placeholder={
+              sessionType === 'plank'
+                ? 'Remove (quarters only)'
+                : 'Remove amount'
+            }
             className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
             style={{
               backgroundColor:
@@ -486,7 +589,15 @@ export default function PlayerCard({
       </div>
 
       {/* Daily Goal Section */}
-      <div className="mt-6 pt-6 border-t" style={{ borderColor: theme === 'christmas' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(75, 85, 99, 0.3)' }}>
+      <div
+        className="mt-6 pt-6 border-t"
+        style={{
+          borderColor:
+            theme === 'christmas'
+              ? 'rgba(239, 68, 68, 0.3)'
+              : 'rgba(75, 85, 99, 0.3)',
+        }}
+      >
         <button
           onClick={() => setShowDailyGoalSection(!showDailyGoalSection)}
           className="w-full flex items-center justify-between text-white mb-3"
@@ -494,9 +605,13 @@ export default function PlayerCard({
           <div className="flex items-center gap-2">
             <span className="font-semibold">🎯 Daily Goal</span>
             {!editingDailyGoal && (
-              <span className="text-sm opacity-70">({dailyGoalProgress}/{dailyGoal})</span>
+              <span className="text-sm opacity-70">
+                ({dailyGoalProgress}/{dailyGoal})
+              </span>
             )}
-            {dailyGoalProgress >= dailyGoal && <span className="text-xl">⭐</span>}
+            {dailyGoalProgress >= dailyGoal && (
+              <span className="text-xl">⭐</span>
+            )}
           </div>
           <motion.div
             animate={{ rotate: showDailyGoalSection ? 180 : 0 }}
@@ -514,8 +629,14 @@ export default function PlayerCard({
             onClick={() => setIsGoalStatsModalOpen(true)}
             className="mb-3 px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2"
             style={{
-              backgroundColor: theme === 'christmas' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-              color: theme === 'christmas' ? 'rgb(134, 239, 172)' : 'rgb(147, 197, 253)',
+              backgroundColor:
+                theme === 'christmas'
+                  ? 'rgba(34, 197, 94, 0.2)'
+                  : 'rgba(59, 130, 246, 0.2)',
+              color:
+                theme === 'christmas'
+                  ? 'rgb(134, 239, 172)'
+                  : 'rgb(147, 197, 253)',
               border: `1px solid ${theme === 'christmas' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
             }}
           >
@@ -533,12 +654,14 @@ export default function PlayerCard({
             <p className="text-xs text-white opacity-50 italic">
               ℹ️ Main entries do not count for daily goals
             </p>
-            
+
             {/* Goal Setting */}
             <div className="flex items-center gap-2">
               {!editingDailyGoal ? (
                 <>
-                  <span className="text-sm text-white opacity-70">Target: {dailyGoal}</span>
+                  <span className="text-sm text-white opacity-70">
+                    Target: {dailyGoal}
+                  </span>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -585,13 +708,16 @@ export default function PlayerCard({
             <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${Math.min((dailyGoalProgress / dailyGoal) * 100, 100)}%` }}
+                animate={{
+                  width: `${Math.min((dailyGoalProgress / dailyGoal) * 100, 100)}%`,
+                }}
                 transition={{ duration: 0.5 }}
                 className="h-full rounded-full"
                 style={{
-                  background: dailyGoalProgress >= dailyGoal
-                    ? 'linear-gradient(to right, rgb(34, 197, 94), rgb(22, 163, 74))'
-                    : 'linear-gradient(to right, rgb(59, 130, 246), rgb(37, 99, 235))',
+                  background:
+                    dailyGoalProgress >= dailyGoal
+                      ? 'linear-gradient(to right, rgb(34, 197, 94), rgb(22, 163, 74))'
+                      : 'linear-gradient(to right, rgb(59, 130, 246), rgb(37, 99, 235))',
                 }}
               />
             </div>
@@ -600,17 +726,23 @@ export default function PlayerCard({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-white opacity-70">
                 <span>Add:</span>
-                <span className="font-bold" style={{ color: 'rgb(147, 197, 253)' }}>+{sliderValue}</span>
+                <span
+                  className="font-bold"
+                  style={{ color: 'rgb(147, 197, 253)' }}
+                >
+                  +{formatNumber(sliderValue)}
+                </span>
               </div>
               <input
                 type="range"
-                min="1"
-                max="70"
+                min={sessionType === 'plank' ? 0.25 : 1}
+                max={sessionType === 'plank' ? 10 : 70}
+                step={sessionType === 'plank' ? 0.25 : 1}
                 value={sliderValue}
                 onChange={(e) => setSliderValue(Number(e.target.value))}
                 className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(sliderValue / 70) * 100}%, rgb(55, 65, 81) ${(sliderValue / 70) * 100}%, rgb(55, 65, 81) 100%)`,
+                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${sessionType === 'plank' ? ((sliderValue - 0.25) / (10 - 0.25)) * 100 : (sliderValue / 70) * 100}%, rgb(55, 65, 81) ${sessionType === 'plank' ? ((sliderValue - 0.25) / (10 - 0.25)) * 100 : (sliderValue / 70) * 100}%, rgb(55, 65, 81) 100%)`,
                 }}
               />
               <motion.button
@@ -619,19 +751,25 @@ export default function PlayerCard({
                 onClick={() => handleAddDailyGoal(sliderValue)}
                 className="w-full font-bold py-2 rounded transition-colors border text-sm"
                 style={{
-                  backgroundColor: theme === 'christmas' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgba(59, 130, 246, 0.2)'
+                      : 'rgba(59, 130, 246, 0.2)',
                   color: 'rgb(147, 197, 253)',
                   borderColor: 'rgba(59, 130, 246, 0.3)',
                 }}
               >
-                Add +{sliderValue}
+                Add +{formatNumber(sliderValue)}
               </motion.button>
             </div>
 
             {/* Remove Buttons */}
             {dailyGoalProgress > 0 && (
               <div className="grid grid-cols-4 gap-2">
-                {[10, 20, 30, 50].map((amount) => (
+                {(sessionType === 'plank'
+                  ? [1.25, 1.5, 1.75, 2]
+                  : [10, 20, 30, 50]
+                ).map((amount) => (
                   <motion.button
                     key={`daily-remove-${amount}`}
                     whileHover={{ scale: 1.05 }}
@@ -639,12 +777,15 @@ export default function PlayerCard({
                     onClick={() => handleRemoveDailyGoal(amount)}
                     className="font-bold py-2 rounded transition-colors border text-sm"
                     style={{
-                      backgroundColor: theme === 'christmas' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                      backgroundColor:
+                        theme === 'christmas'
+                          ? 'rgba(239, 68, 68, 0.2)'
+                          : 'rgba(239, 68, 68, 0.2)',
                       color: 'rgb(252, 165, 165)',
                       borderColor: 'rgba(239, 68, 68, 0.3)',
                     }}
                   >
-                    -{amount}
+                    -{formatNumber(amount)}
                   </motion.button>
                 ))}
               </div>
