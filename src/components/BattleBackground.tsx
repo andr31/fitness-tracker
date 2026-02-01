@@ -159,10 +159,7 @@ export default function BattleBackground() {
           }}
           initial={{ x: 0, opacity: 0 }}
           animate={{
-            x:
-              i === 0
-                ? [0, window.innerWidth + 200]
-                : [-window.innerWidth - 200, 0],
+            x: i === 0 ? [0, 1600] : [-1600, 0],
             opacity: [0, 0.2, 0.3, 0.2, 0],
             y: [0, -50, 0],
           }}
