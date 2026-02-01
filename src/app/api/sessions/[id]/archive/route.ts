@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import * as bcrypt from 'bcryptjs';
 
 interface RouteParams {
   params: Promise<{
@@ -12,9 +13,50 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const sessionId = parseInt(id);
-    
+
     if (isNaN(sessionId)) {
-      return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid session ID' },
+        { status: 400 },
+      );
+    }
+
+    // Get admin password from request body
+    const body = await request.json();
+    const { adminPassword } = body;
+
+    if (!adminPassword) {
+      return NextResponse.json(
+        { error: 'Admin password is required' },
+        { status: 401 },
+      );
+    }
+
+    // Fetch admin password from database (global setting)
+    const adminPasswordResult = await sql`
+      SELECT value FROM settings WHERE key = 'adminPassword' LIMIT 1
+    `;
+
+    if (adminPasswordResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Admin password not configured' },
+        { status: 500 },
+      );
+    }
+
+    const hashedAdminPassword = adminPasswordResult.rows[0].value as string;
+
+    // Verify admin password
+    const isPasswordValid = await bcrypt.compare(
+      adminPassword,
+      hashedAdminPassword,
+    );
+
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Invalid admin password' },
+        { status: 403 },
+      );
     }
 
     // Verify session exists
@@ -34,7 +76,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       FROM players 
       WHERE sessionId = ${sessionId}
     `;
-    
+
     if (playersData.rows.length > 0) {
       await sql`
         INSERT INTO session_history (sessionId, snapshotType, data)
@@ -48,7 +90,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       FROM pushupHistory 
       WHERE sessionId = ${sessionId}
     `;
-    
+
     if (pushupHistoryData.rows.length > 0) {
       await sql`
         INSERT INTO session_history (sessionId, snapshotType, data)
@@ -62,7 +104,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       FROM dailyGoalSettings 
       WHERE sessionId = ${sessionId}
     `;
-    
+
     if (dailyGoalSettingsData.rows.length > 0) {
       await sql`
         INSERT INTO session_history (sessionId, snapshotType, data)
@@ -76,7 +118,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       FROM dailyGoalHistory 
       WHERE sessionId = ${sessionId}
     `;
-    
+
     if (dailyGoalHistoryData.rows.length > 0) {
       await sql`
         INSERT INTO session_history (sessionId, snapshotType, data)
@@ -90,7 +132,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       FROM settings 
       WHERE sessionId = ${sessionId}
     `;
-    
+
     if (settingsData.rows.length > 0) {
       await sql`
         INSERT INTO session_history (sessionId, snapshotType, data)
@@ -104,7 +146,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       FROM competition_settings 
       WHERE sessionId = ${sessionId}
     `;
-    
+
     if (competitionData.rows.length > 0) {
       await sql`
         INSERT INTO session_history (sessionId, snapshotType, data)
@@ -121,7 +163,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     console.error('Error archiving session:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to archive session' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
