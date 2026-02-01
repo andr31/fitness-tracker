@@ -52,7 +52,9 @@ export default function PlayerCard({
   const [dailyGoalInput, setDailyGoalInput] = useState('');
   const [editingDailyGoal, setEditingDailyGoal] = useState(false);
   const [showDailyGoalSection, setShowDailyGoalSection] = useState(false);
-  const [sliderValue, setSliderValue] = useState<number>(10);
+  const [sliderValue, setSliderValue] = useState<number>(
+    sessionType === 'plank' ? 1.25 : 10,
+  );
   const [dailyGoalsMet, setDailyGoalsMet] = useState<number>(0);
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
@@ -728,18 +730,19 @@ export default function PlayerCard({
                   className="font-bold"
                   style={{ color: 'rgb(147, 197, 253)' }}
                 >
-                  +{sliderValue}
+                  +{formatNumber(sliderValue)}
                 </span>
               </div>
               <input
                 type="range"
-                min="1"
-                max="70"
+                min={sessionType === 'plank' ? 0.25 : 1}
+                max={sessionType === 'plank' ? 10 : 70}
+                step={sessionType === 'plank' ? 0.25 : 1}
                 value={sliderValue}
                 onChange={(e) => setSliderValue(Number(e.target.value))}
                 className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${(sliderValue / 70) * 100}%, rgb(55, 65, 81) ${(sliderValue / 70) * 100}%, rgb(55, 65, 81) 100%)`,
+                  background: `linear-gradient(to right, rgb(59, 130, 246) 0%, rgb(59, 130, 246) ${sessionType === 'plank' ? ((sliderValue - 0.25) / (10 - 0.25)) * 100 : (sliderValue / 70) * 100}%, rgb(55, 65, 81) ${sessionType === 'plank' ? ((sliderValue - 0.25) / (10 - 0.25)) * 100 : (sliderValue / 70) * 100}%, rgb(55, 65, 81) 100%)`,
                 }}
               />
               <motion.button
@@ -756,14 +759,17 @@ export default function PlayerCard({
                   borderColor: 'rgba(59, 130, 246, 0.3)',
                 }}
               >
-                Add +{sliderValue}
+                Add +{formatNumber(sliderValue)}
               </motion.button>
             </div>
 
             {/* Remove Buttons */}
             {dailyGoalProgress > 0 && (
               <div className="grid grid-cols-4 gap-2">
-                {[10, 20, 30, 50].map((amount) => (
+                {(sessionType === 'plank'
+                  ? [1.25, 1.5, 1.75, 2]
+                  : [10, 20, 30, 50]
+                ).map((amount) => (
                   <motion.button
                     key={`daily-remove-${amount}`}
                     whileHover={{ scale: 1.05 }}
@@ -779,7 +785,7 @@ export default function PlayerCard({
                       borderColor: 'rgba(239, 68, 68, 0.3)',
                     }}
                   >
-                    -{amount}
+                    -{formatNumber(amount)}
                   </motion.button>
                 ))}
               </div>

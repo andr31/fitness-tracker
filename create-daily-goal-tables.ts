@@ -7,7 +7,7 @@ config({ path: '.env.local' });
 async function createDailyGoalTables() {
   try {
     console.log('Creating daily goal tables...');
-    
+
     // Create dailyGoalSettings table
     await sql`
       CREATE TABLE IF NOT EXISTS dailyGoalSettings (
@@ -17,7 +17,7 @@ async function createDailyGoalTables() {
       )
     `;
     console.log('✓ Created dailyGoalSettings table');
-    
+
     // Create dailyGoalHistory table
     await sql`
       CREATE TABLE IF NOT EXISTS dailyGoalHistory (
@@ -29,14 +29,14 @@ async function createDailyGoalTables() {
       )
     `;
     console.log('✓ Created dailyGoalHistory table');
-    
+
     // Create indexes for faster queries
     await sql`
       CREATE INDEX IF NOT EXISTS idx_dailygoalhistory_player_date 
       ON dailyGoalHistory(playerId, localDate)
     `;
     console.log('✓ Created indexes');
-    
+
     // Insert default daily goals for existing players
     await sql`
       INSERT INTO dailyGoalSettings (playerId, dailyGoal)
@@ -44,9 +44,8 @@ async function createDailyGoalTables() {
       ON CONFLICT (playerId) DO NOTHING
     `;
     console.log('✓ Set default daily goals for existing players');
-    
+
     console.log('\n✅ Successfully created daily goal tables!');
-    
   } catch (error) {
     console.error('Error creating daily goal tables:', error);
     throw error;

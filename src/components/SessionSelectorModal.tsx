@@ -67,7 +67,8 @@ export default function SessionSelectorModal({
       setSessions(data);
       setError('');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load sessions';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to load sessions';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -82,11 +83,15 @@ export default function SessionSelectorModal({
 
     try {
       setIsActivating(true);
-      const response = await fetch(`/api/sessions/${selectedSession}/activate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
+      setError(''); // Clear any previous errors
+      const response = await fetch(
+        `/api/sessions/${selectedSession}/activate`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        },
+      );
 
       if (!response.ok) {
         const data = await response.json();
@@ -95,11 +100,13 @@ export default function SessionSelectorModal({
 
       setPassword('');
       setSelectedSession(null);
+      setError(''); // Clear error on success
       await fetchActiveSession(); // Refresh active session indicator
       onSessionChange();
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to activate session';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to activate session';
       setError(errorMessage);
     } finally {
       setIsActivating(false);
@@ -107,7 +114,11 @@ export default function SessionSelectorModal({
   };
 
   const handleArchiveSession = async (sessionId: number) => {
-    if (!confirm('Archive current session data? This will create a backup before switching.')) {
+    if (
+      !confirm(
+        'Archive current session data? This will create a backup before switching.',
+      )
+    ) {
       return;
     }
 
@@ -125,7 +136,8 @@ export default function SessionSelectorModal({
       alert('Session archived successfully!');
       fetchSessions();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to archive session';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to archive session';
       setError(errorMessage);
     } finally {
       setArchiving(null);
@@ -133,11 +145,13 @@ export default function SessionSelectorModal({
   };
 
   const handleDeleteSession = async (sessionId: number) => {
-    const session = sessions.find(s => s.id === sessionId);
+    const session = sessions.find((s) => s.id === sessionId);
     if (!session) return;
 
     if (activeSessionId === sessionId) {
-      alert('Cannot delete active session. Please switch to another session first.');
+      alert(
+        'Cannot delete active session. Please switch to another session first.',
+      );
       return;
     }
 
@@ -168,14 +182,15 @@ export default function SessionSelectorModal({
       setAdminPassword('');
       fetchSessions();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete session';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to delete session';
       setError(errorMessage);
     }
   };
 
   if (!isOpen) return null;
 
-  const activeSession = sessions.find(s => s.isActive);
+  const activeSession = sessions.find((s) => s.isActive);
 
   return (
     <AnimatePresence>
@@ -190,17 +205,25 @@ export default function SessionSelectorModal({
             borderColor: 'rgb(55, 65, 81)',
           }}
         >
-          <div className="p-6 border-b" style={{ borderColor: 'rgb(55, 65, 81)' }}>
+          <div
+            className="p-6 border-b"
+            style={{ borderColor: 'rgb(55, 65, 81)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <History className="text-white" size={24} />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">Session Manager</h2>
+                  <h2 className="text-2xl font-bold text-white">
+                    Session Manager
+                  </h2>
                   {activeSession && (
                     <p className="text-sm text-gray-400">
-                      Active: <span className="font-medium text-blue-400">{activeSession.name}</span>
+                      Active:{' '}
+                      <span className="font-medium text-blue-400">
+                        {activeSession.name}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -216,7 +239,9 @@ export default function SessionSelectorModal({
 
           <div className="flex-1 overflow-y-auto p-6">
             {loading ? (
-              <div className="text-center py-8 text-gray-400">Loading sessions...</div>
+              <div className="text-center py-8 text-gray-400">
+                Loading sessions...
+              </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-400 mb-4">No sessions found</p>
@@ -234,16 +259,18 @@ export default function SessionSelectorModal({
                     key={session.id}
                     className="border rounded-lg p-4 transition-all cursor-pointer"
                     style={{
-                      borderColor: selectedSession === session.id
-                        ? 'rgb(59, 130, 246)'
-                        : activeSessionId === session.id
-                        ? 'rgb(34, 197, 94)'
-                        : 'rgb(75, 85, 99)',
-                      backgroundColor: selectedSession === session.id
-                        ? 'rgba(59, 130, 246, 0.1)'
-                        : activeSessionId === session.id
-                        ? 'rgba(34, 197, 94, 0.1)'
-                        : 'rgb(55, 65, 81)',
+                      borderColor:
+                        selectedSession === session.id
+                          ? 'rgb(59, 130, 246)'
+                          : activeSessionId === session.id
+                            ? 'rgb(34, 197, 94)'
+                            : 'rgb(75, 85, 99)',
+                      backgroundColor:
+                        selectedSession === session.id
+                          ? 'rgba(59, 130, 246, 0.1)'
+                          : activeSessionId === session.id
+                            ? 'rgba(34, 197, 94, 0.1)'
+                            : 'rgb(55, 65, 81)',
                     }}
                     onClick={() => {
                       if (activeSessionId !== session.id) {
@@ -255,7 +282,9 @@ export default function SessionSelectorModal({
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-white">{session.name}</h3>
+                          <h3 className="font-semibold text-white">
+                            {session.name}
+                          </h3>
                           {activeSessionId === session.id && (
                             <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
                               Active
@@ -263,8 +292,11 @@ export default function SessionSelectorModal({
                           )}
                         </div>
                         <p className="text-xs text-gray-400 mt-1">
-                          Created: {(() => {
-                            const dateStr = session.createdAtLocalDate || session.createdAt.split('T')[0];
+                          Created:{' '}
+                          {(() => {
+                            const dateStr =
+                              session.createdAtLocalDate ||
+                              session.createdAt.split('T')[0];
                             const date = new Date(dateStr + 'T00:00:00');
                             return date.toLocaleDateString('en-US', {
                               month: 'short',
@@ -289,7 +321,9 @@ export default function SessionSelectorModal({
                             }}
                           >
                             <Archive size={14} />
-                            {archiving === session.id ? 'Archiving...' : 'Archive'}
+                            {archiving === session.id
+                              ? 'Archiving...'
+                              : 'Archive'}
                           </button>
                         )}
                         {activeSessionId !== session.id && (
@@ -316,19 +350,30 @@ export default function SessionSelectorModal({
             )}
 
             {selectedSession && activeSessionId !== selectedSession && (
-              <div className="mt-6 p-4 rounded-lg border" style={{
-                backgroundColor: 'rgb(55, 65, 81)',
-                borderColor: 'rgb(75, 85, 99)',
-              }}>
-                <label htmlFor="sessionPassword" className="block text-sm font-medium text-gray-300 mb-2">
+              <div
+                className="mt-6 p-4 rounded-lg border"
+                style={{
+                  backgroundColor: 'rgb(55, 65, 81)',
+                  borderColor: 'rgb(75, 85, 99)',
+                }}
+              >
+                <label
+                  htmlFor="sessionPassword"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
                   Enter session password to activate
                 </label>
                 <input
                   id="sessionPassword"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleActivateSession()}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(''); // Clear error when typing
+                  }}
+                  onKeyDown={(e) =>
+                    e.key === 'Enter' && handleActivateSession()
+                  }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
                   style={{
                     backgroundColor: 'rgb(75, 85, 99)',
@@ -338,6 +383,11 @@ export default function SessionSelectorModal({
                   placeholder="Password"
                   disabled={isActivating}
                 />
+                {error && (
+                  <div className="mt-2 bg-red-900/50 text-red-200 px-3 py-2 rounded-lg text-sm border border-red-800">
+                    {error}
+                  </div>
+                )}
                 <button
                   onClick={handleActivateSession}
                   disabled={isActivating || !password}
@@ -349,18 +399,27 @@ export default function SessionSelectorModal({
             )}
 
             {deletingSession && (
-              <div className="mt-6 p-4 rounded-lg border" style={{
-                backgroundColor: 'rgb(75, 29, 29)',
-                borderColor: 'rgb(127, 29, 29)',
-              }}>
-                <label htmlFor="adminPassword" className="block text-sm font-medium text-red-200 mb-2">
+              <div
+                className="mt-6 p-4 rounded-lg border"
+                style={{
+                  backgroundColor: 'rgb(75, 29, 29)',
+                  borderColor: 'rgb(127, 29, 29)',
+                }}
+              >
+                <label
+                  htmlFor="adminPassword"
+                  className="block text-sm font-medium text-red-200 mb-2"
+                >
                   Enter admin password to delete session
                 </label>
                 <input
                   id="adminPassword"
                   type="password"
                   value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onChange={(e) => {
+                    setAdminPassword(e.target.value);
+                    setError(''); // Clear error when typing
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && confirmDeleteSession()}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-colors"
                   style={{
@@ -370,11 +429,17 @@ export default function SessionSelectorModal({
                   }}
                   placeholder="Admin password"
                 />
+                {error && (
+                  <div className="mt-2 bg-red-900/50 text-red-200 px-3 py-2 rounded-lg text-sm border border-red-800">
+                    {error}
+                  </div>
+                )}
                 <div className="flex gap-3 mt-3">
                   <button
                     onClick={() => {
                       setDeletingSession(null);
                       setAdminPassword('');
+                      setError(''); // Clear error when canceling
                     }}
                     className="flex-1 px-4 py-2 border rounded-lg transition-colors text-gray-300"
                     style={{
@@ -393,18 +458,15 @@ export default function SessionSelectorModal({
                 </div>
               </div>
             )}
-
-            {error && (
-              <div className="mt-4 bg-red-900/50 text-red-200 px-4 py-3 rounded-lg text-sm border border-red-800">
-                {error}
-              </div>
-            )}
           </div>
 
-          <div className="p-6 border-t" style={{
-            borderColor: 'rgb(55, 65, 81)',
-            backgroundColor: 'rgb(55, 65, 81)',
-          }}>
+          <div
+            className="p-6 border-t"
+            style={{
+              borderColor: 'rgb(55, 65, 81)',
+              backgroundColor: 'rgb(55, 65, 81)',
+            }}
+          >
             <button
               onClick={onCreateNew}
               className="w-full px-4 py-2 border rounded-lg transition-colors flex items-center justify-center gap-2 text-gray-300 hover:bg-gray-600"
