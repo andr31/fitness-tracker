@@ -1,8 +1,20 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function BattleBackground() {
+  const [mounted, setMounted] = useState(false);
+
+  // Only generate random positions after mounting to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   // Generate battle elements (swords, shields, banners)
   const battleElements = Array.from({ length: 15 }, (_, i) => ({
     id: i,

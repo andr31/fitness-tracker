@@ -57,6 +57,26 @@ export default function Home() {
     localStorage.setItem('fitness-tracker-theme', theme);
   }, [theme]);
 
+  // Prevent body scroll when modals are open
+  useEffect(() => {
+    const anyModalOpen = isModalOpen || isSessionSelectorOpen;
+    
+    if (anyModalOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+  }, [isModalOpen, isSessionSelectorOpen]);
+
   // Fetch players and settings on mount (no auto-refresh)
   useEffect(() => {
     fetchPlayers();
