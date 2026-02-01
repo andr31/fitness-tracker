@@ -60,7 +60,6 @@ export default function Home() {
   // Prevent body scroll when modals are open
   useEffect(() => {
     const anyModalOpen = isModalOpen || isSessionSelectorOpen;
-    
     if (anyModalOpen) {
       const scrollY = window.scrollY;
       document.body.style.position = 'fixed';
