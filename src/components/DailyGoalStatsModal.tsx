@@ -17,6 +17,7 @@ interface DailyGoalStatsModalProps {
   playerId: number;
   playerName: string;
   theme?: Theme;
+  sessionType?: 'pushups' | 'plank';
 }
 
 export default function DailyGoalStatsModal({
@@ -25,6 +26,7 @@ export default function DailyGoalStatsModal({
   playerId,
   playerName,
   theme = 'cartoon',
+  sessionType = 'pushups',
 }: DailyGoalStatsModalProps) {
   const [data, setData] = useState<{
     goalsMet: number;
@@ -162,7 +164,10 @@ export default function DailyGoalStatsModal({
                         {data.goalsMet === 1 ? 'Day' : 'Days'} Goal Met
                       </div>
                       <div className="text-sm text-white opacity-50 mt-1">
-                        Target: {data.dailyGoal} pushups/day
+                        Target: {data.dailyGoal}{' '}
+                        {sessionType === 'plank'
+                          ? 'minutes/day'
+                          : 'pushups/day'}
                       </div>
                     </div>
                   </div>
@@ -205,7 +210,7 @@ export default function DailyGoalStatsModal({
                               {day.total} / {day.target}
                             </div>
                             <div className="text-xs text-white opacity-50">
-                              pushups
+                              {sessionType === 'plank' ? 'minutes' : 'pushups'}
                             </div>
                           </div>
                         </motion.div>

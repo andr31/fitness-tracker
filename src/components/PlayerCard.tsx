@@ -810,6 +810,7 @@ export default function PlayerCard({
         playerId={player.id}
         playerName={player.name}
         theme={theme}
+        sessionType={sessionType}
       />
     </motion.div>
   );
