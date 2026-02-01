@@ -32,7 +32,13 @@ export default function Home() {
   const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
     'pushups',
   );
-  const [theme, setTheme] = useState<Theme>('cartoon');
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('fitness-tracker-theme');
+      return (savedTheme as Theme) || 'gameofthrones';
+    }
+    return 'gameofthrones';
+  });
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
@@ -45,6 +51,11 @@ export default function Home() {
     Set<number>
   >(new Set());
   const playerCardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+
+  // Save theme to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('fitness-tracker-theme', theme);
+  }, [theme]);
 
   // Fetch players and settings on mount (no auto-refresh)
   useEffect(() => {
