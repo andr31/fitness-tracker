@@ -74,6 +74,30 @@ export const themeColors: Record<Theme, ThemeColors> = {
       secondary: 'text-red-100',
     },
   },
+  gameofthrones: {
+    bg: {
+      primary: 'slate-950',
+      secondary: 'slate-900',
+      gradient: 'from-black via-slate-900 to-stone-950',
+    },
+    accent: {
+      primary: 'amber-500',
+      secondary: 'red-700',
+      highlight: 'yellow-600',
+    },
+    button: {
+      primary: 'from-amber-600 to-yellow-700',
+      primaryHover: 'from-amber-700 to-yellow-800',
+      secondary: 'red-800',
+      secondaryHover: 'red-900',
+    },
+    card: 'bg-gradient-to-br from-slate-900/70 to-stone-950/60',
+    border: 'border-amber-900',
+    text: {
+      primary: 'text-amber-50',
+      secondary: 'text-stone-300',
+    },
+  },
 };
 
 export function getThemeClasses(theme: Theme) {

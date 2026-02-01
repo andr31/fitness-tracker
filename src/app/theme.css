@@ -22,6 +22,18 @@
   --color-dumbbell: rgb(253, 230, 138);
 }
 
+[data-theme='gameofthrones'] {
+  --color-bg-primary: rgb(0, 0, 0);
+  --color-bg-secondary: rgb(15, 23, 42);
+  --color-accent-primary: rgb(245, 158, 11);
+  --color-accent-secondary: rgb(185, 28, 28);
+  --color-button-primary: rgb(217, 119, 6);
+  --color-button-primary-hover: rgb(180, 83, 9);
+  --color-border: rgb(120, 53, 15);
+  --color-card-bg: rgba(10, 15, 30, 0.85);
+  --color-dumbbell: rgb(245, 158, 11);
+}
+
 body {
   background: linear-gradient(
     to bottom right,

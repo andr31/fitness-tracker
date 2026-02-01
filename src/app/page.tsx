@@ -9,6 +9,7 @@ import AddPlayerModal from '@/components/AddPlayerModal';
 import SessionSelectorModal from '@/components/SessionSelectorModal';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
+import BattleBackground from '@/components/BattleBackground';
 import CountdownTimer from '@/components/CountdownTimer';
 import CelebrationEffect from '@/components/CelebrationEffect';
 import { Theme } from '@/lib/emojis';
@@ -32,6 +33,7 @@ export default function Home() {
     'pushups',
   );
   const [theme, setTheme] = useState<Theme>('cartoon');
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
@@ -277,13 +279,16 @@ export default function Home() {
       className="min-h-screen bg-gradient-to-br"
       style={{
         backgroundImage:
-          theme === 'christmas'
-            ? 'linear-gradient(to bottom right, rgb(127, 29, 29), rgb(20, 83, 45), rgb(15, 35, 60))'
-            : 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))',
+          theme === 'gameofthrones'
+            ? 'linear-gradient(to bottom right, rgb(0, 0, 0), rgb(15, 23, 42), rgb(28, 25, 23), rgb(0, 0, 0))'
+            : theme === 'christmas'
+              ? 'linear-gradient(to bottom right, rgb(127, 29, 29), rgb(20, 83, 45), rgb(15, 35, 60))'
+              : 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))',
       }}
     >
-      {/* Christmas decorations */}
+      {/* Theme backgrounds */}
       {theme === 'christmas' && <ChristmasBackground />}
+      {theme === 'gameofthrones' && <BattleBackground />}
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -291,11 +296,21 @@ export default function Home() {
         className="backdrop-blur-sm border-b sticky top-0 z-30"
         style={{
           backgroundColor:
-            theme === 'christmas'
-              ? 'rgba(100, 35, 35, 0.8)'
-              : 'rgba(31, 41, 55, 0.5)',
+            theme === 'gameofthrones'
+              ? 'rgba(15, 23, 42, 0.9)'
+              : theme === 'christmas'
+                ? 'rgba(100, 35, 35, 0.8)'
+                : 'rgba(31, 41, 55, 0.5)',
           borderColor:
-            theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
+            theme === 'gameofthrones'
+              ? 'rgb(120, 53, 15)'
+              : theme === 'christmas'
+                ? 'rgb(220, 38, 38)'
+                : 'rgb(55, 65, 81)',
+          boxShadow:
+            theme === 'gameofthrones'
+              ? '0 4px 6px -1px rgba(217, 119, 6, 0.2)'
+              : 'none',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -312,9 +327,11 @@ export default function Home() {
                     className="w-6 h-6 flex-shrink-0"
                     style={{
                       color:
-                        theme === 'christmas'
-                          ? 'rgb(253, 224, 71)'
-                          : 'rgb(250, 204, 21)',
+                        theme === 'gameofthrones'
+                          ? 'rgb(245, 158, 11)'
+                          : theme === 'christmas'
+                            ? 'rgb(253, 224, 71)'
+                            : 'rgb(250, 204, 21)',
                     }}
                   />
                 </motion.div>
@@ -322,9 +339,11 @@ export default function Home() {
                   className="text-xl font-bold text-transparent bg-clip-text flex-shrink truncate"
                   style={{
                     backgroundImage:
-                      theme === 'christmas'
-                        ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
-                        : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                      theme === 'gameofthrones'
+                        ? 'linear-gradient(to right, rgb(245, 158, 11), rgb(217, 119, 6), rgb(180, 83, 9))'
+                        : theme === 'christmas'
+                          ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
+                          : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
                   {sessionType === 'plank'
@@ -417,46 +436,68 @@ export default function Home() {
                       )}
                     </div>
 
-                    {/* Theme Buttons */}
-                    <div className="flex gap-2" hidden>
+                    {/* Theme Dropdown */}
+                    <div className="relative">
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setTheme('cartoon')}
-                        className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
+                        className="w-full px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-between gap-2"
                         style={{
-                          backgroundColor:
-                            theme === 'cartoon'
-                              ? 'rgb(147, 51, 234)'
-                              : 'rgb(55, 65, 81)',
+                          backgroundColor: 'rgb(55, 65, 81)',
                           color: 'white',
-                          boxShadow:
-                            theme === 'cartoon'
-                              ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                              : 'none',
                         }}
                       >
-                        🤖 Cartoon
+                        <span>
+                          {theme === 'cartoon' && '🤖 Cartoon'}
+                          {theme === 'christmas' && '🎄 Christmas'}
+                          {theme === 'gameofthrones' && '🐉 GoT'}
+                        </span>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform ${themeDropdownOpen ? 'rotate-180' : ''}`}
+                        />
                       </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setTheme('christmas')}
-                        className="flex-1 px-4 py-2 rounded-lg font-semibold transition-all"
-                        style={{
-                          backgroundColor:
-                            theme === 'christmas'
-                              ? 'rgb(34, 197, 94)'
-                              : 'rgb(55, 65, 81)',
-                          color: 'white',
-                          boxShadow:
-                            theme === 'christmas'
-                              ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                              : 'none',
-                        }}
-                      >
-                        🎄 Christmas
-                      </motion.button>
+                      <AnimatePresence>
+                        {themeDropdownOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="fixed left-4 right-4 bg-gray-800 rounded-lg shadow-2xl border border-gray-700 overflow-hidden"
+                            style={{
+                              top: 'auto',
+                              marginTop: '0.5rem',
+                              zIndex: 9999,
+                            }}
+                          >
+                            {['cartoon', 'christmas', 'gameofthrones'].map(
+                              (t) => (
+                                <button
+                                  key={t}
+                                  onClick={() => {
+                                    setTheme(t as Theme);
+                                    setThemeDropdownOpen(false);
+                                  }}
+                                  className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors font-semibold border-b border-gray-700 last:border-b-0"
+                                  style={{
+                                    backgroundColor:
+                                      theme === t
+                                        ? 'rgba(147, 51, 234, 0.2)'
+                                        : 'transparent',
+                                    color: 'white',
+                                  }}
+                                >
+                                  {t === 'cartoon' && '🤖 Cartoon'}
+                                  {t === 'christmas' && '🎄 Christmas'}
+                                  {t === 'gameofthrones' &&
+                                    '🐉 Game of Thrones'}
+                                </button>
+                              ),
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {/* Add Player Button */}
@@ -517,11 +558,11 @@ export default function Home() {
 
           {/* Desktop: Original layout */}
           <div className="hidden lg:block">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-              {/* Title and Logo */}
+            <div className="flex items-center justify-between gap-6">
+              {/* Left: Title and Logo */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 flex-shrink-0"
               >
                 <motion.div
                   animate={{ rotate: [0, 10, -10, 0] }}
@@ -531,19 +572,23 @@ export default function Home() {
                     className="w-8 h-8"
                     style={{
                       color:
-                        theme === 'christmas'
-                          ? 'rgb(253, 224, 71)'
-                          : 'rgb(250, 204, 21)',
+                        theme === 'gameofthrones'
+                          ? 'rgb(245, 158, 11)'
+                          : theme === 'christmas'
+                            ? 'rgb(253, 224, 71)'
+                            : 'rgb(250, 204, 21)',
                     }}
                   />
                 </motion.div>
                 <h1
-                  className="text-4xl font-bold text-transparent bg-clip-text"
+                  className="text-3xl font-bold text-transparent bg-clip-text whitespace-nowrap"
                   style={{
                     backgroundImage:
-                      theme === 'christmas'
-                        ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
-                        : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                      theme === 'gameofthrones'
+                        ? 'linear-gradient(to right, rgb(245, 158, 11), rgb(217, 119, 6), rgb(180, 83, 9))'
+                        : theme === 'christmas'
+                          ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
+                          : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
                   {sessionType === 'plank'
@@ -552,115 +597,131 @@ export default function Home() {
                 </h1>
               </motion.div>
 
-              {/* Active Session Name */}
-              {activeSessionName && (
-                <div
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border"
-                  style={{
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderColor: 'rgba(59, 130, 246, 0.3)',
-                  }}
-                >
-                  <span className="text-sm font-medium text-blue-300">
-                    Session:
-                  </span>
-                  <span className="text-sm font-semibold text-white">
-                    {activeSessionName}
-                  </span>
-                </div>
-              )}
-
-              {/* Milestone Display */}
-              <div className="flex items-center gap-3">
-                {!editingMilestone ? (
-                  <>
-                    <span className="text-lg font-semibold text-white">
-                      🎯 Milestone: {milestone}
+              {/* Center: Session Name and Milestone */}
+              <div className="flex items-center gap-6 flex-1 justify-center">
+                {/* Active Session Name */}
+                {activeSessionName && (
+                  <div
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border"
+                    style={{
+                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                      borderColor: 'rgba(59, 130, 246, 0.4)',
+                    }}
+                  >
+                    <span className="text-xs font-medium text-blue-300">
+                      Session:
                     </span>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => {
-                        setEditingMilestone(true);
-                        setMilestoneInput(milestone.toString());
-                      }}
-                      className="text-white hover:text-yellow-300 transition-colors"
-                    >
-                      ✏️
-                    </motion.button>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={milestoneInput}
-                      onChange={(e) => setMilestoneInput(e.target.value)}
-                      className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
-                      min="1"
-                      autoFocus
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={handleSaveMilestone}
-                      className="text-green-400 hover:text-green-300 text-xl"
-                    >
-                      ✓
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setEditingMilestone(false)}
-                      className="text-red-400 hover:text-red-300 text-xl"
-                    >
-                      ✕
-                    </motion.button>
+                    <span className="text-sm font-semibold text-white">
+                      {activeSessionName}
+                    </span>
                   </div>
                 )}
+
+                {/* Milestone Display */}
+                <div className="flex items-center gap-2">
+                  {!editingMilestone ? (
+                    <>
+                      <span className="text-base font-semibold text-white whitespace-nowrap">
+                        🎯 Milestone: {milestone}
+                      </span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => {
+                          setEditingMilestone(true);
+                          setMilestoneInput(milestone.toString());
+                        }}
+                        className="text-white hover:text-yellow-300 transition-colors"
+                      >
+                        ✏️
+                      </motion.button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={milestoneInput}
+                        onChange={(e) => setMilestoneInput(e.target.value)}
+                        className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                        min="1"
+                        autoFocus
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleSaveMilestone}
+                        className="text-green-400 hover:text-green-300 text-xl"
+                      >
+                        ✓
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setEditingMilestone(false)}
+                        className="text-red-400 hover:text-red-300 text-xl"
+                      >
+                        ✕
+                      </motion.button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Theme Switcher and Add Button */}
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Theme Buttons */}
-                <div className="flex gap-2" hidden>
+              {/* Right: Theme and Action Buttons */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                {/* Theme Dropdown */}
+                <div className="relative">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setTheme('cartoon')}
-                    className="px-4 py-2 rounded-lg font-semibold transition-all"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
+                    className="px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 whitespace-nowrap"
                     style={{
-                      backgroundColor:
-                        theme === 'cartoon'
-                          ? 'rgb(147, 51, 234)'
-                          : 'rgb(55, 65, 81)',
+                      backgroundColor: 'rgb(55, 65, 81)',
                       color: 'white',
-                      boxShadow:
-                        theme === 'cartoon'
-                          ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                          : 'none',
                     }}
                   >
-                    🤖 Cartoon
+                    <span>
+                      {theme === 'cartoon' && '🤖 Cartoon'}
+                      {theme === 'christmas' && '🎄 Christmas'}
+                      {theme === 'gameofthrones' && '🐉 GoT'}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${themeDropdownOpen ? 'rotate-180' : ''}`}
+                    />
                   </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setTheme('christmas')}
-                    className="px-4 py-2 rounded-lg font-semibold transition-all"
-                    style={{
-                      backgroundColor:
-                        theme === 'christmas'
-                          ? 'rgb(34, 197, 94)'
-                          : 'rgb(55, 65, 81)',
-                      color: 'white',
-                      boxShadow:
-                        theme === 'christmas'
-                          ? '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                          : 'none',
-                    }}
-                  >
-                    🎄 Christmas
-                  </motion.button>
+                  <AnimatePresence>
+                    {themeDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 overflow-hidden z-50"
+                      >
+                        {['cartoon', 'christmas', 'gameofthrones'].map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => {
+                              setTheme(t as Theme);
+                              setThemeDropdownOpen(false);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors font-semibold"
+                            style={{
+                              backgroundColor:
+                                theme === t
+                                  ? 'rgba(147, 51, 234, 0.2)'
+                                  : 'transparent',
+                              color: 'white',
+                            }}
+                          >
+                            {t === 'cartoon' && '🤖 Cartoon'}
+                            {t === 'christmas' && '🎄 Christmas'}
+                            {t === 'gameofthrones' && '🐉 Game of Thrones'}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* Add Player Button */}

@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PushUp Battle - Fitness Competition Tracker',
+  title: 'Fitness Competition Tracker',
   description:
     'A fun and interactive pushup competition tracker with live leaderboard animations',
 };

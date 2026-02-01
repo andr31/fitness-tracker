@@ -48,6 +48,30 @@ export const THEMES = {
     '🎉',
     '✨',
   ],
+  gameofthrones: [
+    '🐺', // Stark (Direwolf)
+    '🦁', // Lannister (Lion)
+    '🐉', // Targaryen (Dragon)
+    '🐙', // Greyjoy (Kraken)
+    '🌹', // Tyrell (Rose)
+    '🦅', // Arryn (Falcon)
+    '⚔️', // Swords
+    '🛡️', // Shield
+    '👑', // Crown
+    '🏰', // Castle
+    '🗡️', // Dagger
+    '🔥', // Fire (Dracarys)
+    '❄️', // Ice/Winter
+    '🦌', // Baratheon (Stag)
+    '☠️', // Death/Danger
+    '🐍', // Viper/Martell
+    '🦂', // Scorpion
+    '🪓', // Axe
+    '⚡', // Lightning
+    '🌙', // Moon
+    '⭐', // Star
+    '🍷', // Wine
+  ],
 } as const;
 
 export type Theme = keyof typeof THEMES;
