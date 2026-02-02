@@ -4,26 +4,23 @@ import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   try {
     const sessionId = await getActiveSessionId();
-    
+
     if (!sessionId) {
       return NextResponse.json(
         { error: 'No active session. Please select a session first.' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     const playerId = parseInt(id, 10);
 
     if (isNaN(playerId)) {
-      return NextResponse.json(
-        { error: 'Invalid player ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
     }
 
     // Get all days where the daily goal was met (comparing against the last target set that day)
@@ -46,24 +43,24 @@ export async function GET(
       FROM dailyGoalSettings 
       WHERE playerId = ${playerId} AND sessionId = ${sessionId}
     `;
-    
-    const currentDailyGoal = goalResult.rows.length > 0 ? goalResult.rows[0].dailygoal : 100;
+
+    const currentDailyGoal =
+      goalResult.rows.length > 0 ? goalResult.rows[0].dailygoal : 100;
 
     return NextResponse.json({
       goalsMet: result.rows.length,
       dailyGoal: currentDailyGoal,
-      days: result.rows.map(row => ({
+      days: result.rows.map((row) => ({
         date: row.date,
-        total: parseInt(row.total, 10),
-        target: parseInt(row.dailygoaltarget, 10)
-      }))
+        total: parseFloat(row.total),
+        target: parseFloat(row.dailygoaltarget),
+      })),
     });
-
   } catch (error) {
     console.error('Error fetching daily goal stats:', error);
     return NextResponse.json(
       { error: 'Failed to fetch daily goal stats' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -18,6 +18,7 @@ interface DailyHistoryModalProps {
   playerId: number;
   playerName: string;
   theme?: Theme;
+  sessionType?: 'pushups' | 'plank';
 }
 
 export default function DailyHistoryModal({
@@ -26,6 +27,7 @@ export default function DailyHistoryModal({
   playerId,
   playerName,
   theme = 'cartoon',
+  sessionType = 'pushups',
 }: DailyHistoryModalProps) {
   const [history, setHistory] = useState<DailyHistory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,15 +55,21 @@ export default function DailyHistoryModal({
 
   const formatDate = (dateString: string) => {
     const today = new Date();
-    const todayStr = today.getFullYear() + '-' + 
-                     String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                     String(today.getDate()).padStart(2, '0');
-    
+    const todayStr =
+      today.getFullYear() +
+      '-' +
+      String(today.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(today.getDate()).padStart(2, '0');
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.getFullYear() + '-' + 
-                         String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + 
-                         String(yesterday.getDate()).padStart(2, '0');
+    const yesterdayStr =
+      yesterday.getFullYear() +
+      '-' +
+      String(yesterday.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(yesterday.getDate()).padStart(2, '0');
 
     if (dateString === todayStr) {
       return 'Today';
@@ -72,13 +80,24 @@ export default function DailyHistoryModal({
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+        year:
+          date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
       });
     }
   };
 
-  const totalPushups = history.reduce((sum, day) => sum + parseInt(day.total.toString()), 0);
-  const avgPerDay = history.length > 0 ? Math.round(totalPushups / history.length) : 0;
+  const totalPushups = history.reduce(
+    (sum, day) => sum + parseFloat(day.total.toString()),
+    0,
+  );
+  const avgPerDay = history.length > 0 ? totalPushups / history.length : 0;
+
+  // Helper to format numbers: show decimals only if needed
+  const formatNumber = (num: number | string): string => {
+    const n = typeof num === 'string' ? parseFloat(num) : num;
+    if (isNaN(n)) return '0';
+    return n % 1 === 0 ? n.toString() : n.toFixed(2).replace(/\.?0+$/, '');
+  };
 
   return (
     <AnimatePresence>
@@ -114,7 +133,9 @@ export default function DailyHistoryModal({
               className="p-6 border-b"
               style={{
                 borderColor:
-                  theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
+                  theme === 'christmas'
+                    ? 'rgb(220, 38, 38)'
+                    : 'rgb(55, 65, 81)',
               }}
             >
               <div className="flex items-center justify-between">
@@ -145,8 +166,12 @@ export default function DailyHistoryModal({
                           : 'rgba(59, 130, 246, 0.2)',
                     }}
                   >
-                    <div className="text-sm text-gray-300">Total (Last 30d)</div>
-                    <div className="text-2xl font-bold text-white">{totalPushups}</div>
+                    <div className="text-sm text-gray-300">
+                      Total (Last 30d)
+                    </div>
+                    <div className="text-2xl font-bold text-white">
+                      {formatNumber(totalPushups)}
+                    </div>
                   </div>
                   <div
                     className="rounded-lg p-3"
@@ -158,7 +183,9 @@ export default function DailyHistoryModal({
                     }}
                   >
                     <div className="text-sm text-gray-300">Avg per Day</div>
-                    <div className="text-2xl font-bold text-white">{avgPerDay}</div>
+                    <div className="text-2xl font-bold text-white">
+                      {formatNumber(avgPerDay)}
+                    </div>
                   </div>
                 </div>
               )}
@@ -190,8 +217,8 @@ export default function DailyHistoryModal({
                               ? 'rgba(34, 197, 94, 0.15)'
                               : 'rgba(59, 130, 246, 0.15)'
                             : theme === 'christmas'
-                            ? 'rgba(100, 35, 35, 0.5)'
-                            : 'rgba(55, 65, 81, 0.5)',
+                              ? 'rgba(100, 35, 35, 0.5)'
+                              : 'rgba(55, 65, 81, 0.5)',
                         border:
                           index === 0
                             ? theme === 'christmas'
@@ -205,9 +232,13 @@ export default function DailyHistoryModal({
                           {formatDate(day.date)}
                         </div>
                         <div className="text-sm text-gray-400 flex items-center gap-2">
-                          <span className="text-green-400">+{day.additions}</span>
+                          <span className="text-green-400">
+                            +{day.additions}
+                          </span>
                           {day.removals > 0 && (
-                            <span className="text-red-400">-{day.removals}</span>
+                            <span className="text-red-400">
+                              -{day.removals}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -222,7 +253,7 @@ export default function DailyHistoryModal({
                           }}
                         />
                         <div className="text-2xl font-bold text-white">
-                          {day.total}
+                          {formatNumber(day.total)}
                         </div>
                       </div>
                     </motion.div>

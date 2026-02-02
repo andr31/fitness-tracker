@@ -79,6 +79,13 @@ export default function DailyGoalStatsModal({
     return `${Math.floor(diffDays / 30)} months ago`;
   };
 
+  // Helper to format numbers: show decimals only if needed
+  const formatNumber = (num: number | string): string => {
+    const n = typeof num === 'string' ? parseFloat(num) : num;
+    if (isNaN(n)) return '0';
+    return n % 1 === 0 ? n.toString() : n.toFixed(2).replace(/\.?0+$/, '');
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -207,7 +214,8 @@ export default function DailyGoalStatsModal({
                           </div>
                           <div className="text-right">
                             <div className="text-lg font-bold text-green-400">
-                              {day.total} / {day.target}
+                              {formatNumber(day.total)} /{' '}
+                              {formatNumber(day.target)}
                             </div>
                             <div className="text-xs text-white opacity-50">
                               {sessionType === 'plank' ? 'minutes' : 'pushups'}

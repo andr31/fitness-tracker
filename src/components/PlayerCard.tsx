@@ -10,8 +10,10 @@ import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 
 // Helper to format numbers: show decimals only if needed
-const formatNumber = (num: number): string => {
-  return num % 1 === 0 ? num.toString() : num.toFixed(2).replace(/\.?0+$/, '');
+const formatNumber = (num: number | string): string => {
+  const n = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(n)) return '0';
+  return n % 1 === 0 ? n.toString() : n.toFixed(2).replace(/\.?0+$/, '');
 };
 
 interface Player {
@@ -346,7 +348,7 @@ export default function PlayerCard({
                 }}
               >
                 <Calendar className="w-3 h-3" />
-                Today: {todayTotal}
+                Today: {formatNumber(todayTotal)}
               </motion.button>
             )}
           </div>
@@ -801,6 +803,7 @@ export default function PlayerCard({
         playerId={player.id}
         playerName={player.name}
         theme={theme}
+        sessionType={sessionType}
       />
 
       {/* Daily Goal Stats Modal */}
