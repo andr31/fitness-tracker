@@ -11,6 +11,7 @@ import CreateSessionModal from '@/components/CreateSessionModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
 import BattleBackground from '@/components/BattleBackground';
 import CountdownTimer from '@/components/CountdownTimer';
+import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
 import { Theme } from '@/lib/emojis';
 import './theme.css';
@@ -129,7 +130,7 @@ export default function Home() {
   const fetchSettings = async () => {
     try {
       const response = await fetch('/api/settings');
-      if (!response.ok) throw new Error('Failed to fetch settings');
+      if (!response.ok) return; // No active session or settings not available yet
       const data = await response.json();
       if (data.milestone) {
         const milestoneValue = parseInt(data.milestone);
@@ -385,7 +386,7 @@ export default function Home() {
                     {activeSessionName}
                   </span>
                 )}
-                {!editingMilestone && (
+                {activeSessionName && !editingMilestone && (
                   <span className="text-sm font-semibold text-white whitespace-nowrap flex-shrink-0">
                     🎯 M:{milestone}
                   </span>
@@ -418,53 +419,57 @@ export default function Home() {
                 >
                   <div className="pt-4 space-y-3">
                     {/* Milestone Edit */}
-                    <div className="flex items-center gap-2">
-                      {!editingMilestone ? (
-                        <>
-                          <span className="text-base font-semibold text-white">
-                            🎯 Milestone: {milestone}
-                          </span>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              setEditingMilestone(true);
-                              setMilestoneInput(milestone.toString());
-                            }}
-                            className="text-white hover:text-yellow-300 transition-colors"
-                          >
-                            ✏️
-                          </motion.button>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={milestoneInput}
-                            onChange={(e) => setMilestoneInput(e.target.value)}
-                            className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
-                            min="1"
-                            autoFocus
-                          />
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={handleSaveMilestone}
-                            className="text-green-400 hover:text-green-300 text-xl"
-                          >
-                            ✓
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setEditingMilestone(false)}
-                            className="text-red-400 hover:text-red-300 text-xl"
-                          >
-                            ✕
-                          </motion.button>
-                        </div>
-                      )}
-                    </div>
+                    {activeSessionName && (
+                      <div className="flex items-center gap-2">
+                        {!editingMilestone ? (
+                          <>
+                            <span className="text-base font-semibold text-white">
+                              🎯 Milestone: {milestone}
+                            </span>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                setEditingMilestone(true);
+                                setMilestoneInput(milestone.toString());
+                              }}
+                              className="text-white hover:text-yellow-300 transition-colors"
+                            >
+                              ✏️
+                            </motion.button>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              value={milestoneInput}
+                              onChange={(e) =>
+                                setMilestoneInput(e.target.value)
+                              }
+                              className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                              min="1"
+                              autoFocus
+                            />
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={handleSaveMilestone}
+                              className="text-green-400 hover:text-green-300 text-xl"
+                            >
+                              ✓
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => setEditingMilestone(false)}
+                              className="text-red-400 hover:text-red-300 text-xl"
+                            >
+                              ✕
+                            </motion.button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Theme Dropdown */}
                     <div className="relative">
@@ -531,33 +536,35 @@ export default function Home() {
                     </div>
 
                     {/* Add Player Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setIsModalOpen(true)}
-                      className="w-full text-white font-bold px-6 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
-                      style={{
-                        backgroundColor:
-                          theme === 'christmas'
-                            ? 'rgb(34, 197, 94)'
-                            : 'rgb(34, 197, 94)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          theme === 'christmas'
-                            ? 'rgb(22, 163, 74)'
-                            : 'rgb(22, 163, 74)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          theme === 'christmas'
-                            ? 'rgb(34, 197, 94)'
-                            : 'rgb(34, 197, 94)';
-                      }}
-                    >
-                      <Plus className="w-5 h-5" />
-                      Add Player
-                    </motion.button>
+                    {activeSessionName && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full text-white font-bold px-6 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
+                        style={{
+                          backgroundColor:
+                            theme === 'christmas'
+                              ? 'rgb(34, 197, 94)'
+                              : 'rgb(34, 197, 94)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor =
+                            theme === 'christmas'
+                              ? 'rgb(22, 163, 74)'
+                              : 'rgb(22, 163, 74)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor =
+                            theme === 'christmas'
+                              ? 'rgb(34, 197, 94)'
+                              : 'rgb(34, 197, 94)';
+                        }}
+                      >
+                        <Plus className="w-5 h-5" />
+                        Add Player
+                      </motion.button>
+                    )}
 
                     {/* Session Management Button */}
                     <motion.button
@@ -648,53 +655,55 @@ export default function Home() {
                 )}
 
                 {/* Milestone Display */}
-                <div className="flex items-center gap-2">
-                  {!editingMilestone ? (
-                    <>
-                      <span className="text-base font-semibold text-white whitespace-nowrap">
-                        🎯 Milestone: {milestone}
-                      </span>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => {
-                          setEditingMilestone(true);
-                          setMilestoneInput(milestone.toString());
-                        }}
-                        className="text-white hover:text-yellow-300 transition-colors"
-                      >
-                        ✏️
-                      </motion.button>
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={milestoneInput}
-                        onChange={(e) => setMilestoneInput(e.target.value)}
-                        className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
-                        min="1"
-                        autoFocus
-                      />
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={handleSaveMilestone}
-                        className="text-green-400 hover:text-green-300 text-xl"
-                      >
-                        ✓
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setEditingMilestone(false)}
-                        className="text-red-400 hover:text-red-300 text-xl"
-                      >
-                        ✕
-                      </motion.button>
-                    </div>
-                  )}
-                </div>
+                {activeSessionName && (
+                  <div className="flex items-center gap-2">
+                    {!editingMilestone ? (
+                      <>
+                        <span className="text-base font-semibold text-white whitespace-nowrap">
+                          🎯 Milestone: {milestone}
+                        </span>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => {
+                            setEditingMilestone(true);
+                            setMilestoneInput(milestone.toString());
+                          }}
+                          className="text-white hover:text-yellow-300 transition-colors"
+                        >
+                          ✏️
+                        </motion.button>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={milestoneInput}
+                          onChange={(e) => setMilestoneInput(e.target.value)}
+                          className="w-24 px-3 py-1 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:border-yellow-500"
+                          min="1"
+                          autoFocus
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={handleSaveMilestone}
+                          className="text-green-400 hover:text-green-300 text-xl"
+                        >
+                          ✓
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setEditingMilestone(false)}
+                          className="text-red-400 hover:text-red-300 text-xl"
+                        >
+                          ✕
+                        </motion.button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Right: Theme and Action Buttons */}
@@ -755,33 +764,35 @@ export default function Home() {
                 </div>
 
                 {/* Add Player Button */}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsModalOpen(true)}
-                  className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
-                  style={{
-                    backgroundColor:
-                      theme === 'christmas'
-                        ? 'rgb(34, 197, 94)'
-                        : 'rgb(34, 197, 94)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      theme === 'christmas'
-                        ? 'rgb(22, 163, 74)'
-                        : 'rgb(22, 163, 74)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor =
-                      theme === 'christmas'
-                        ? 'rgb(34, 197, 94)'
-                        : 'rgb(34, 197, 94)';
-                  }}
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Player
-                </motion.button>
+                {activeSessionName && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsModalOpen(true)}
+                    className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+                    style={{
+                      backgroundColor:
+                        theme === 'christmas'
+                          ? 'rgb(34, 197, 94)'
+                          : 'rgb(34, 197, 94)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        theme === 'christmas'
+                          ? 'rgb(22, 163, 74)'
+                          : 'rgb(22, 163, 74)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        theme === 'christmas'
+                          ? 'rgb(34, 197, 94)'
+                          : 'rgb(34, 197, 94)';
+                    }}
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Player
+                  </motion.button>
+                )}
 
                 {/* Session Management Button */}
                 <motion.button
@@ -808,165 +819,233 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Countdown Timer */}
-      <div className="max-w-7xl mx-auto px-4 mt-4">
-        <CountdownTimer key={activeSessionName} theme={theme} />
-      </div>
-
-      {/* Champions Banner */}
-      {players.filter((p) => p.totalPushups >= milestone).length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-7xl mx-auto px-4 mt-4"
-        >
-          <div
-            className="rounded-lg p-6 backdrop-blur-md border"
+      {/* Show session-dependent content only when a session is active */}
+      {!activeSessionName && !loading ? (
+        <div className="max-w-7xl mx-auto px-4 mt-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16 rounded-xl border backdrop-blur-md"
             style={{
               background:
-                theme === 'christmas'
-                  ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(220, 38, 38, 0.2))'
-                  : 'linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(249, 115, 22, 0.2))',
+                theme === 'gameofthrones'
+                  ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(28, 25, 23, 0.5))'
+                  : theme === 'christmas'
+                    ? 'linear-gradient(135deg, rgba(127, 29, 29, 0.5), rgba(20, 83, 45, 0.3))'
+                    : 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
               borderColor:
-                theme === 'christmas'
-                  ? 'rgba(34, 197, 94, 0.3)'
-                  : 'rgba(250, 204, 21, 0.3)',
+                theme === 'gameofthrones'
+                  ? 'rgb(120, 53, 15)'
+                  : theme === 'christmas'
+                    ? 'rgb(220, 38, 38)'
+                    : 'rgb(55, 65, 81)',
             }}
-          >
-            <h2 className="text-2xl font-bold text-white mb-4 text-center">
-              🏆 Champions - Milestone Reached! 🏆
-            </h2>
-            <div className="flex flex-wrap justify-center gap-4">
-              {players
-                .filter((p) => p.totalPushups >= milestone)
-                .map((champion) => (
-                  <motion.div
-                    key={champion.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => scrollToPlayer(champion.id)}
-                    className="px-6 py-3 rounded-lg font-semibold text-lg backdrop-blur-sm cursor-pointer"
-                    style={{
-                      background:
-                        theme === 'christmas'
-                          ? 'rgba(34, 197, 94, 0.3)'
-                          : 'rgba(250, 204, 21, 0.3)',
-                      color: 'white',
-                      border: '2px solid',
-                      borderColor:
-                        theme === 'christmas'
-                          ? 'rgb(34, 197, 94)'
-                          : 'rgb(250, 204, 21)',
-                    }}
-                  >
-                    🎖️ {champion.name} - {champion.totalPushups} pushups
-                  </motion.div>
-                ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 rounded-lg"
-            style={{
-              backgroundColor:
-                theme === 'christmas'
-                  ? 'rgba(239, 68, 68, 0.2)'
-                  : 'rgba(239, 68, 68, 0.2)',
-              borderColor:
-                theme === 'christmas'
-                  ? 'rgba(239, 68, 68, 0.5)'
-                  : 'rgba(239, 68, 68, 0.5)',
-              borderWidth: '1px',
-              color:
-                theme === 'christmas'
-                  ? 'rgb(254, 226, 226)'
-                  : 'rgb(254, 226, 226)',
-            }}
-          >
-            {error}
-          </motion.div>
-        )}
-
-        {loading ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center justify-center h-96"
           >
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ repeat: Infinity, duration: 1 }}
-              className="w-12 h-12 border-4 border-gray-700 border-t-yellow-400 rounded-full"
-            />
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 2.5 }}
+              className="text-5xl mb-4"
+            >
+              🏋️
+            </motion.div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              No Active Session
+            </h2>
+            <p className="text-gray-400 mb-6">
+              Select or create a session to get started
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsSessionSelectorOpen(true)}
+              className="text-white font-bold px-8 py-3 rounded-lg inline-flex items-center gap-2 transition-all shadow-lg"
+              style={{ backgroundColor: 'rgb(59, 130, 246)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgb(37, 99, 235)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgb(59, 130, 246)';
+              }}
+            >
+              <History className="w-5 h-5" />
+              Open Sessions
+            </motion.button>
           </motion.div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left side - Players */}
-            <div className="lg:col-span-1 space-y-4">
-              {players.length > 0 && (
-                <h2 className="text-2xl font-bold text-white mb-4">Players</h2>
-              )}
-              <AnimatePresence>
-                {players.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-8"
-                    style={{
-                      color:
-                        theme === 'christmas'
-                          ? 'rgb(254, 226, 226)'
-                          : 'rgb(156, 163, 175)',
-                    }}
-                  >
-                    <p className="mb-4">No players yet!</p>
-                    <p className="text-sm">
-                      Click "Add Player" to get started 🚀
-                    </p>
-                  </motion.div>
-                ) : (
-                  players.map((player) => (
-                    <div
-                      key={player.id}
-                      ref={(el) => {
-                        playerCardRefs.current[player.id] = el;
-                      }}
-                      style={{ transition: 'transform 0.3s ease' }}
-                    >
-                      <PlayerCard
-                        player={player}
-                        theme={theme}
-                        milestone={milestone}
-                        sessionType={sessionType}
-                        onAddPushups={(amount, date) =>
-                          handleAddPushups(player.id, amount, date)
-                        }
-                        onRemovePushups={(amount) =>
-                          handleRemovePushups(player.id, amount)
-                        }
-                        onDelete={() => handleDeletePlayer(player.id)}
-                      />
-                    </div>
-                  ))
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Right side - Race Track */}
-            <div className="lg:col-span-2">
-              <RaceTrack players={players} />
-            </div>
+        </div>
+      ) : activeSessionName ? (
+        <>
+          {/* Countdown Timer */}
+          <div className="max-w-7xl mx-auto px-4 mt-4">
+            <CountdownTimer key={activeSessionName} theme={theme} />
           </div>
-        )}
-      </main>
+
+          {/* Stopwatch — plank sessions only */}
+          {sessionType === 'plank' && (
+            <div className="max-w-7xl mx-auto px-4 mt-4">
+              <div className="max-w-sm mx-auto lg:mx-0">
+                <StopwatchWidget theme={theme} />
+              </div>
+            </div>
+          )}
+
+          {/* Champions Banner */}
+          {players.filter((p) => p.totalPushups >= milestone).length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-7xl mx-auto px-4 mt-4"
+            >
+              <div
+                className="rounded-lg p-6 backdrop-blur-md border"
+                style={{
+                  background:
+                    theme === 'christmas'
+                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(220, 38, 38, 0.2))'
+                      : 'linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(249, 115, 22, 0.2))',
+                  borderColor:
+                    theme === 'christmas'
+                      ? 'rgba(34, 197, 94, 0.3)'
+                      : 'rgba(250, 204, 21, 0.3)',
+                }}
+              >
+                <h2 className="text-2xl font-bold text-white mb-4 text-center">
+                  🏆 Champions - Milestone Reached! 🏆
+                </h2>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {players
+                    .filter((p) => p.totalPushups >= milestone)
+                    .map((champion) => (
+                      <motion.div
+                        key={champion.id}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => scrollToPlayer(champion.id)}
+                        className="px-6 py-3 rounded-lg font-semibold text-lg backdrop-blur-sm cursor-pointer"
+                        style={{
+                          background:
+                            theme === 'christmas'
+                              ? 'rgba(34, 197, 94, 0.3)'
+                              : 'rgba(250, 204, 21, 0.3)',
+                          color: 'white',
+                          border: '2px solid',
+                          borderColor:
+                            theme === 'christmas'
+                              ? 'rgb(34, 197, 94)'
+                              : 'rgb(250, 204, 21)',
+                        }}
+                      >
+                        🎖️ {champion.name} - {champion.totalPushups} pushups
+                      </motion.div>
+                    ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Main Content */}
+          <main className="max-w-7xl mx-auto px-4 py-8">
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 rounded-lg"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgba(239, 68, 68, 0.2)'
+                      : 'rgba(239, 68, 68, 0.2)',
+                  borderColor:
+                    theme === 'christmas'
+                      ? 'rgba(239, 68, 68, 0.5)'
+                      : 'rgba(239, 68, 68, 0.5)',
+                  borderWidth: '1px',
+                  color:
+                    theme === 'christmas'
+                      ? 'rgb(254, 226, 226)'
+                      : 'rgb(254, 226, 226)',
+                }}
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {loading ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center h-96"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                  className="w-12 h-12 border-4 border-gray-700 border-t-yellow-400 rounded-full"
+                />
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left side - Players */}
+                <div className="lg:col-span-1 space-y-4">
+                  {players.length > 0 && (
+                    <h2 className="text-2xl font-bold text-white mb-4">
+                      Players
+                    </h2>
+                  )}
+                  <AnimatePresence>
+                    {players.length === 0 ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="text-center py-8"
+                        style={{
+                          color:
+                            theme === 'christmas'
+                              ? 'rgb(254, 226, 226)'
+                              : 'rgb(156, 163, 175)',
+                        }}
+                      >
+                        <p className="mb-4">No players yet!</p>
+                        <p className="text-sm">
+                          Click "Add Player" to get started 🚀
+                        </p>
+                      </motion.div>
+                    ) : (
+                      players.map((player) => (
+                        <div
+                          key={player.id}
+                          ref={(el) => {
+                            playerCardRefs.current[player.id] = el;
+                          }}
+                          style={{ transition: 'transform 0.3s ease' }}
+                        >
+                          <PlayerCard
+                            player={player}
+                            theme={theme}
+                            milestone={milestone}
+                            sessionType={sessionType}
+                            onAddPushups={(amount, date) =>
+                              handleAddPushups(player.id, amount, date)
+                            }
+                            onRemovePushups={(amount) =>
+                              handleRemovePushups(player.id, amount)
+                            }
+                            onDelete={() => handleDeletePlayer(player.id)}
+                          />
+                        </div>
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Right side - Race Track */}
+                <div className="lg:col-span-2">
+                  <RaceTrack players={players} />
+                </div>
+              </div>
+            )}
+          </main>
+        </>
+      ) : null}
 
       {/* Add Player Modal */}
       <AddPlayerModal
