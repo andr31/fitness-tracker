@@ -20,6 +20,7 @@ interface Player {
   id: number;
   name: string;
   totalPushups: number;
+  createdAt: string;
 }
 
 export default function Home() {

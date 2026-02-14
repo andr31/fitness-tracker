@@ -11,6 +11,8 @@ interface Session {
   createdAt: string;
   updatedAt: string;
   createdAtLocalDate?: string;
+  lastActivityDate?: string | null;
+  playerCount?: number;
 }
 
 interface SessionSelectorModalProps {
@@ -343,9 +345,46 @@ export default function SessionSelectorModal({
                               });
                             })()}
                           </p>
+                          <div className="flex items-center gap-3 mt-1">
+                            {session.playerCount !== undefined && (
+                              <span className="text-xs text-gray-400">
+                                👥 {session.playerCount} player
+                                {session.playerCount !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {session.lastActivityDate ? (
+                              <span className="text-xs text-gray-400">
+                                Last active:{' '}
+                                {(() => {
+                                  const lastDate = new Date(
+                                    session.lastActivityDate + 'T00:00:00',
+                                  );
+                                  const now = new Date();
+                                  const today = new Date(
+                                    now.getFullYear(),
+                                    now.getMonth(),
+                                    now.getDate(),
+                                  );
+                                  const diffDays = Math.floor(
+                                    (today.getTime() - lastDate.getTime()) /
+                                      (1000 * 60 * 60 * 24),
+                                  );
+                                  if (diffDays === 0) return '🟢 Today';
+                                  if (diffDays === 1) return '🟢 Yesterday';
+                                  if (diffDays <= 3)
+                                    return `🟡 ${diffDays} days ago`;
+                                  return `🔴 ${diffDays} days ago`;
+                                })()}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-500">
+                                No activity yet
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
                           onClick={(e) => {
@@ -408,57 +447,75 @@ export default function SessionSelectorModal({
                         )}
                       </div>
                     </div>
+
+                    {/* Inline password input for selected non-active session */}
+                    <AnimatePresence>
+                      {selectedSession === session.id &&
+                        activeSessionId !== session.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div
+                              className="mt-3 pt-3 border-t"
+                              style={{ borderColor: 'rgb(75, 85, 99)' }}
+                            >
+                              <label
+                                htmlFor={`sessionPassword-${session.id}`}
+                                className="block text-sm font-medium text-gray-300 mb-2"
+                              >
+                                Enter password to activate{' '}
+                                <span className="font-bold text-white">
+                                  {session.name}
+                                </span>
+                              </label>
+                              <input
+                                id={`sessionPassword-${session.id}`}
+                                type="password"
+                                value={password}
+                                onChange={(e) => {
+                                  setPassword(e.target.value);
+                                  setError('');
+                                }}
+                                onKeyDown={(e) =>
+                                  e.key === 'Enter' && handleActivateSession()
+                                }
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                                style={{
+                                  backgroundColor: 'rgb(75, 85, 99)',
+                                  borderColor: 'rgb(107, 114, 128)',
+                                  color: 'white',
+                                }}
+                                placeholder="Password"
+                                disabled={isActivating}
+                                autoFocus
+                              />
+                              {error && (
+                                <div className="mt-2 bg-red-900/50 text-red-200 px-3 py-2 rounded-lg text-sm border border-red-800">
+                                  {error}
+                                </div>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleActivateSession();
+                                }}
+                                disabled={isActivating || !password}
+                                className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50"
+                              >
+                                {isActivating
+                                  ? 'Activating...'
+                                  : 'Activate Session'}
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                    </AnimatePresence>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {selectedSession && activeSessionId !== selectedSession && (
-              <div
-                className="mt-6 p-4 rounded-lg border"
-                style={{
-                  backgroundColor: 'rgb(55, 65, 81)',
-                  borderColor: 'rgb(75, 85, 99)',
-                }}
-              >
-                <label
-                  htmlFor="sessionPassword"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Enter session password to activate
-                </label>
-                <input
-                  id="sessionPassword"
-                  type="password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError(''); // Clear error when typing
-                  }}
-                  onKeyDown={(e) =>
-                    e.key === 'Enter' && handleActivateSession()
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
-                  style={{
-                    backgroundColor: 'rgb(75, 85, 99)',
-                    borderColor: 'rgb(107, 114, 128)',
-                    color: 'white',
-                  }}
-                  placeholder="Password"
-                  disabled={isActivating}
-                />
-                {error && (
-                  <div className="mt-2 bg-red-900/50 text-red-200 px-3 py-2 rounded-lg text-sm border border-red-800">
-                    {error}
-                  </div>
-                )}
-                <button
-                  onClick={handleActivateSession}
-                  disabled={isActivating || !password}
-                  className="mt-3 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50"
-                >
-                  {isActivating ? 'Activating...' : 'Activate Session'}
-                </button>
               </div>
             )}
 
