@@ -14,9 +14,13 @@ export async function getActiveSessionId(): Promise<number | null> {
 export async function GET() {
   try {
     const result = await sql`
-      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType 
-      FROM sessions 
-      ORDER BY isActive DESC, createdAt DESC
+      SELECT s.id, s.name, s.isActive, s.createdAt, s.updatedAt, s.createdAtLocalDate, s.sessionType,
+        (SELECT MAX(sub.localDate) FROM (
+          SELECT ph.localDate FROM pushupHistory ph WHERE ph.sessionId = s.id GROUP BY ph.localDate HAVING SUM(ph.amount) > 0
+        ) sub) as lastActivityDate,
+        (SELECT COUNT(*) FROM players p WHERE p.sessionId = s.id) as playerCount
+      FROM sessions s
+      ORDER BY s.isActive DESC, s.createdAt DESC
     `;
 
     return NextResponse.json(
@@ -28,6 +32,8 @@ export async function GET() {
         updatedAt: row.updatedat,
         createdAtLocalDate: row.createdatlocaldate,
         sessionType: row.sessiontype || 'pushups',
+        lastActivityDate: row.lastactivitydate || null,
+        playerCount: parseInt(row.playercount) || 0,
       })),
     );
   } catch (error) {

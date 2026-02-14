@@ -20,6 +20,7 @@ interface Player {
   id: number;
   name: string;
   totalPushups: number;
+  createdAt: string;
 }
 
 interface PlayerCardProps {
@@ -60,6 +61,7 @@ export default function PlayerCard({
   const [dailyGoalsMet, setDailyGoalsMet] = useState<number>(0);
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
+  const [daysSinceActive, setDaysSinceActive] = useState<number | null>(null);
 
   const fetchTodayTotal = async () => {
     try {
@@ -74,8 +76,50 @@ export default function PlayerCard({
           (d: { date: string; total: number }) => d.date === today,
         );
         setTodayTotal(todayEntry ? todayEntry.total : 0);
+
+        // Calculate days since last activity for sleepy badge
+        // Only count days with positive net total (ignore add+remove to zero)
+        const lastActiveEntry = data.find(
+          (d: { date: string; total: number }) =>
+            parseFloat(String(d.total)) > 0,
+        );
+        if (lastActiveEntry) {
+          const lastDate = new Date(lastActiveEntry.date + 'T00:00:00');
+          const todayDate = new Date(today + 'T00:00:00');
+          const diffDays = Math.floor(
+            (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          setDaysSinceActive(diffDays);
+        } else {
+          // No positive activity — use player creation date
+          const createdDate = new Date(player.createdAt);
+          const created = new Date(
+            createdDate.getFullYear(),
+            createdDate.getMonth(),
+            createdDate.getDate(),
+          );
+          const todayDate = new Date(today + 'T00:00:00');
+          const diffDays = Math.floor(
+            (todayDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
+          );
+          setDaysSinceActive(Math.max(2, diffDays));
+        }
       } else {
         setTodayTotal(0);
+        // No history — use player creation date
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const createdDate = new Date(player.createdAt);
+        const created = new Date(
+          createdDate.getFullYear(),
+          createdDate.getMonth(),
+          createdDate.getDate(),
+        );
+        const todayDate = new Date(today + 'T00:00:00');
+        const diffDays = Math.floor(
+          (todayDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
+        );
+        setDaysSinceActive(Math.max(2, diffDays));
       }
     } catch (error) {
       console.error('Error fetching today total:', error);
@@ -316,7 +360,30 @@ export default function PlayerCard({
             size="large"
           />
           <div>
-            <h3 className="text-xl font-bold text-white">{player.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold text-white">{player.name}</h3>
+              {daysSinceActive !== null && daysSinceActive >= 2 && (
+                <motion.span
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: 1,
+                  }}
+                  transition={{
+                    scale: { repeat: Infinity, duration: 3, ease: 'easeInOut' },
+                    opacity: { duration: 0.5 },
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: 'rgba(147, 130, 220, 0.2)',
+                    color: 'rgb(196, 181, 253)',
+                    border: '1px solid rgba(147, 130, 220, 0.3)',
+                  }}
+                >
+                  😴 {daysSinceActive}d
+                </motion.span>
+              )}
+            </div>
             <motion.p
               key={player.totalPushups}
               initial={{
@@ -459,34 +526,33 @@ export default function PlayerCard({
 
         {/* Quick buttons */}
         <div className="grid grid-cols-4 gap-2">
-          {(sessionType === 'plank'
-            ? [1.25, 1.5, 1.75, 2]
-            : [10, 20, 30, 50]
-          ).map((amount) => (
-            <motion.button
-              key={`add-${amount}`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleQuickAdd(amount)}
-              className="font-bold py-2 rounded transition-colors border"
-              style={{
-                backgroundColor:
-                  theme === 'christmas'
-                    ? 'rgba(34, 197, 94, 0.2)'
-                    : 'rgba(34, 197, 94, 0.2)',
-                color:
-                  theme === 'christmas'
-                    ? 'rgb(186, 230, 253)'
-                    : 'rgb(134, 239, 172)',
-                borderColor:
-                  theme === 'christmas'
-                    ? 'rgba(34, 197, 94, 0.3)'
-                    : 'rgba(34, 197, 94, 0.3)',
-              }}
-            >
-              +{amount}
-            </motion.button>
-          ))}
+          {(sessionType === 'plank' ? [2, 3, 3.5, 4] : [10, 20, 30, 50]).map(
+            (amount) => (
+              <motion.button
+                key={`add-${amount}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleQuickAdd(amount)}
+                className="font-bold py-2 rounded transition-colors border"
+                style={{
+                  backgroundColor:
+                    theme === 'christmas'
+                      ? 'rgba(34, 197, 94, 0.2)'
+                      : 'rgba(34, 197, 94, 0.2)',
+                  color:
+                    theme === 'christmas'
+                      ? 'rgb(186, 230, 253)'
+                      : 'rgb(134, 239, 172)',
+                  borderColor:
+                    theme === 'christmas'
+                      ? 'rgba(34, 197, 94, 0.3)'
+                      : 'rgba(34, 197, 94, 0.3)',
+                }}
+              >
+                +{amount}
+              </motion.button>
+            ),
+          )}
         </div>
 
         {/* Custom add input - show for all session types */}
@@ -530,7 +596,7 @@ export default function PlayerCard({
         {/* Remove shortcuts for plank sessions */}
         {sessionType === 'plank' && (
           <div className="grid grid-cols-4 gap-2">
-            {[1.25, 1.5, 1.75, 2].map((amount) => (
+            {[2, 3, 3.5, 4].map((amount) => (
               <motion.button
                 key={`remove-${amount}`}
                 whileHover={{ scale: 1.05 }}
@@ -769,7 +835,7 @@ export default function PlayerCard({
             {dailyGoalProgress > 0 && (
               <div className="grid grid-cols-4 gap-2">
                 {(sessionType === 'plank'
-                  ? [1.25, 1.5, 1.75, 2]
+                  ? [2, 3, 3.5, 4]
                   : [10, 20, 30, 50]
                 ).map((amount) => (
                   <motion.button
