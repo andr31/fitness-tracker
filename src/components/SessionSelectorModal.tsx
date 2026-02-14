@@ -356,8 +356,12 @@ export default function SessionSelectorModal({
                               <span className="text-xs text-gray-400">
                                 Last active:{' '}
                                 {(() => {
+                                  const raw = session.lastActivityDate!;
+                                  const dateStr = raw.includes('T')
+                                    ? raw.split('T')[0]
+                                    : raw;
                                   const lastDate = new Date(
-                                    session.lastActivityDate + 'T00:00:00',
+                                    dateStr + 'T00:00:00',
                                   );
                                   const now = new Date();
                                   const today = new Date(

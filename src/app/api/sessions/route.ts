@@ -32,7 +32,9 @@ export async function GET() {
         updatedAt: row.updatedat,
         createdAtLocalDate: row.createdatlocaldate,
         sessionType: row.sessiontype || 'pushups',
-        lastActivityDate: row.lastactivitydate || null,
+        lastActivityDate: row.lastactivitydate
+          ? new Date(row.lastactivitydate).toISOString().split('T')[0]
+          : null,
         playerCount: parseInt(row.playercount) || 0,
       })),
     );
