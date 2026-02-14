@@ -360,7 +360,7 @@ export default function PlayerCard({
             size="large"
           />
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <h3 className="text-xl font-bold text-white">{player.name}</h3>
               {daysSinceActive !== null && daysSinceActive >= 2 && (
                 <motion.span
@@ -373,7 +373,7 @@ export default function PlayerCard({
                     scale: { repeat: Infinity, duration: 3, ease: 'easeInOut' },
                     opacity: { duration: 0.5 },
                   }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap"
                   style={{
                     backgroundColor: 'rgba(147, 130, 220, 0.2)',
                     color: 'rgb(196, 181, 253)',
