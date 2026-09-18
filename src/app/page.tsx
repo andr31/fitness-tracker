@@ -378,9 +378,11 @@ export default function Home() {
                           : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
-                  {sessionType === 'plank'
-                    ? 'Plank Pos Battle'
-                    : 'PushUp Battle'}
+                  {!activeSessionName
+                    ? 'Fitness Battle'
+                    : sessionType === 'plank'
+                      ? 'Plank Pos Battle'
+                      : 'PushUp Battle'}
                 </h1>
                 {activeSessionName && (
                   <span className="text-xs font-medium text-blue-300 whitespace-nowrap flex-shrink-0 truncate max-w-[100px]">
@@ -629,9 +631,11 @@ export default function Home() {
                           : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
-                  {sessionType === 'plank'
-                    ? 'Plank Pos Battle'
-                    : 'PushUp Battle'}
+                  {!activeSessionName
+                    ? 'Fitness Battle'
+                    : sessionType === 'plank'
+                      ? 'Plank Pos Battle'
+                      : 'PushUp Battle'}
                 </h1>
               </motion.div>
 
