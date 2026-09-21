@@ -149,7 +149,7 @@ export default function HalloweenBackground() {
   if (!mounted) return null;
 
   return (
-    <>
+    <div aria-hidden="true">
       {/* Rolling fog */}
       <div className="fixed inset-x-0 bottom-0 h-1/3 pointer-events-none overflow-hidden z-0">
         <motion.div
@@ -231,6 +231,6 @@ export default function HalloweenBackground() {
           </motion.div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
