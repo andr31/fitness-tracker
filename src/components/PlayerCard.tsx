@@ -159,7 +159,7 @@ export default function PlayerCard({
           const diffDays = Math.floor(
             (todayDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
           );
-          setDaysSinceActive(Math.max(2, diffDays));
+          setDaysSinceActive(diffDays);
         }
       } else {
         setTodayTotal(0);
@@ -176,7 +176,7 @@ export default function PlayerCard({
         const diffDays = Math.floor(
           (todayDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
         );
-        setDaysSinceActive(Math.max(2, diffDays));
+        setDaysSinceActive(diffDays);
       }
     } catch (error) {
       console.error('Error fetching today total:', error);
