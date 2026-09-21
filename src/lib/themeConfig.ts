@@ -98,6 +98,30 @@ export const themeColors: Record<Theme, ThemeColors> = {
       secondary: 'text-stone-300',
     },
   },
+  halloween: {
+    bg: {
+      primary: 'purple-950',
+      secondary: 'black',
+      gradient: 'from-black via-purple-950 to-orange-950',
+    },
+    accent: {
+      primary: 'orange-500',
+      secondary: 'purple-500',
+      highlight: 'lime-400',
+    },
+    button: {
+      primary: 'from-orange-600 to-purple-700',
+      primaryHover: 'from-orange-700 to-purple-800',
+      secondary: 'purple-700',
+      secondaryHover: 'purple-800',
+    },
+    card: 'bg-gradient-to-br from-purple-950/70 to-black/60',
+    border: 'border-orange-700',
+    text: {
+      primary: 'text-orange-50',
+      secondary: 'text-purple-300',
+    },
+  },
 };
 
 export function getThemeClasses(theme: Theme) {

@@ -12,12 +12,48 @@ interface AddPlayerModalProps {
   theme?: Theme;
 }
 
+function getThemeColors(theme: Theme) {
+  switch (theme) {
+    case 'christmas':
+      return {
+        modalBg: 'rgb(100, 35, 35)',
+        modalBorder: 'rgb(220, 38, 38)',
+        closeIcon: 'rgb(186, 230, 253)',
+        inputBg: 'rgb(60, 20, 20)',
+        inputBorder: 'rgb(220, 38, 38)',
+        errorText: 'rgb(186, 230, 253)',
+        submitBg: 'rgb(34, 197, 94)',
+      };
+    case 'halloween':
+      return {
+        modalBg: 'rgb(30, 12, 48)',
+        modalBorder: 'rgb(249, 115, 22)',
+        closeIcon: 'rgb(216, 180, 254)',
+        inputBg: 'rgb(46, 16, 74)',
+        inputBorder: 'rgb(168, 85, 247)',
+        errorText: 'rgb(190, 242, 100)',
+        submitBg: 'rgb(234, 88, 12)',
+      };
+    default:
+      return {
+        modalBg: 'rgb(31, 41, 55)',
+        modalBorder: 'rgb(55, 65, 81)',
+        closeIcon: 'rgb(156, 163, 175)',
+        inputBg: 'rgb(55, 65, 81)',
+        inputBorder: 'rgb(75, 85, 99)',
+        errorText: 'rgb(248, 113, 113)',
+        submitBg: 'rgb(59, 130, 246)',
+      };
+  }
+}
+
 export default function AddPlayerModal({
   isOpen,
   onClose,
   onAdd,
   theme = 'cartoon',
 }: AddPlayerModalProps) {
+  const colors = getThemeColors(theme);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
@@ -52,10 +88,8 @@ export default function AddPlayerModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-2xl border z-50 w-[calc(100%-2rem)] sm:w-full max-w-sm p-6 sm:p-8"
             style={{
-              backgroundColor:
-                theme === 'christmas' ? 'rgb(100, 35, 35)' : 'rgb(31, 41, 55)',
-              borderColor:
-                theme === 'christmas' ? 'rgb(220, 38, 38)' : 'rgb(55, 65, 81)',
+              backgroundColor: colors.modalBg,
+              borderColor: colors.modalBorder,
             }}
           >
             <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -65,10 +99,7 @@ export default function AddPlayerModal({
                 onClick={onClose}
                 className="transition-colors flex-shrink-0 ml-2"
                 style={{
-                  color:
-                    theme === 'christmas'
-                      ? 'rgb(186, 230, 253)'
-                      : 'rgb(156, 163, 175)',
+                  color: colors.closeIcon,
                 }}
               >
                 <X className="w-6 h-6" />
@@ -87,14 +118,8 @@ export default function AddPlayerModal({
                   placeholder="Enter player name"
                   className="w-full rounded px-4 py-3 border outline-none transition-colors"
                   style={{
-                    backgroundColor:
-                      theme === 'christmas'
-                        ? 'rgb(60, 20, 20)'
-                        : 'rgb(55, 65, 81)',
-                    borderColor:
-                      theme === 'christmas'
-                        ? 'rgb(220, 38, 38)'
-                        : 'rgb(75, 85, 99)',
+                    backgroundColor: colors.inputBg,
+                    borderColor: colors.inputBorder,
                     color: 'white',
                   }}
                 />
@@ -106,10 +131,7 @@ export default function AddPlayerModal({
                   animate={{ opacity: 1, y: 0 }}
                   className="text-sm"
                   style={{
-                    color:
-                      theme === 'christmas'
-                        ? 'rgb(186, 230, 253)'
-                        : 'rgb(248, 113, 113)',
+                    color: colors.errorText,
                   }}
                 >
                   {error}
@@ -122,10 +144,7 @@ export default function AddPlayerModal({
                 type="submit"
                 className="w-full text-white font-bold py-3 rounded transition-colors flex items-center justify-center gap-2"
                 style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgb(34, 197, 94)'
-                      : 'rgb(59, 130, 246)',
+                  backgroundColor: colors.submitBg,
                 }}
               >
                 <Plus className="w-5 h-5" />

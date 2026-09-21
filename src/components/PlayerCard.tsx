@@ -33,6 +33,61 @@ interface PlayerCardProps {
   sessionType?: 'pushups' | 'plank';
 }
 
+function getThemeColors(theme: Theme) {
+  switch (theme) {
+    case 'christmas':
+      return {
+        cardBg:
+          'linear-gradient(to bottom right, rgba(127, 29, 29, 0.6), rgba(20, 83, 45, 0.4), rgba(15, 35, 60, 0.3))',
+        cardBorder: 'rgb(239, 68, 68)',
+        flashColor: '#FBBF24',
+        highlightBgStrong: 'rgba(34, 197, 94, 0.3)',
+        highlightBgSoft: 'rgba(34, 197, 94, 0.2)',
+        highlightColor: 'rgb(134, 239, 172)',
+        highlightBorder: 'rgba(34, 197, 94, 0.3)',
+        deleteColor: 'rgb(252, 165, 165)',
+        inputBg: 'rgb(20, 83, 45)',
+        inputBorder: 'rgb(34, 197, 94)',
+        quickAddColor: 'rgb(186, 230, 253)',
+        removeInputBg: 'rgb(60, 20, 20)',
+        sectionBorder: 'rgba(239, 68, 68, 0.3)',
+      };
+    case 'halloween':
+      return {
+        cardBg:
+          'linear-gradient(to bottom right, rgba(46, 16, 74, 0.65), rgba(20, 10, 30, 0.55), rgba(10, 6, 20, 0.5))',
+        cardBorder: 'rgb(168, 85, 247)',
+        flashColor: '#F97316',
+        highlightBgStrong: 'rgba(234, 88, 12, 0.3)',
+        highlightBgSoft: 'rgba(234, 88, 12, 0.2)',
+        highlightColor: 'rgb(253, 186, 116)',
+        highlightBorder: 'rgba(168, 85, 247, 0.4)',
+        deleteColor: 'rgb(248, 113, 113)',
+        inputBg: 'rgb(46, 16, 74)',
+        inputBorder: 'rgb(168, 85, 247)',
+        quickAddColor: 'rgb(190, 242, 100)',
+        removeInputBg: 'rgb(40, 10, 20)',
+        sectionBorder: 'rgba(168, 85, 247, 0.3)',
+      };
+    default:
+      return {
+        cardBg: 'linear-gradient(to bottom right, rgb(31, 41, 55), rgb(17, 24, 39))',
+        cardBorder: 'rgb(55, 65, 81)',
+        flashColor: '#FFD700',
+        highlightBgStrong: 'rgba(59, 130, 246, 0.3)',
+        highlightBgSoft: 'rgba(59, 130, 246, 0.2)',
+        highlightColor: 'rgb(147, 197, 253)',
+        highlightBorder: 'rgba(59, 130, 246, 0.3)',
+        deleteColor: 'rgb(248, 113, 113)',
+        inputBg: 'rgb(55, 65, 81)',
+        inputBorder: 'rgb(75, 85, 99)',
+        quickAddColor: 'rgb(134, 239, 172)',
+        removeInputBg: 'rgb(55, 30, 30)',
+        sectionBorder: 'rgba(75, 85, 99, 0.3)',
+      };
+  }
+}
+
 export default function PlayerCard({
   player,
   onAddPushups,
@@ -62,6 +117,8 @@ export default function PlayerCard({
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [daysSinceActive, setDaysSinceActive] = useState<number | null>(null);
+
+  const colors = getThemeColors(theme);
 
   const fetchTodayTotal = async () => {
     try {
@@ -102,7 +159,7 @@ export default function PlayerCard({
           const diffDays = Math.floor(
             (todayDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
           );
-          setDaysSinceActive(Math.max(2, diffDays));
+          setDaysSinceActive(diffDays);
         }
       } else {
         setTodayTotal(0);
@@ -119,7 +176,7 @@ export default function PlayerCard({
         const diffDays = Math.floor(
           (todayDate.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
         );
-        setDaysSinceActive(Math.max(2, diffDays));
+        setDaysSinceActive(diffDays);
       }
     } catch (error) {
       console.error('Error fetching today total:', error);
@@ -299,12 +356,8 @@ export default function PlayerCard({
       exit={{ opacity: 0, y: -20 }}
       className="rounded-lg p-6 shadow-lg border hover:border-opacity-75 transition-all relative"
       style={{
-        background:
-          theme === 'christmas'
-            ? 'linear-gradient(to bottom right, rgba(127, 29, 29, 0.6), rgba(20, 83, 45, 0.4), rgba(15, 35, 60, 0.3))'
-            : 'linear-gradient(to bottom right, rgb(31, 41, 55), rgb(17, 24, 39))',
-        borderColor:
-          theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
+        background: colors.cardBg,
+        borderColor: colors.cardBorder,
       }}
     >
       {/* Crown Badge (Milestone) */}
@@ -388,7 +441,7 @@ export default function PlayerCard({
               key={player.totalPushups}
               initial={{
                 scale: 1.3,
-                color: theme === 'christmas' ? '#FBBF24' : '#FFD700',
+                color: colors.flashColor,
               }}
               animate={{ scale: 1, color: '#FFFFFF' }}
               transition={{ duration: 0.4 }}
@@ -404,14 +457,8 @@ export default function PlayerCard({
                 onClick={() => setIsHistoryOpen(true)}
                 className="text-sm mt-1 px-2 py-0.5 rounded flex items-center gap-1"
                 style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgba(34, 197, 94, 0.3)'
-                      : 'rgba(59, 130, 246, 0.3)',
-                  color:
-                    theme === 'christmas'
-                      ? 'rgb(134, 239, 172)'
-                      : 'rgb(147, 197, 253)',
+                  backgroundColor: colors.highlightBgStrong,
+                  color: colors.highlightColor,
                 }}
               >
                 <Calendar className="w-3 h-3" />
@@ -428,20 +475,14 @@ export default function PlayerCard({
             onClick={() => setIsHistoryOpen(true)}
             className="p-2 rounded-lg transition-colors"
             style={{
-              backgroundColor:
-                theme === 'christmas'
-                  ? 'rgba(34, 197, 94, 0.2)'
-                  : 'rgba(59, 130, 246, 0.2)',
+              backgroundColor: colors.highlightBgSoft,
             }}
             title="View daily history"
           >
             <Calendar
               className="w-5 h-5"
               style={{
-                color:
-                  theme === 'christmas'
-                    ? 'rgb(134, 239, 172)'
-                    : 'rgb(147, 197, 253)',
+                color: colors.highlightColor,
               }}
             />
           </motion.button>
@@ -451,19 +492,13 @@ export default function PlayerCard({
             onClick={handleDelete}
             className="p-2 rounded-lg transition-colors"
             style={{
-              backgroundColor:
-                theme === 'christmas'
-                  ? 'rgba(239, 68, 68, 0.2)'
-                  : 'rgba(239, 68, 68, 0.2)',
+              backgroundColor: 'rgba(239, 68, 68, 0.2)',
             }}
           >
             <Trash2
               className="w-5 h-5"
               style={{
-                color:
-                  theme === 'christmas'
-                    ? 'rgb(252, 165, 165)'
-                    : 'rgb(248, 113, 113)',
+                color: colors.deleteColor,
               }}
             />
           </motion.button>
@@ -483,12 +518,8 @@ export default function PlayerCard({
             className="px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-2"
             style={{
               backgroundColor: showDatePicker
-                ? theme === 'christmas'
-                  ? 'rgba(34, 197, 94, 0.3)'
-                  : 'rgba(59, 130, 246, 0.3)'
-                : theme === 'christmas'
-                  ? 'rgba(55, 65, 81, 0.5)'
-                  : 'rgba(55, 65, 81, 0.5)',
+                ? colors.highlightBgStrong
+                : 'rgba(55, 65, 81, 0.5)',
               color: 'white',
             }}
           >
@@ -503,12 +534,8 @@ export default function PlayerCard({
               max={new Date().toISOString().split('T')[0]}
               className="px-3 py-1.5 rounded text-sm outline-none"
               style={{
-                backgroundColor:
-                  theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
-                borderColor:
-                  theme === 'christmas'
-                    ? 'rgb(34, 197, 94)'
-                    : 'rgb(75, 85, 99)',
+                backgroundColor: colors.inputBg,
+                borderColor: colors.inputBorder,
                 color: 'white',
               }}
             />
@@ -535,18 +562,9 @@ export default function PlayerCard({
                 onClick={() => handleQuickAdd(amount)}
                 className="font-bold py-2 rounded transition-colors border"
                 style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgba(34, 197, 94, 0.2)'
-                      : 'rgba(34, 197, 94, 0.2)',
-                  color:
-                    theme === 'christmas'
-                      ? 'rgb(186, 230, 253)'
-                      : 'rgb(134, 239, 172)',
-                  borderColor:
-                    theme === 'christmas'
-                      ? 'rgba(34, 197, 94, 0.3)'
-                      : 'rgba(34, 197, 94, 0.3)',
+                  backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                  color: colors.quickAddColor,
+                  borderColor: 'rgba(34, 197, 94, 0.3)',
                 }}
               >
                 +{amount}
@@ -575,10 +593,8 @@ export default function PlayerCard({
             }
             className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
             style={{
-              backgroundColor:
-                theme === 'christmas' ? 'rgb(20, 83, 45)' : 'rgb(55, 65, 81)',
-              borderColor:
-                theme === 'christmas' ? 'rgb(34, 197, 94)' : 'rgb(75, 85, 99)',
+              backgroundColor: colors.inputBg,
+              borderColor: colors.inputBorder,
               color: 'white',
             }}
           />
@@ -604,10 +620,7 @@ export default function PlayerCard({
                 onClick={() => onRemovePushups(amount)}
                 className="font-bold py-2 rounded transition-colors border text-sm"
                 style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgba(239, 68, 68, 0.2)'
-                      : 'rgba(239, 68, 68, 0.2)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
                   color: 'rgb(252, 165, 165)',
                   borderColor: 'rgba(239, 68, 68, 0.3)',
                 }}
@@ -637,10 +650,8 @@ export default function PlayerCard({
             }
             className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
             style={{
-              backgroundColor:
-                theme === 'christmas' ? 'rgb(60, 20, 20)' : 'rgb(55, 30, 30)',
-              borderColor:
-                theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(239, 68, 68)',
+              backgroundColor: colors.removeInputBg,
+              borderColor: 'rgb(239, 68, 68)',
               color: 'white',
             }}
           />
@@ -660,10 +671,7 @@ export default function PlayerCard({
       <div
         className="mt-6 pt-6 border-t"
         style={{
-          borderColor:
-            theme === 'christmas'
-              ? 'rgba(239, 68, 68, 0.3)'
-              : 'rgba(75, 85, 99, 0.3)',
+          borderColor: colors.sectionBorder,
         }}
       >
         <button
@@ -697,15 +705,9 @@ export default function PlayerCard({
             onClick={() => setIsGoalStatsModalOpen(true)}
             className="mb-3 px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-2"
             style={{
-              backgroundColor:
-                theme === 'christmas'
-                  ? 'rgba(34, 197, 94, 0.2)'
-                  : 'rgba(59, 130, 246, 0.2)',
-              color:
-                theme === 'christmas'
-                  ? 'rgb(134, 239, 172)'
-                  : 'rgb(147, 197, 253)',
-              border: `1px solid ${theme === 'christmas' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+              backgroundColor: colors.highlightBgSoft,
+              color: colors.highlightColor,
+              border: `1px solid ${colors.highlightBorder}`,
             }}
           >
             🏆 {dailyGoalsMet} {dailyGoalsMet === 1 ? 'day' : 'days'} goal met
@@ -819,10 +821,7 @@ export default function PlayerCard({
                 onClick={() => handleAddDailyGoal(sliderValue)}
                 className="w-full font-bold py-2 rounded transition-colors border text-sm"
                 style={{
-                  backgroundColor:
-                    theme === 'christmas'
-                      ? 'rgba(59, 130, 246, 0.2)'
-                      : 'rgba(59, 130, 246, 0.2)',
+                  backgroundColor: 'rgba(59, 130, 246, 0.2)',
                   color: 'rgb(147, 197, 253)',
                   borderColor: 'rgba(59, 130, 246, 0.3)',
                 }}
@@ -845,10 +844,7 @@ export default function PlayerCard({
                     onClick={() => handleRemoveDailyGoal(amount)}
                     className="font-bold py-2 rounded transition-colors border text-sm"
                     style={{
-                      backgroundColor:
-                        theme === 'christmas'
-                          ? 'rgba(239, 68, 68, 0.2)'
-                          : 'rgba(239, 68, 68, 0.2)',
+                      backgroundColor: 'rgba(239, 68, 68, 0.2)',
                       color: 'rgb(252, 165, 165)',
                       borderColor: 'rgba(239, 68, 68, 0.3)',
                     }}

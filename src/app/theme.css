@@ -34,6 +34,18 @@
   --color-dumbbell: rgb(245, 158, 11);
 }
 
+[data-theme='halloween'] {
+  --color-bg-primary: rgb(10, 6, 20);
+  --color-bg-secondary: rgb(46, 16, 74);
+  --color-accent-primary: rgb(249, 115, 22);
+  --color-accent-secondary: rgb(168, 85, 247);
+  --color-button-primary: rgb(234, 88, 12);
+  --color-button-primary-hover: rgb(194, 65, 12);
+  --color-border: rgb(124, 45, 18);
+  --color-card-bg: rgba(46, 16, 74, 0.55);
+  --color-dumbbell: rgb(249, 115, 22);
+}
+
 body {
   background: linear-gradient(
     to bottom right,

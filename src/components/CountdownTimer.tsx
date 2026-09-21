@@ -8,7 +8,41 @@ interface CountdownTimerProps {
   theme?: Theme;
 }
 
+function getThemeColors(theme: Theme) {
+  switch (theme) {
+    case 'christmas':
+      return {
+        bg: 'linear-gradient(to bottom right, rgba(127, 29, 29, 0.6), rgba(20, 83, 45, 0.4))',
+        border: 'rgb(239, 68, 68)',
+        boxBg: 'rgba(20, 83, 45, 0.4)',
+        digit: 'rgb(252, 165, 165)',
+      };
+    case 'gameofthrones':
+      return {
+        bg: 'linear-gradient(to bottom right, rgba(15, 23, 42, 0.8), rgba(28, 25, 23, 0.6))',
+        border: 'rgb(120, 53, 15)',
+        boxBg: 'rgba(120, 53, 15, 0.2)',
+        digit: 'rgb(245, 158, 11)',
+      };
+    case 'halloween':
+      return {
+        bg: 'linear-gradient(to bottom right, rgba(46, 16, 74, 0.7), rgba(10, 6, 20, 0.6))',
+        border: 'rgb(249, 115, 22)',
+        boxBg: 'rgba(88, 28, 135, 0.35)',
+        digit: 'rgb(249, 115, 22)',
+      };
+    default:
+      return {
+        bg: 'linear-gradient(to bottom right, rgb(31, 41, 55), rgb(17, 24, 39))',
+        border: 'rgb(55, 65, 81)',
+        boxBg: 'rgba(55, 65, 81, 0.5)',
+        digit: 'rgb(147, 197, 253)',
+      };
+  }
+}
+
 export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProps) {
+  const colors = getThemeColors(theme);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState({
     days: 0,
@@ -100,12 +134,8 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
       animate={{ opacity: 1, y: 0 }}
       className="rounded-lg p-6 shadow-lg border mb-6"
       style={{
-        background:
-          theme === 'christmas'
-            ? 'linear-gradient(to bottom right, rgba(127, 29, 29, 0.6), rgba(20, 83, 45, 0.4))'
-            : 'linear-gradient(to bottom right, rgb(31, 41, 55), rgb(17, 24, 39))',
-        borderColor:
-          theme === 'christmas' ? 'rgb(239, 68, 68)' : 'rgb(55, 65, 81)',
+        background: colors.bg,
+        borderColor: colors.border,
       }}
     >
       <div className="flex items-center justify-between mb-4">
@@ -175,10 +205,7 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
                   key={item.label}
                   className="text-center p-3 rounded-lg"
                   style={{
-                    backgroundColor:
-                      theme === 'christmas'
-                        ? 'rgba(20, 83, 45, 0.4)'
-                        : 'rgba(55, 65, 81, 0.5)',
+                    backgroundColor: colors.boxBg,
                   }}
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{
@@ -189,12 +216,7 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
                 >
                   <div
                     className="text-3xl font-bold mb-1"
-                    style={{
-                      color:
-                        theme === 'christmas'
-                          ? 'rgb(252, 165, 165)'
-                          : 'rgb(147, 197, 253)',
-                    }}
+                    style={{ color: colors.digit }}
                   >
                     {item.value.toString().padStart(2, '0')}
                   </div>

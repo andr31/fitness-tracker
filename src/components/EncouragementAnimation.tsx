@@ -22,10 +22,28 @@ const encouragementMessages = [
   "Way to go! 🎉"
 ];
 
+function getThemeColors(theme: Theme) {
+  switch (theme) {
+    case 'christmas':
+      return {
+        bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.95))',
+      };
+    case 'halloween':
+      return {
+        bg: 'linear-gradient(135deg, rgba(234, 88, 12, 0.95), rgba(126, 34, 206, 0.95))',
+      };
+    default:
+      return {
+        bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))',
+      };
+  }
+}
+
 export default function EncouragementAnimation({
   show,
   theme = 'cartoon',
 }: EncouragementAnimationProps) {
+  const colors = getThemeColors(theme);
   const message = useMemo(
     () => encouragementMessages[Math.floor(Math.random() * encouragementMessages.length)],
     [show]
@@ -46,10 +64,7 @@ export default function EncouragementAnimation({
         transition={{ duration: 0.5 }}
         className="text-center px-6 py-4 rounded-xl shadow-2xl"
         style={{
-          background:
-            theme === 'christmas'
-              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.95))'
-              : 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))',
+          background: colors.bg,
           backdropFilter: 'blur(10px)',
         }}
       >
