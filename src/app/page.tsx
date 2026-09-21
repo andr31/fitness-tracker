@@ -38,9 +38,9 @@ export default function Home() {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('fitness-tracker-theme');
-      return (savedTheme as Theme) || 'gameofthrones';
+      return (savedTheme as Theme) || 'halloween';
     }
-    return 'gameofthrones';
+    return 'halloween';
   });
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [milestone, setMilestone] = useState<number>(1000);
