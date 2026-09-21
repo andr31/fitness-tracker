@@ -20,6 +20,41 @@ interface DailyGoalStatsModalProps {
   sessionType?: 'pushups' | 'plank';
 }
 
+function getThemeColors(theme: Theme) {
+  switch (theme) {
+    case 'christmas':
+      return {
+        modalBg: 'rgb(15, 60, 30)',
+        modalBorder: 'rgba(34, 197, 94, 0.3)',
+        headerBorder: 'rgba(34, 197, 94, 0.3)',
+        summaryBg: 'rgba(34, 197, 94, 0.2)',
+        summaryBorder: 'rgba(34, 197, 94, 0.3)',
+        dayBg: 'rgba(20, 83, 45, 0.5)',
+        dayBorder: 'rgba(34, 197, 94, 0.2)',
+      };
+    case 'halloween':
+      return {
+        modalBg: 'rgb(30, 12, 48)',
+        modalBorder: 'rgba(249, 115, 22, 0.4)',
+        headerBorder: 'rgba(249, 115, 22, 0.3)',
+        summaryBg: 'rgba(234, 88, 12, 0.2)',
+        summaryBorder: 'rgba(249, 115, 22, 0.3)',
+        dayBg: 'rgba(46, 16, 74, 0.5)',
+        dayBorder: 'rgba(168, 85, 247, 0.25)',
+      };
+    default:
+      return {
+        modalBg: 'rgb(31, 41, 55)',
+        modalBorder: 'rgba(59, 130, 246, 0.3)',
+        headerBorder: 'rgba(75, 85, 99, 0.3)',
+        summaryBg: 'rgba(59, 130, 246, 0.2)',
+        summaryBorder: 'rgba(59, 130, 246, 0.3)',
+        dayBg: 'rgba(55, 65, 81, 0.5)',
+        dayBorder: 'rgba(75, 85, 99, 0.3)',
+      };
+  }
+}
+
 export default function DailyGoalStatsModal({
   isOpen,
   onClose,
@@ -28,6 +63,7 @@ export default function DailyGoalStatsModal({
   theme = 'cartoon',
   sessionType = 'pushups',
 }: DailyGoalStatsModalProps) {
+  const colors = getThemeColors(theme);
   const [data, setData] = useState<{
     goalsMet: number;
     dailyGoal: number;
@@ -106,23 +142,15 @@ export default function DailyGoalStatsModal({
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-lg shadow-2xl"
             style={{
-              backgroundColor:
-                theme === 'christmas' ? 'rgb(15, 60, 30)' : 'rgb(31, 41, 55)',
-              border: `2px solid ${
-                theme === 'christmas'
-                  ? 'rgba(34, 197, 94, 0.3)'
-                  : 'rgba(59, 130, 246, 0.3)'
-              }`,
+              backgroundColor: colors.modalBg,
+              border: `2px solid ${colors.modalBorder}`,
             }}
           >
             {/* Header */}
             <div
               className="flex items-center justify-between p-4 border-b"
               style={{
-                borderColor:
-                  theme === 'christmas'
-                    ? 'rgba(34, 197, 94, 0.3)'
-                    : 'rgba(75, 85, 99, 0.3)',
+                borderColor: colors.headerBorder,
               }}
             >
               <div className="flex items-center gap-3">
@@ -152,15 +180,8 @@ export default function DailyGoalStatsModal({
                   <div
                     className="rounded-lg p-6 mb-6"
                     style={{
-                      backgroundColor:
-                        theme === 'christmas'
-                          ? 'rgba(34, 197, 94, 0.2)'
-                          : 'rgba(59, 130, 246, 0.2)',
-                      border: `1px solid ${
-                        theme === 'christmas'
-                          ? 'rgba(34, 197, 94, 0.3)'
-                          : 'rgba(59, 130, 246, 0.3)'
-                      }`,
+                      backgroundColor: colors.summaryBg,
+                      border: `1px solid ${colors.summaryBorder}`,
                     }}
                   >
                     <div className="text-center">
@@ -193,15 +214,8 @@ export default function DailyGoalStatsModal({
                           transition={{ delay: index * 0.05 }}
                           className="rounded-lg p-4 flex items-center justify-between"
                           style={{
-                            backgroundColor:
-                              theme === 'christmas'
-                                ? 'rgba(20, 83, 45, 0.5)'
-                                : 'rgba(55, 65, 81, 0.5)',
-                            border: `1px solid ${
-                              theme === 'christmas'
-                                ? 'rgba(34, 197, 94, 0.2)'
-                                : 'rgba(75, 85, 99, 0.3)'
-                            }`,
+                            backgroundColor: colors.dayBg,
+                            border: `1px solid ${colors.dayBorder}`,
                           }}
                         >
                           <div>

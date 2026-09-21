@@ -49,7 +49,9 @@ export default function EncouragementAnimation({
           background:
             theme === 'christmas'
               ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(16, 185, 129, 0.95))'
-              : 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))',
+              : theme === 'halloween'
+                ? 'linear-gradient(135deg, rgba(234, 88, 12, 0.95), rgba(126, 34, 206, 0.95))'
+                : 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))',
           backdropFilter: 'blur(10px)',
         }}
       >

@@ -21,6 +21,44 @@ interface DailyHistoryModalProps {
   sessionType?: 'pushups' | 'plank';
 }
 
+function getThemeColors(theme: Theme) {
+  switch (theme) {
+    case 'christmas':
+      return {
+        modalBg: 'rgb(127, 29, 29)',
+        modalBorder: 'rgb(220, 38, 38)',
+        statBox1: 'rgba(34, 197, 94, 0.2)',
+        statBox2: 'rgba(253, 224, 71, 0.2)',
+        highlightItemBg: 'rgba(34, 197, 94, 0.15)',
+        normalItemBg: 'rgba(100, 35, 35, 0.5)',
+        highlightItemBorder: 'rgb(34, 197, 94)',
+        trendIcon: 'rgb(34, 197, 94)',
+      };
+    case 'halloween':
+      return {
+        modalBg: 'rgb(30, 12, 48)',
+        modalBorder: 'rgb(249, 115, 22)',
+        statBox1: 'rgba(234, 88, 12, 0.25)',
+        statBox2: 'rgba(168, 85, 247, 0.25)',
+        highlightItemBg: 'rgba(234, 88, 12, 0.2)',
+        normalItemBg: 'rgba(46, 16, 74, 0.5)',
+        highlightItemBorder: 'rgb(249, 115, 22)',
+        trendIcon: 'rgb(249, 115, 22)',
+      };
+    default:
+      return {
+        modalBg: 'rgb(31, 41, 55)',
+        modalBorder: 'rgb(55, 65, 81)',
+        statBox1: 'rgba(59, 130, 246, 0.2)',
+        statBox2: 'rgba(147, 51, 234, 0.2)',
+        highlightItemBg: 'rgba(59, 130, 246, 0.15)',
+        normalItemBg: 'rgba(55, 65, 81, 0.5)',
+        highlightItemBorder: 'rgb(59, 130, 246)',
+        trendIcon: 'rgb(59, 130, 246)',
+      };
+  }
+}
+
 export default function DailyHistoryModal({
   isOpen,
   onClose,
@@ -29,6 +67,7 @@ export default function DailyHistoryModal({
   theme = 'cartoon',
   sessionType = 'pushups',
 }: DailyHistoryModalProps) {
+  const colors = getThemeColors(theme);
   const [history, setHistory] = useState<DailyHistory[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -120,22 +159,15 @@ export default function DailyHistoryModal({
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl z-50 max-h-[80vh] overflow-hidden"
             style={{
-              backgroundColor:
-                theme === 'christmas' ? 'rgb(127, 29, 29)' : 'rgb(31, 41, 55)',
-              border:
-                theme === 'christmas'
-                  ? '2px solid rgb(220, 38, 38)'
-                  : '2px solid rgb(55, 65, 81)',
+              backgroundColor: colors.modalBg,
+              border: `2px solid ${colors.modalBorder}`,
             }}
           >
             {/* Header */}
             <div
               className="p-6 border-b"
               style={{
-                borderColor:
-                  theme === 'christmas'
-                    ? 'rgb(220, 38, 38)'
-                    : 'rgb(55, 65, 81)',
+                borderColor: colors.modalBorder,
               }}
             >
               <div className="flex items-center justify-between">
@@ -160,10 +192,7 @@ export default function DailyHistoryModal({
                   <div
                     className="rounded-lg p-3"
                     style={{
-                      backgroundColor:
-                        theme === 'christmas'
-                          ? 'rgba(34, 197, 94, 0.2)'
-                          : 'rgba(59, 130, 246, 0.2)',
+                      backgroundColor: colors.statBox1,
                     }}
                   >
                     <div className="text-sm text-gray-300">
@@ -176,10 +205,7 @@ export default function DailyHistoryModal({
                   <div
                     className="rounded-lg p-3"
                     style={{
-                      backgroundColor:
-                        theme === 'christmas'
-                          ? 'rgba(253, 224, 71, 0.2)'
-                          : 'rgba(147, 51, 234, 0.2)',
+                      backgroundColor: colors.statBox2,
                     }}
                   >
                     <div className="text-sm text-gray-300">Avg per Day</div>
@@ -212,19 +238,9 @@ export default function DailyHistoryModal({
                       className="rounded-lg p-4 flex items-center justify-between"
                       style={{
                         backgroundColor:
-                          index === 0
-                            ? theme === 'christmas'
-                              ? 'rgba(34, 197, 94, 0.15)'
-                              : 'rgba(59, 130, 246, 0.15)'
-                            : theme === 'christmas'
-                              ? 'rgba(100, 35, 35, 0.5)'
-                              : 'rgba(55, 65, 81, 0.5)',
+                          index === 0 ? colors.highlightItemBg : colors.normalItemBg,
                         border:
-                          index === 0
-                            ? theme === 'christmas'
-                              ? '1px solid rgb(34, 197, 94)'
-                              : '1px solid rgb(59, 130, 246)'
-                            : 'none',
+                          index === 0 ? `1px solid ${colors.highlightItemBorder}` : 'none',
                       }}
                     >
                       <div>
@@ -246,10 +262,7 @@ export default function DailyHistoryModal({
                         <TrendingUp
                           className="w-5 h-5"
                           style={{
-                            color:
-                              theme === 'christmas'
-                                ? 'rgb(34, 197, 94)'
-                                : 'rgb(59, 130, 246)',
+                            color: colors.trendIcon,
                           }}
                         />
                         <div className="text-2xl font-bold text-white">

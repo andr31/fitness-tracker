@@ -65,6 +65,25 @@ function getThemeColors(theme: Theme) {
         centiColor: 'rgba(245, 158, 11, 0.5)',
         lapBg: 'rgba(120, 53, 15, 0.2)',
       };
+    case 'halloween':
+      return {
+        ringTrack: 'rgba(168, 85, 247, 0.15)',
+        ringStroke: 'rgb(249, 115, 22)',
+        ringGlow: 'rgba(249, 115, 22, 0.45)',
+        accent: 'rgb(168, 85, 247)',
+        bg: 'linear-gradient(135deg, rgba(46, 16, 74, 0.8), rgba(10, 6, 20, 0.8))',
+        border: 'rgb(124, 45, 18)',
+        btnStart: 'rgb(234, 88, 12)',
+        btnStartHover: 'rgb(194, 65, 12)',
+        btnPause: 'rgb(168, 85, 247)',
+        btnPauseHover: 'rgb(126, 34, 206)',
+        btnReset: 'rgba(132, 204, 22, 0.15)',
+        btnResetBorder: 'rgb(132, 204, 22)',
+        labelColor: 'rgb(196, 145, 233)',
+        timeColor: 'rgb(249, 115, 22)',
+        centiColor: 'rgba(249, 115, 22, 0.6)',
+        lapBg: 'rgba(88, 28, 135, 0.3)',
+      };
     default: // cartoon
       return {
         ringTrack: 'rgba(250, 204, 21, 0.1)',

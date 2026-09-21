@@ -10,6 +10,7 @@ import SessionSelectorModal from '@/components/SessionSelectorModal';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
 import BattleBackground from '@/components/BattleBackground';
+import HalloweenBackground from '@/components/HalloweenBackground';
 import CountdownTimer from '@/components/CountdownTimer';
 import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
@@ -315,12 +316,15 @@ export default function Home() {
             ? 'linear-gradient(to bottom right, rgb(0, 0, 0), rgb(15, 23, 42), rgb(28, 25, 23), rgb(0, 0, 0))'
             : theme === 'christmas'
               ? 'linear-gradient(to bottom right, rgb(127, 29, 29), rgb(20, 83, 45), rgb(15, 35, 60))'
-              : 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))',
+              : theme === 'halloween'
+                ? 'linear-gradient(to bottom right, rgb(10, 6, 20), rgb(46, 16, 74), rgb(20, 10, 5), rgb(0, 0, 0))'
+                : 'linear-gradient(to bottom right, rgb(17, 24, 39), rgb(31, 41, 55), rgb(0, 0, 0))',
       }}
     >
       {/* Theme backgrounds */}
       {theme === 'christmas' && <ChristmasBackground />}
       {theme === 'gameofthrones' && <BattleBackground />}
+      {theme === 'halloween' && <HalloweenBackground />}
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -332,17 +336,23 @@ export default function Home() {
               ? 'rgba(15, 23, 42, 0.9)'
               : theme === 'christmas'
                 ? 'rgba(100, 35, 35, 0.8)'
-                : 'rgba(31, 41, 55, 0.5)',
+                : theme === 'halloween'
+                  ? 'rgba(46, 16, 74, 0.85)'
+                  : 'rgba(31, 41, 55, 0.5)',
           borderColor:
             theme === 'gameofthrones'
               ? 'rgb(120, 53, 15)'
               : theme === 'christmas'
                 ? 'rgb(220, 38, 38)'
-                : 'rgb(55, 65, 81)',
+                : theme === 'halloween'
+                  ? 'rgb(249, 115, 22)'
+                  : 'rgb(55, 65, 81)',
           boxShadow:
             theme === 'gameofthrones'
               ? '0 4px 6px -1px rgba(217, 119, 6, 0.2)'
-              : 'none',
+              : theme === 'halloween'
+                ? '0 4px 10px -1px rgba(249, 115, 22, 0.3)'
+                : 'none',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -363,7 +373,9 @@ export default function Home() {
                           ? 'rgb(245, 158, 11)'
                           : theme === 'christmas'
                             ? 'rgb(253, 224, 71)'
-                            : 'rgb(250, 204, 21)',
+                            : theme === 'halloween'
+                              ? 'rgb(249, 115, 22)'
+                              : 'rgb(250, 204, 21)',
                     }}
                   />
                 </motion.div>
@@ -375,7 +387,9 @@ export default function Home() {
                         ? 'linear-gradient(to right, rgb(245, 158, 11), rgb(217, 119, 6), rgb(180, 83, 9))'
                         : theme === 'christmas'
                           ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
-                          : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                          : theme === 'halloween'
+                            ? 'linear-gradient(to right, rgb(249, 115, 22), rgb(168, 85, 247), rgb(132, 204, 22))'
+                            : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
                   {!activeSessionName
@@ -490,6 +504,7 @@ export default function Home() {
                           {theme === 'cartoon' && '🤖 Cartoon'}
                           {theme === 'christmas' && '🎄 Christmas'}
                           {theme === 'gameofthrones' && '🐉 GoT'}
+                          {theme === 'halloween' && '🎃 Halloween'}
                         </span>
                         <ChevronDown
                           className={`w-4 h-4 transition-transform ${themeDropdownOpen ? 'rotate-180' : ''}`}
@@ -509,7 +524,7 @@ export default function Home() {
                               zIndex: 9999,
                             }}
                           >
-                            {['cartoon', 'christmas', 'gameofthrones'].map(
+                            {['cartoon', 'christmas', 'gameofthrones', 'halloween'].map(
                               (t) => (
                                 <button
                                   key={t}
@@ -530,6 +545,7 @@ export default function Home() {
                                   {t === 'christmas' && '🎄 Christmas'}
                                   {t === 'gameofthrones' &&
                                     '🐉 Game of Thrones'}
+                                  {t === 'halloween' && '🎃 Halloween'}
                                 </button>
                               ),
                             )}
@@ -616,7 +632,9 @@ export default function Home() {
                           ? 'rgb(245, 158, 11)'
                           : theme === 'christmas'
                             ? 'rgb(253, 224, 71)'
-                            : 'rgb(250, 204, 21)',
+                            : theme === 'halloween'
+                              ? 'rgb(249, 115, 22)'
+                              : 'rgb(250, 204, 21)',
                     }}
                   />
                 </motion.div>
@@ -628,7 +646,9 @@ export default function Home() {
                         ? 'linear-gradient(to right, rgb(245, 158, 11), rgb(217, 119, 6), rgb(180, 83, 9))'
                         : theme === 'christmas'
                           ? 'linear-gradient(to right, rgb(253, 230, 138), rgb(220, 38, 38), rgb(96, 165, 250))'
-                          : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
+                          : theme === 'halloween'
+                            ? 'linear-gradient(to right, rgb(249, 115, 22), rgb(168, 85, 247), rgb(132, 204, 22))'
+                            : 'linear-gradient(to right, rgb(250, 204, 21), rgb(249, 115, 22))',
                   }}
                 >
                   {!activeSessionName
@@ -729,6 +749,7 @@ export default function Home() {
                       {theme === 'cartoon' && '🤖 Cartoon'}
                       {theme === 'christmas' && '🎄 Christmas'}
                       {theme === 'gameofthrones' && '🐉 GoT'}
+                      {theme === 'halloween' && '🎃 Halloween'}
                     </span>
                     <ChevronDown
                       className={`w-4 h-4 transition-transform ${themeDropdownOpen ? 'rotate-180' : ''}`}
@@ -742,7 +763,7 @@ export default function Home() {
                         exit={{ opacity: 0, y: -10 }}
                         className="absolute top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-xl border border-gray-700 overflow-hidden z-50"
                       >
-                        {['cartoon', 'christmas', 'gameofthrones'].map((t) => (
+                        {['cartoon', 'christmas', 'gameofthrones', 'halloween'].map((t) => (
                           <button
                             key={t}
                             onClick={() => {
@@ -761,6 +782,7 @@ export default function Home() {
                             {t === 'cartoon' && '🤖 Cartoon'}
                             {t === 'christmas' && '🎄 Christmas'}
                             {t === 'gameofthrones' && '🐉 Game of Thrones'}
+                            {t === 'halloween' && '🎃 Halloween'}
                           </button>
                         ))}
                       </motion.div>
@@ -837,13 +859,17 @@ export default function Home() {
                   ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(28, 25, 23, 0.5))'
                   : theme === 'christmas'
                     ? 'linear-gradient(135deg, rgba(127, 29, 29, 0.5), rgba(20, 83, 45, 0.3))'
-                    : 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
+                    : theme === 'halloween'
+                      ? 'linear-gradient(135deg, rgba(46, 16, 74, 0.6), rgba(10, 6, 20, 0.5))'
+                      : 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
               borderColor:
                 theme === 'gameofthrones'
                   ? 'rgb(120, 53, 15)'
                   : theme === 'christmas'
                     ? 'rgb(220, 38, 38)'
-                    : 'rgb(55, 65, 81)',
+                    : theme === 'halloween'
+                      ? 'rgb(249, 115, 22)'
+                      : 'rgb(55, 65, 81)',
             }}
           >
             <motion.div
@@ -906,11 +932,15 @@ export default function Home() {
                   background:
                     theme === 'christmas'
                       ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(220, 38, 38, 0.2))'
-                      : 'linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(249, 115, 22, 0.2))',
+                      : theme === 'halloween'
+                        ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(168, 85, 247, 0.25))'
+                        : 'linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(249, 115, 22, 0.2))',
                   borderColor:
                     theme === 'christmas'
                       ? 'rgba(34, 197, 94, 0.3)'
-                      : 'rgba(250, 204, 21, 0.3)',
+                      : theme === 'halloween'
+                        ? 'rgba(249, 115, 22, 0.4)'
+                        : 'rgba(250, 204, 21, 0.3)',
                 }}
               >
                 <h2 className="text-2xl font-bold text-white mb-4 text-center">
@@ -930,13 +960,17 @@ export default function Home() {
                           background:
                             theme === 'christmas'
                               ? 'rgba(34, 197, 94, 0.3)'
-                              : 'rgba(250, 204, 21, 0.3)',
+                              : theme === 'halloween'
+                                ? 'rgba(249, 115, 22, 0.3)'
+                                : 'rgba(250, 204, 21, 0.3)',
                           color: 'white',
                           border: '2px solid',
                           borderColor:
                             theme === 'christmas'
                               ? 'rgb(34, 197, 94)'
-                              : 'rgb(250, 204, 21)',
+                              : theme === 'halloween'
+                                ? 'rgb(249, 115, 22)'
+                                : 'rgb(250, 204, 21)',
                         }}
                       >
                         🎖️ {champion.name} - {champion.totalPushups} pushups
@@ -1006,7 +1040,9 @@ export default function Home() {
                           color:
                             theme === 'christmas'
                               ? 'rgb(254, 226, 226)'
-                              : 'rgb(156, 163, 175)',
+                              : theme === 'halloween'
+                                ? 'rgb(216, 180, 254)'
+                                : 'rgb(156, 163, 175)',
                         }}
                       >
                         <p className="mb-4">No players yet!</p>

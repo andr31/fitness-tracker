@@ -72,6 +72,30 @@ export const THEMES = {
     '⭐', // Star
     '🍷', // Wine
   ],
+  halloween: [
+    '🎃',
+    '👻',
+    '🦇',
+    '🕷️',
+    '🕸️',
+    '💀',
+    '☠️',
+    '🧟',
+    '🧛',
+    '🧙',
+    '🙀',
+    '🪦',
+    '⚰️',
+    '🌙',
+    '🔮',
+    '🐈‍⬛',
+    '🦴',
+    '🍬',
+    '🧹',
+    '⚡',
+    '🩸',
+    '👹',
+  ],
 } as const;
 
 export type Theme = keyof typeof THEMES;
