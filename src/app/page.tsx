@@ -15,6 +15,7 @@ import CountdownTimer from '@/components/CountdownTimer';
 import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
 import { Theme } from '@/lib/emojis';
+import { getSeasonalTheme } from '@/lib/themeConfig';
 import './theme.css';
 
 interface Player {
@@ -35,13 +36,7 @@ export default function Home() {
   const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
     'pushups',
   );
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('fitness-tracker-theme');
-      return (savedTheme as Theme) || 'halloween';
-    }
-    return 'halloween';
-  });
+  const [theme, setTheme] = useState<Theme>(() => getSeasonalTheme());
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
@@ -55,10 +50,25 @@ export default function Home() {
   >(new Set());
   const playerCardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
-  // Save theme to localStorage whenever it changes
+  // Save theme to localStorage whenever it changes.
+  // The seasonal schedule is the default behavior, so this keeps the active theme in sync with the current date.
   useEffect(() => {
     localStorage.setItem('fitness-tracker-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const syncSeasonalTheme = () => {
+      const nextTheme = getSeasonalTheme();
+      setTheme((currentTheme) =>
+        currentTheme === nextTheme ? currentTheme : nextTheme,
+      );
+    };
+
+    syncSeasonalTheme();
+
+    const intervalId = window.setInterval(syncSeasonalTheme, 60 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   // Prevent body scroll when modals are open
   useEffect(() => {

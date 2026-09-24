@@ -127,3 +127,25 @@ export const themeColors: Record<Theme, ThemeColors> = {
 export function getThemeClasses(theme: Theme) {
   return themeColors[theme];
 }
+
+export function getSeasonalTheme(date: Date = new Date()): Theme {
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  // Halloween: from the last day of September through the end of October.
+  if ((month === 8 && day >= 30) || month === 9) {
+    return 'halloween';
+  }
+
+  // Game of Thrones: November before the final day, and the default year-round outside seasonal windows.
+  if (month === 10) {
+    return day === 30 ? 'christmas' : 'gameofthrones';
+  }
+
+  // Christmas: from the last day of November through the end of December.
+  if (month === 11) {
+    return 'christmas';
+  }
+
+  return 'gameofthrones';
+}
