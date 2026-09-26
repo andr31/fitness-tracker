@@ -62,6 +62,8 @@ export default function Home() {
   >(null);
   const isSessionAdmin = players.find((p) => p.isMine)?.role === 'admin';
   const canEditMilestone = sessionAuthMode !== 'account' || isSessionAdmin;
+  const hasJoinedSession =
+    sessionAuthMode === 'account' && players.some((p) => p.isMine);
 
   // Save theme to localStorage whenever it changes.
   // The seasonal schedule is the default behavior, so this keeps the active theme in sync with the current date.
@@ -145,12 +147,17 @@ export default function Home() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
+    // Refresh ownership flags (isMine/role) so controls don't stay stale for account-mode sessions
+    fetchPlayers();
   };
 
-  const handleAuthenticated = (user: CurrentUser) => {
+  const handleAuthenticated = async (user: CurrentUser) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
-    if (pendingAfterAuth === 'addPlayer') {
+    // Re-sync isMine/role now that we're logged in, without needing a page refresh
+    const updatedPlayers = await fetchPlayers();
+    const alreadyJoined = updatedPlayers.some((p) => p.isMine);
+    if (pendingAfterAuth === 'addPlayer' && !alreadyJoined) {
       setIsModalOpen(true);
     }
     setPendingAfterAuth(null);
@@ -165,7 +172,7 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const fetchPlayers = async () => {
+  const fetchPlayers = async (): Promise<Player[]> => {
     try {
       setLoading(true);
       const response = await fetch('/api/players');
@@ -174,16 +181,18 @@ export default function Home() {
           // No active session, show session selector
           setIsSessionSelectorOpen(true);
           setLoading(false);
-          return;
+          return [];
         }
         throw new Error('Failed to fetch players');
       }
       const data = await response.json();
       setPlayers(data);
       setError('');
+      return data;
     } catch (err) {
       setError('Failed to load players');
       console.error(err);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -619,7 +628,7 @@ export default function Home() {
                     </div>
 
                     {/* Add Player Button */}
-                    {activeSessionName && (
+                    {activeSessionName && !hasJoinedSession && (
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -882,7 +891,7 @@ export default function Home() {
                 </div>
 
                 {/* Add Player Button */}
-                {activeSessionName && (
+                {activeSessionName && !hasJoinedSession && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
