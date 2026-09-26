@@ -654,7 +654,7 @@ export default function Home() {
                         }}
                       >
                         <Plus className="w-5 h-5" />
-                        Add Player
+                        {sessionAuthMode === 'account' ? 'Join Session' : 'Add Player'}
                       </motion.button>
                     )}
 
@@ -917,7 +917,7 @@ export default function Home() {
                     }}
                   >
                     <Plus className="w-5 h-5" />
-                    Add Player
+                    {sessionAuthMode === 'account' ? 'Join Session' : 'Add Player'}
                   </motion.button>
                 )}
 
@@ -1176,7 +1176,9 @@ export default function Home() {
                       >
                         <p className="mb-4">No players yet!</p>
                         <p className="text-sm">
-                          Click "Add Player" to get started 🚀
+                          {sessionAuthMode === 'account'
+                            ? 'Click "Join Session" to get started 🚀'
+                            : 'Click "Add Player" to get started 🚀'}
                         </p>
                       </motion.div>
                     ) : (
