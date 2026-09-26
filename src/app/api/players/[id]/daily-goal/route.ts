@@ -1,6 +1,7 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveSessionId } from '@/lib/sessionHelpers';
+import { requireOwnPlayer } from '@/lib/authz';
 
 export async function POST(
   request: NextRequest,
@@ -25,6 +26,9 @@ export async function POST(
         { status: 400 },
       );
     }
+
+    const authz = await requireOwnPlayer(sessionId, playerId);
+    if (!authz.ok) return authz.response;
 
     const { amount, date, dailyGoalTarget } = await request.json();
 

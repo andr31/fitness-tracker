@@ -10,7 +10,7 @@ export async function GET(
     console.log('Looking up session with short code:', shortCode);
 
     const result = await sql`
-      SELECT id, name, sessiontype 
+      SELECT id, name, sessiontype, authMode 
       FROM sessions 
       WHERE short_code = ${shortCode}
     `;
@@ -28,6 +28,7 @@ export async function GET(
       id: session.id,
       name: session.name,
       sessionType: session.sessiontype,
+      authMode: session.authmode || 'open',
     });
   } catch (error) {
     console.error('Error fetching session by code:', error);

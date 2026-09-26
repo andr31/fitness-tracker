@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Loader2, Lock } from 'lucide-react';
+import AuthModal from '@/components/AuthModal';
 
 export default function JoinSession() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function JoinSession() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [authMode, setAuthMode] = useState<'open' | 'account'>('open');
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     checkSessionAndPassword();
@@ -33,6 +36,7 @@ export default function JoinSession() {
 
       const session = await response.json();
       setSessionName(session.name);
+      setAuthMode(session.authMode || 'open');
 
       // Check if password is already saved in cookies
       const savedPassword = getCookie(`session_pwd_${session.id}`);
@@ -63,8 +67,12 @@ export default function JoinSession() {
       if (response.ok) {
         // Save password in cookie
         setCookie(`session_pwd_${sessionId}`, pwd, 30);
-        // Redirect to home page
-        router.push('/');
+
+        if (authMode === 'account') {
+          await proceedWithAccountJoin();
+        } else {
+          router.push('/');
+        }
       } else {
         const data = await response.json();
         setError(data.error || 'Invalid password');
@@ -76,6 +84,53 @@ export default function JoinSession() {
       setError('Failed to join session');
       setLoading(false);
     }
+  };
+
+  // For account-based sessions: make sure the visitor is logged in, then
+  // create their player row (or reuse it if they've already joined).
+  const proceedWithAccountJoin = async () => {
+    try {
+      const meResponse = await fetch('/api/auth/me');
+      if (!meResponse.ok) {
+        setShowAuthModal(true);
+        setLoading(false);
+        return;
+      }
+
+      await joinAsPlayer();
+    } catch (err) {
+      console.error('Error checking login state:', err);
+      setError('Failed to join session');
+      setLoading(false);
+    }
+  };
+
+  const joinAsPlayer = async () => {
+    try {
+      const response = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      // 409 just means they already joined previously -- that's fine.
+      if (!response.ok && response.status !== 409) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to join session');
+      }
+
+      router.push('/');
+    } catch (err) {
+      console.error('Error joining as player:', err);
+      setError(err instanceof Error ? err.message : 'Failed to join session');
+      setLoading(false);
+    }
+  };
+
+  const handleAuthenticated = async () => {
+    setShowAuthModal(false);
+    setLoading(true);
+    await joinAsPlayer();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,6 +192,24 @@ export default function JoinSession() {
             Go to Home
           </button>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (showAuthModal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
+        <div className="text-center mb-6 absolute top-16">
+          <p className="text-gray-300 text-lg">
+            Sign in to join <span className="font-semibold">{sessionName}</span>
+          </p>
+        </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => router.push('/')}
+          onAuthenticated={handleAuthenticated}
+          title="Sign in to join"
+        />
       </div>
     );
   }

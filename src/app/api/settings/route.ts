@@ -1,6 +1,7 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveSessionId } from '@/lib/sessionHelpers';
+import { requireSessionAdmin } from '@/lib/authz';
 
 export async function GET() {
   try {
@@ -54,6 +55,9 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authz = await requireSessionAdmin(sessionId);
+    if (!authz.ok) return authz.response;
 
     await sql`
       INSERT INTO settings (key, value, sessionId)

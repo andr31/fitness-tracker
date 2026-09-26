@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, ChevronDown, ChevronUp, History } from 'lucide-react';
+import { Dumbbell, Plus, ChevronDown, ChevronUp, History, LogIn, LogOut } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
@@ -16,6 +16,7 @@ import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
 import { Theme } from '@/lib/emojis';
 import { getSeasonalTheme } from '@/lib/themeConfig';
+import AuthModal, { CurrentUser } from '@/components/AuthModal';
 import './theme.css';
 
 interface Player {
@@ -23,6 +24,8 @@ interface Player {
   name: string;
   totalPushups: number;
   createdAt: string;
+  role?: string;
+  isMine?: boolean;
 }
 
 export default function Home() {
@@ -49,6 +52,16 @@ export default function Home() {
     Set<number>
   >(new Set());
   const playerCardRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const [sessionAuthMode, setSessionAuthMode] = useState<'open' | 'account'>(
+    'open',
+  );
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingAfterAuth, setPendingAfterAuth] = useState<
+    'addPlayer' | null
+  >(null);
+  const isSessionAdmin = players.find((p) => p.isMine)?.role === 'admin';
+  const canEditMilestone = sessionAuthMode !== 'account' || isSessionAdmin;
 
   // Save theme to localStorage whenever it changes.
   // The seasonal schedule is the default behavior, so this keeps the active theme in sync with the current date.
@@ -94,6 +107,7 @@ export default function Home() {
     fetchPlayers();
     fetchSettings();
     fetchActiveSession();
+    fetchCurrentUser();
   }, []);
 
   const fetchActiveSession = async () => {
@@ -103,16 +117,52 @@ export default function Home() {
         const session = await response.json();
         setActiveSessionName(session.name);
         setSessionType(session.sessionType || 'pushups');
+        setSessionAuthMode(session.authMode || 'open');
       } else {
         // No active session
         setActiveSessionName('');
         setSessionType('pushups');
+        setSessionAuthMode('open');
       }
     } catch (err) {
       console.error('Failed to fetch active session:', err);
       setActiveSessionName('');
       setSessionType('pushups');
+      setSessionAuthMode('open');
     }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      setCurrentUser(response.ok ? await response.json() : null);
+    } catch (err) {
+      console.error('Failed to fetch current user:', err);
+      setCurrentUser(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setCurrentUser(null);
+  };
+
+  const handleAuthenticated = (user: CurrentUser) => {
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+    if (pendingAfterAuth === 'addPlayer') {
+      setIsModalOpen(true);
+    }
+    setPendingAfterAuth(null);
+  };
+
+  const handleOpenAddPlayer = () => {
+    if (sessionAuthMode === 'account' && !currentUser) {
+      setPendingAfterAuth('addPlayer');
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setIsModalOpen(true);
   };
 
   const fetchPlayers = async () => {
@@ -209,6 +259,7 @@ export default function Home() {
       setIsModalOpen(false);
       setError('');
     } catch (err: any) {
+      setIsModalOpen(false);
       setError(err.message || 'Failed to add player');
     }
   };
@@ -288,12 +339,13 @@ export default function Home() {
     name: string,
     password: string,
     sessionType: 'pushups' | 'plank',
+    authMode: 'open' | 'account',
   ) => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, password, sessionType }),
+        body: JSON.stringify({ name, password, sessionType, authMode }),
       });
 
       if (!response.ok) {
@@ -453,19 +505,21 @@ export default function Home() {
                             <span className="text-base font-semibold text-white">
                               🎯 Milestone: {milestone}
                             </span>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                setEditingMilestone(true);
-                                setMilestoneInput(milestone.toString());
-                              }}
-                              className="text-white hover:text-yellow-300 transition-colors"
-                            >
-                              ✏️
-                            </motion.button>
+                            {canEditMilestone && (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  setEditingMilestone(true);
+                                  setMilestoneInput(milestone.toString());
+                                }}
+                                className="text-white hover:text-yellow-300 transition-colors"
+                              >
+                                ✏️
+                              </motion.button>
+                            )}
                           </>
-                        ) : (
+                        ) : canEditMilestone ? (
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
@@ -494,7 +548,7 @@ export default function Home() {
                               ✕
                             </motion.button>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     )}
 
@@ -569,7 +623,7 @@ export default function Home() {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={handleOpenAddPlayer}
                         className="w-full text-white font-bold px-6 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
                         style={{
                           backgroundColor:
@@ -615,6 +669,31 @@ export default function Home() {
                     >
                       <History className="w-5 h-5" />
                       Sessions
+                    </motion.button>
+
+                    {/* Account Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() =>
+                        currentUser ? handleLogout() : setIsAuthModalOpen(true)
+                      }
+                      className="w-full text-white font-bold px-6 py-2 rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg"
+                      style={{
+                        backgroundColor: 'rgb(75, 85, 99)',
+                      }}
+                    >
+                      {currentUser ? (
+                        <>
+                          <LogOut className="w-5 h-5" />
+                          Log out ({currentUser.displayName})
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="w-5 h-5" />
+                          Log in
+                        </>
+                      )}
                     </motion.button>
                   </div>
                 </motion.div>
@@ -697,19 +776,21 @@ export default function Home() {
                         <span className="text-base font-semibold text-white whitespace-nowrap">
                           🎯 Milestone: {milestone}
                         </span>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => {
-                            setEditingMilestone(true);
-                            setMilestoneInput(milestone.toString());
-                          }}
-                          className="text-white hover:text-yellow-300 transition-colors"
-                        >
-                          ✏️
-                        </motion.button>
+                        {canEditMilestone && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              setEditingMilestone(true);
+                              setMilestoneInput(milestone.toString());
+                            }}
+                            className="text-white hover:text-yellow-300 transition-colors"
+                          >
+                            ✏️
+                          </motion.button>
+                        )}
                       </>
-                    ) : (
+                    ) : canEditMilestone ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="number"
@@ -736,7 +817,7 @@ export default function Home() {
                           ✕
                         </motion.button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -805,7 +886,7 @@ export default function Home() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={handleOpenAddPlayer}
                     className="text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
                     style={{
                       backgroundColor:
@@ -849,6 +930,31 @@ export default function Home() {
                 >
                   <History className="w-5 h-5" />
                   Sessions
+                </motion.button>
+
+                {/* Account Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() =>
+                    currentUser ? handleLogout() : setIsAuthModalOpen(true)
+                  }
+                  className="text-white font-bold px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg"
+                  style={{
+                    backgroundColor: 'rgb(75, 85, 99)',
+                  }}
+                >
+                  {currentUser ? (
+                    <>
+                      <LogOut className="w-4 h-4" />
+                      {currentUser.displayName}
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4" />
+                      Log in
+                    </>
+                  )}
                 </motion.button>
               </div>
             </div>
@@ -1074,6 +1180,9 @@ export default function Home() {
                             theme={theme}
                             milestone={milestone}
                             sessionType={sessionType}
+                            accountMode={sessionAuthMode === 'account'}
+                            isMine={player.isMine ?? true}
+                            isAdmin={player.role === 'admin'}
                             onAddPushups={(amount, date) =>
                               handleAddPushups(player.id, amount, date)
                             }
@@ -1104,6 +1213,8 @@ export default function Home() {
         theme={theme}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddPlayer}
+        accountMode={sessionAuthMode === 'account'}
+        joinDisplayName={currentUser?.displayName}
       />
 
       {/* Session Management Modals */}
@@ -1121,6 +1232,18 @@ export default function Home() {
         isOpen={isCreateSessionOpen}
         onClose={() => setIsCreateSessionOpen(false)}
         onCreateSession={handleCreateSession}
+        isLoggedIn={!!currentUser}
+        onRequireLogin={() => setIsAuthModalOpen(true)}
+      />
+
+      {/* Account Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingAfterAuth(null);
+        }}
+        onAuthenticated={handleAuthenticated}
       />
 
       {/* Celebration Effect */}
