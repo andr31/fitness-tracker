@@ -1,6 +1,7 @@
 import { sql } from '@vercel/postgres';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveSessionId } from '@/lib/sessionHelpers';
+import { requireSessionAdmin } from '@/lib/authz';
 
 // GET competition end date
 export async function GET() {
@@ -58,6 +59,9 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const authz = await requireSessionAdmin(sessionId);
+    if (!authz.ok) return authz.response;
 
     // Check if competition_settings exists for this session
     const existing = await sql`

@@ -31,6 +31,11 @@ interface PlayerCardProps {
   theme?: Theme;
   milestone?: number;
   sessionType?: 'pushups' | 'plank';
+  // Account-based sessions only: whether this card belongs to the logged-in user,
+  // and whether they're the session admin (can kick others, but never edit their data).
+  accountMode?: boolean;
+  isMine?: boolean;
+  isAdmin?: boolean;
 }
 
 function getThemeColors(theme: Theme) {
@@ -96,7 +101,12 @@ export default function PlayerCard({
   theme = 'cartoon',
   milestone = 1000,
   sessionType = 'pushups',
+  accountMode = false,
+  isMine = true,
+  isAdmin = false,
 }: PlayerCardProps) {
+  const canEditData = !accountMode || isMine;
+  const canDelete = !accountMode || isMine || isAdmin;
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
@@ -486,24 +496,33 @@ export default function PlayerCard({
               }}
             />
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleDelete}
-            className="p-2 rounded-lg transition-colors"
-            style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            }}
-          >
-            <Trash2
-              className="w-5 h-5"
+          {canDelete && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleDelete}
+              className="p-2 rounded-lg transition-colors"
               style={{
-                color: colors.deleteColor,
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
               }}
-            />
-          </motion.button>
+              title={isMine ? 'Leave session' : 'Remove player'}
+            >
+              <Trash2
+                className="w-5 h-5"
+                style={{
+                  color: colors.deleteColor,
+                }}
+              />
+            </motion.button>
+          )}
         </div>
       </div>
+
+      {!canEditData && (
+        <p className="text-xs text-white opacity-50 italic mb-2">
+          🔒 View only — only {player.name} can update this data
+        </p>
+      )}
 
       <div className="space-y-4">
         {/* Date Picker Toggle */}
@@ -557,10 +576,11 @@ export default function PlayerCard({
             (amount) => (
               <motion.button
                 key={`add-${amount}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleQuickAdd(amount)}
-                className="font-bold py-2 rounded transition-colors border"
+                whileHover={{ scale: canEditData ? 1.05 : 1 }}
+                whileTap={{ scale: canEditData ? 0.95 : 1 }}
+                onClick={() => canEditData && handleQuickAdd(amount)}
+                disabled={!canEditData}
+                className="font-bold py-2 rounded transition-colors border disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: 'rgba(34, 197, 94, 0.2)',
                   color: colors.quickAddColor,
@@ -591,7 +611,8 @@ export default function PlayerCard({
                 ? 'Custom (quarters only)'
                 : 'Custom amount'
             }
-            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
+            disabled={!canEditData}
+            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
@@ -599,10 +620,11 @@ export default function PlayerCard({
             }}
           />
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: canEditData ? 1.05 : 1 }}
+            whileTap={{ scale: canEditData ? 0.95 : 1 }}
             onClick={handleCustomAdd}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded transition-colors flex items-center gap-2"
+            disabled={!canEditData}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Add
@@ -615,10 +637,11 @@ export default function PlayerCard({
             {[2, 3, 3.5, 4].map((amount) => (
               <motion.button
                 key={`remove-${amount}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => onRemovePushups(amount)}
-                className="font-bold py-2 rounded transition-colors border text-sm"
+                whileHover={{ scale: canEditData ? 1.05 : 1 }}
+                whileTap={{ scale: canEditData ? 0.95 : 1 }}
+                onClick={() => canEditData && onRemovePushups(amount)}
+                disabled={!canEditData}
+                className="font-bold py-2 rounded transition-colors border text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: 'rgba(239, 68, 68, 0.2)',
                   color: 'rgb(252, 165, 165)',
@@ -648,7 +671,8 @@ export default function PlayerCard({
                 ? 'Remove (quarters only)'
                 : 'Remove amount'
             }
-            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white"
+            disabled={!canEditData}
+            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: colors.removeInputBg,
               borderColor: 'rgb(239, 68, 68)',
@@ -656,10 +680,11 @@ export default function PlayerCard({
             }}
           />
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: canEditData ? 1.05 : 1 }}
+            whileTap={{ scale: canEditData ? 0.95 : 1 }}
             onClick={handleCustomRemove}
-            className="bg-red-500/40 hover:bg-red-500/60 text-red-300 font-bold px-4 py-2 rounded transition-colors border border-red-500/30 flex items-center gap-2"
+            disabled={!canEditData}
+            className="bg-red-500/40 hover:bg-red-500/60 text-red-300 font-bold px-4 py-2 rounded transition-colors border border-red-500/30 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Minus className="w-4 h-4" />
             Remove
@@ -732,17 +757,19 @@ export default function PlayerCard({
                   <span className="text-sm text-white opacity-70">
                     Target: {dailyGoal}
                   </span>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => {
-                      setEditingDailyGoal(true);
-                      setDailyGoalInput(dailyGoal.toString());
-                    }}
-                    className="text-white hover:text-yellow-300 transition-colors text-sm"
-                  >
-                    ✏️ Edit
-                  </motion.button>
+                  {canEditData && (
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        setEditingDailyGoal(true);
+                        setDailyGoalInput(dailyGoal.toString());
+                      }}
+                      className="text-white hover:text-yellow-300 transition-colors text-sm"
+                    >
+                      ✏️ Edit
+                    </motion.button>
+                  )}
                 </>
               ) : (
                 <div className="flex items-center gap-2 w-full">
@@ -816,10 +843,11 @@ export default function PlayerCard({
                 }}
               />
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleAddDailyGoal(sliderValue)}
-                className="w-full font-bold py-2 rounded transition-colors border text-sm"
+                whileHover={{ scale: canEditData ? 1.05 : 1 }}
+                whileTap={{ scale: canEditData ? 0.95 : 1 }}
+                onClick={() => canEditData && handleAddDailyGoal(sliderValue)}
+                disabled={!canEditData}
+                className="w-full font-bold py-2 rounded transition-colors border text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: 'rgba(59, 130, 246, 0.2)',
                   color: 'rgb(147, 197, 253)',
@@ -839,10 +867,11 @@ export default function PlayerCard({
                 ).map((amount) => (
                   <motion.button
                     key={`daily-remove-${amount}`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleRemoveDailyGoal(amount)}
-                    className="font-bold py-2 rounded transition-colors border text-sm"
+                    whileHover={{ scale: canEditData ? 1.05 : 1 }}
+                    whileTap={{ scale: canEditData ? 0.95 : 1 }}
+                    onClick={() => canEditData && handleRemoveDailyGoal(amount)}
+                    disabled={!canEditData}
+                    className="font-bold py-2 rounded transition-colors border text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: 'rgba(239, 68, 68, 0.2)',
                       color: 'rgb(252, 165, 165)',

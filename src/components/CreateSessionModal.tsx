@@ -11,13 +11,18 @@ interface CreateSessionModalProps {
     name: string,
     password: string,
     sessionType: 'pushups' | 'plank',
+    authMode: 'open' | 'account',
   ) => Promise<void>;
+  isLoggedIn: boolean;
+  onRequireLogin: () => void;
 }
 
 export default function CreateSessionModal({
   isOpen,
   onClose,
   onCreateSession,
+  isLoggedIn,
+  onRequireLogin,
 }: CreateSessionModalProps) {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +30,7 @@ export default function CreateSessionModal({
   const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
     'pushups',
   );
+  const [authMode, setAuthMode] = useState<'open' | 'account'>('open');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,13 +53,19 @@ export default function CreateSessionModal({
       return;
     }
 
+    if (authMode === 'account' && !isLoggedIn) {
+      onRequireLogin();
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      await onCreateSession(name.trim(), password, sessionType);
+      await onCreateSession(name.trim(), password, sessionType, authMode);
       setName('');
       setPassword('');
       setConfirmPassword('');
       setSessionType('pushups');
+      setAuthMode('open');
       onClose();
     } catch (err: unknown) {
       const errorMessage =
@@ -149,6 +161,38 @@ export default function CreateSessionModal({
                   ? 'Track pushup counts with whole numbers'
                   : 'Track plank time in quarters (0.25, 0.5, 0.75, 1, etc.)'}
               </p>
+            </div>
+
+            <div
+              className="flex items-start gap-3 p-3 rounded-lg border"
+              style={{
+                backgroundColor: 'rgb(55, 65, 81)',
+                borderColor: 'rgb(75, 85, 99)',
+              }}
+            >
+              <input
+                id="accountMode"
+                type="checkbox"
+                checked={authMode === 'account'}
+                onChange={(e) =>
+                  setAuthMode(e.target.checked ? 'account' : 'open')
+                }
+                className="mt-1"
+                disabled={isSubmitting}
+              />
+              <label htmlFor="accountMode" className="text-sm text-gray-300">
+                <span className="font-medium text-white block">
+                  Require player accounts
+                </span>
+                Each player signs in with their own account and can only
+                update their own data. You (as creator) become the session
+                admin and can manage shared settings like the milestone.
+                {!isLoggedIn && authMode === 'account' && (
+                  <span className="block mt-1 text-yellow-400">
+                    You&apos;ll need to log in to create this type of session.
+                  </span>
+                )}
+              </label>
             </div>
 
             <div>

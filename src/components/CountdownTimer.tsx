@@ -6,6 +6,7 @@ import { Theme } from '@/lib/emojis';
 
 interface CountdownTimerProps {
   theme?: Theme;
+  canEdit?: boolean;
 }
 
 function getThemeColors(theme: Theme) {
@@ -41,7 +42,10 @@ function getThemeColors(theme: Theme) {
   }
 }
 
-export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProps) {
+export default function CountdownTimer({
+  theme = 'cartoon',
+  canEdit = true,
+}: CountdownTimerProps) {
   const colors = getThemeColors(theme);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState({
@@ -142,25 +146,27 @@ export default function CountdownTimer({ theme = 'cartoon' }: CountdownTimerProp
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           ⏰ Competition Countdown
         </h2>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => {
-            setEditingEndDate(!editingEndDate);
-            if (!editingEndDate && endDate) {
-              // Format as local datetime-local string (no timezone conversion)
-              const year = endDate.getFullYear();
-              const month = String(endDate.getMonth() + 1).padStart(2, '0');
-              const day = String(endDate.getDate()).padStart(2, '0');
-              const hours = String(endDate.getHours()).padStart(2, '0');
-              const minutes = String(endDate.getMinutes()).padStart(2, '0');
-              setDateInput(`${year}-${month}-${day}T${hours}:${minutes}`);
-            }
-          }}
-          className="text-white hover:text-yellow-300 transition-colors text-sm"
-        >
-          {editingEndDate ? '✕' : '✏️'}
-        </motion.button>
+        {canEdit && (
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              setEditingEndDate(!editingEndDate);
+              if (!editingEndDate && endDate) {
+                // Format as local datetime-local string (no timezone conversion)
+                const year = endDate.getFullYear();
+                const month = String(endDate.getMonth() + 1).padStart(2, '0');
+                const day = String(endDate.getDate()).padStart(2, '0');
+                const hours = String(endDate.getHours()).padStart(2, '0');
+                const minutes = String(endDate.getMinutes()).padStart(2, '0');
+                setDateInput(`${year}-${month}-${day}T${hours}:${minutes}`);
+              }
+            }}
+            className="text-white hover:text-yellow-300 transition-colors text-sm"
+          >
+            {editingEndDate ? '✕' : '✏️'}
+          </motion.button>
+        )}
       </div>
 
       {editingEndDate ? (

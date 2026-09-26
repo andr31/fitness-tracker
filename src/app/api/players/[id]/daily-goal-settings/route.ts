@@ -1,6 +1,7 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveSessionId } from '@/lib/sessionHelpers';
+import { requireOwnPlayer } from '@/lib/authz';
 
 export async function GET(
   request: NextRequest,
@@ -73,6 +74,9 @@ export async function PUT(
     if (isNaN(playerId)) {
       return NextResponse.json({ error: 'Invalid player ID' }, { status: 400 });
     }
+
+    const authz = await requireOwnPlayer(sessionId, playerId);
+    if (!authz.ok) return authz.response;
 
     const { dailyGoal } = await request.json();
 

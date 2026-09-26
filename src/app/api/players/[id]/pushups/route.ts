@@ -1,6 +1,7 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveSessionId } from '@/lib/sessionHelpers';
+import { requireOwnPlayer } from '@/lib/authz';
 
 // Helper to transform lowercase column names to camelCase
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +48,9 @@ export async function POST(
         { status: 400 },
       );
     }
+
+    const authz = await requireOwnPlayer(sessionId, playerId);
+    if (!authz.ok) return authz.response;
 
     const body = await request.json();
     let { amount, date } = body;

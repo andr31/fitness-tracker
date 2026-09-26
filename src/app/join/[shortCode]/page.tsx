@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Loader2, Lock } from 'lucide-react';
+import AuthModal from '@/components/AuthModal';
 
 export default function JoinSession() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function JoinSession() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     checkSessionAndPassword();
@@ -39,7 +41,7 @@ export default function JoinSession() {
 
       if (savedPassword) {
         // Try to activate with saved password
-        await activateSession(session.id, savedPassword);
+        await activateSession(session.id, savedPassword, session.authMode || 'open');
       } else {
         // Need to ask for password
         setNeedsPassword(true);
@@ -52,7 +54,11 @@ export default function JoinSession() {
     }
   };
 
-  const activateSession = async (sessionId: number, pwd: string) => {
+  const activateSession = async (
+    sessionId: number,
+    pwd: string,
+    mode: 'open' | 'account',
+  ) => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/activate`, {
         method: 'POST',
@@ -63,8 +69,12 @@ export default function JoinSession() {
       if (response.ok) {
         // Save password in cookie
         setCookie(`session_pwd_${sessionId}`, pwd, 30);
-        // Redirect to home page
-        router.push('/');
+
+        if (mode === 'account') {
+          await proceedWithAccountJoin();
+        } else {
+          router.push('/');
+        }
       } else {
         const data = await response.json();
         setError(data.error || 'Invalid password');
@@ -78,6 +88,53 @@ export default function JoinSession() {
     }
   };
 
+  // For account-based sessions: make sure the visitor is logged in, then
+  // create their player row (or reuse it if they've already joined).
+  const proceedWithAccountJoin = async () => {
+    try {
+      const meResponse = await fetch('/api/auth/me');
+      if (!meResponse.ok) {
+        setShowAuthModal(true);
+        setLoading(false);
+        return;
+      }
+
+      await joinAsPlayer();
+    } catch (err) {
+      console.error('Error checking login state:', err);
+      setError('Failed to join session');
+      setLoading(false);
+    }
+  };
+
+  const joinAsPlayer = async () => {
+    try {
+      const response = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      // 409 just means they already joined previously -- that's fine.
+      if (!response.ok && response.status !== 409) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to join session');
+      }
+
+      router.push('/');
+    } catch (err) {
+      console.error('Error joining as player:', err);
+      setError(err instanceof Error ? err.message : 'Failed to join session');
+      setLoading(false);
+    }
+  };
+
+  const handleAuthenticated = async () => {
+    setShowAuthModal(false);
+    setLoading(true);
+    await joinAsPlayer();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -87,7 +144,7 @@ export default function JoinSession() {
       const response = await fetch(`/api/sessions/by-code/${shortCode}`);
       if (response.ok) {
         const session = await response.json();
-        await activateSession(session.id, password);
+        await activateSession(session.id, password, session.authMode || 'open');
       }
     } catch (err) {
       setError('Failed to join session');
@@ -137,6 +194,24 @@ export default function JoinSession() {
             Go to Home
           </button>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (showAuthModal) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
+        <div className="text-center mb-6 absolute top-16">
+          <p className="text-gray-300 text-lg">
+            Sign in to join <span className="font-semibold">{sessionName}</span>
+          </p>
+        </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => router.push('/')}
+          onAuthenticated={handleAuthenticated}
+          title="Sign in to join"
+        />
       </div>
     );
   }

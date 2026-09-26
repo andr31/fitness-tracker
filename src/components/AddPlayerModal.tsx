@@ -10,6 +10,8 @@ interface AddPlayerModalProps {
   onClose: () => void;
   onAdd: (name: string) => void;
   theme?: Theme;
+  accountMode?: boolean;
+  joinDisplayName?: string;
 }
 
 function getThemeColors(theme: Theme) {
@@ -52,6 +54,8 @@ export default function AddPlayerModal({
   onClose,
   onAdd,
   theme = 'cartoon',
+  accountMode = false,
+  joinDisplayName,
 }: AddPlayerModalProps) {
   const colors = getThemeColors(theme);
   const [name, setName] = useState('');
@@ -60,6 +64,12 @@ export default function AddPlayerModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (accountMode) {
+      // Account-based sessions: joining uses the logged-in user's display name.
+      onAdd(joinDisplayName || '');
+      return;
+    }
 
     if (!name.trim()) {
       setError('Player name is required');
@@ -93,7 +103,9 @@ export default function AddPlayerModal({
             }}
           >
             <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-white">Add Player</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                {accountMode ? 'Join Session' : 'Add Player'}
+              </h2>
               <motion.button
                 whileHover={{ rotate: 90 }}
                 onClick={onClose}
@@ -107,23 +119,33 @@ export default function AddPlayerModal({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    if (error) setError('');
-                  }}
-                  placeholder="Enter player name"
-                  className="w-full rounded px-4 py-3 border outline-none transition-colors"
-                  style={{
-                    backgroundColor: colors.inputBg,
-                    borderColor: colors.inputBorder,
-                    color: 'white',
-                  }}
-                />
-              </div>
+              {accountMode ? (
+                <p className="text-sm text-gray-300">
+                  You&apos;ll join as{' '}
+                  <span className="font-semibold text-white">
+                    {joinDisplayName}
+                  </span>
+                  . You can only manage your own data in this session.
+                </p>
+              ) : (
+                <div>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (error) setError('');
+                    }}
+                    placeholder="Enter player name"
+                    className="w-full rounded px-4 py-3 border outline-none transition-colors"
+                    style={{
+                      backgroundColor: colors.inputBg,
+                      borderColor: colors.inputBorder,
+                      color: 'white',
+                    }}
+                  />
+                </div>
+              )}
 
               {error && (
                 <motion.p
@@ -148,7 +170,7 @@ export default function AddPlayerModal({
                 }}
               >
                 <Plus className="w-5 h-5" />
-                Add Player
+                {accountMode ? 'Join Session' : 'Add Player'}
               </motion.button>
             </form>
           </motion.div>
