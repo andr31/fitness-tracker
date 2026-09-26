@@ -83,6 +83,8 @@ export default function AuthModal({
         >
           <button
             onClick={onClose}
+            type="button"
+            aria-label="Close"
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-300 transition-colors"
             disabled={isSubmitting}
           >

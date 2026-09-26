@@ -16,7 +16,6 @@ export default function JoinSession() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [authMode, setAuthMode] = useState<'open' | 'account'>('open');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -36,14 +35,13 @@ export default function JoinSession() {
 
       const session = await response.json();
       setSessionName(session.name);
-      setAuthMode(session.authMode || 'open');
 
       // Check if password is already saved in cookies
       const savedPassword = getCookie(`session_pwd_${session.id}`);
 
       if (savedPassword) {
         // Try to activate with saved password
-        await activateSession(session.id, savedPassword);
+        await activateSession(session.id, savedPassword, session.authMode || 'open');
       } else {
         // Need to ask for password
         setNeedsPassword(true);
@@ -56,7 +54,11 @@ export default function JoinSession() {
     }
   };
 
-  const activateSession = async (sessionId: number, pwd: string) => {
+  const activateSession = async (
+    sessionId: number,
+    pwd: string,
+    mode: 'open' | 'account',
+  ) => {
     try {
       const response = await fetch(`/api/sessions/${sessionId}/activate`, {
         method: 'POST',
@@ -68,7 +70,7 @@ export default function JoinSession() {
         // Save password in cookie
         setCookie(`session_pwd_${sessionId}`, pwd, 30);
 
-        if (authMode === 'account') {
+        if (mode === 'account') {
           await proceedWithAccountJoin();
         } else {
           router.push('/');
@@ -142,7 +144,7 @@ export default function JoinSession() {
       const response = await fetch(`/api/sessions/by-code/${shortCode}`);
       if (response.ok) {
         const session = await response.json();
-        await activateSession(session.id, password);
+        await activateSession(session.id, password, session.authMode || 'open');
       }
     } catch (err) {
       setError('Failed to join session');

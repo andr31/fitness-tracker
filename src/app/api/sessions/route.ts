@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
     // Validate authMode - account-based sessions require the creator to be logged in
     const validAuthMode = authMode === 'account' ? 'account' : 'open';
     let creatorUserId: number | null = null;
+    let creatorDisplayName: string | null = null;
     if (validAuthMode === 'account') {
       const currentUser = await getCurrentUser();
       if (!currentUser) {
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
         );
       }
       creatorUserId = currentUser.id;
+      creatorDisplayName = currentUser.displayName;
     }
 
     const trimmedName = name.trim();
@@ -113,6 +115,15 @@ export async function POST(request: NextRequest) {
     `;
 
     const newSession = result.rows[0];
+
+    // Account-based sessions need an admin from the start, so the creator joins
+    // as their own admin player right away instead of a separate manual step.
+    if (validAuthMode === 'account' && creatorUserId !== null) {
+      await sql`
+        INSERT INTO players (name, totalpushups, sessionId, userId, role)
+        VALUES (${creatorDisplayName}, 0, ${newSession.id}, ${creatorUserId}, 'admin')
+      `;
+    }
 
     return NextResponse.json(
       {

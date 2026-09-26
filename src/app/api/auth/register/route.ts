@@ -33,6 +33,12 @@ export async function POST(request: NextRequest) {
       );
     }
     const trimmedDisplayName = displayName.trim();
+    if (!trimmedDisplayName) {
+      return NextResponse.json(
+        { error: 'Display name is required' },
+        { status: 400 },
+      );
+    }
 
     const existing = await sql`
       SELECT id FROM users WHERE email = ${trimmedEmail}

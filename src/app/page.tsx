@@ -1032,7 +1032,11 @@ export default function Home() {
         <>
           {/* Countdown Timer */}
           <div className="max-w-7xl mx-auto px-4 mt-4">
-            <CountdownTimer key={activeSessionName} theme={theme} />
+            <CountdownTimer
+              key={activeSessionName}
+              theme={theme}
+              canEdit={canEditMilestone}
+            />
           </div>
 
           {/* Stopwatch — plank sessions only */}
@@ -1191,7 +1195,7 @@ export default function Home() {
                             sessionType={sessionType}
                             accountMode={sessionAuthMode === 'account'}
                             isMine={player.isMine ?? true}
-                            isAdmin={player.role === 'admin'}
+                            isAdmin={isSessionAdmin}
                             onAddPushups={(amount, date) =>
                               handleAddPushups(player.id, amount, date)
                             }
