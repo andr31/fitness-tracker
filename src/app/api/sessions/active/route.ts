@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const result = await sql`
-      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, authMode 
+      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, authMode, creatorUserId
       FROM sessions 
       WHERE id = ${sessionId}
     `;
@@ -32,6 +32,7 @@ export async function GET() {
       createdAtLocalDate: session.createdatlocaldate,
       sessionType: session.sessiontype || 'pushups',
       authMode: session.authmode || 'open',
+      creatorUserId: session.creatoruserid,
     });
   } catch (error) {
     console.error('Error fetching active session:', error);

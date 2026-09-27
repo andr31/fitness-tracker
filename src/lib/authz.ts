@@ -58,12 +58,26 @@ export async function requireOwnPlayer(
 export async function requireSessionAdmin(
   sessionId: number,
 ): Promise<AuthzResult> {
-  const session = await getSessionAuthMode(sessionId);
+  const sessionResult = await sql`
+    SELECT authMode, creatorUserId FROM sessions WHERE id = ${sessionId}
+  `;
+  if (sessionResult.rows.length === 0) {
+    return forbidden('Session not found', 404);
+  }
+
+  const session = {
+    authMode: sessionResult.rows[0].authmode || 'open',
+    creatorUserId: sessionResult.rows[0].creatoruserid,
+  };
   if (!session) return forbidden('Session not found', 404);
   if (session.authMode !== 'account') return { ok: true };
 
   const user = await getCurrentUser();
   if (!user) return forbidden('Please log in to continue', 401);
+
+  if (session.creatorUserId === user.id) {
+    return { ok: true };
+  }
 
   const memberResult = await sql`
     SELECT role FROM players WHERE sessionId = ${sessionId} AND userId = ${user.id}

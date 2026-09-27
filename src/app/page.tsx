@@ -55,12 +55,18 @@ export default function Home() {
   const [sessionAuthMode, setSessionAuthMode] = useState<'open' | 'account'>(
     'open',
   );
+  const [sessionCreatorUserId, setSessionCreatorUserId] = useState<number | null>(
+    null,
+  );
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [pendingAfterAuth, setPendingAfterAuth] = useState<
     'addPlayer' | null
   >(null);
-  const isSessionAdmin = players.find((p) => p.isMine)?.role === 'admin';
+  const isSessionAdmin =
+    sessionAuthMode !== 'account' ||
+    currentUser?.id === sessionCreatorUserId ||
+    players.find((p) => p.isMine)?.role === 'admin';
   const canEditMilestone = sessionAuthMode !== 'account' || isSessionAdmin;
   const hasJoinedSession =
     sessionAuthMode === 'account' && players.some((p) => p.isMine);
@@ -120,17 +126,20 @@ export default function Home() {
         setActiveSessionName(session.name);
         setSessionType(session.sessionType || 'pushups');
         setSessionAuthMode(session.authMode || 'open');
+        setSessionCreatorUserId(session.creatorUserId ?? null);
       } else {
         // No active session
         setActiveSessionName('');
         setSessionType('pushups');
         setSessionAuthMode('open');
+        setSessionCreatorUserId(null);
       }
     } catch (err) {
       console.error('Failed to fetch active session:', err);
       setActiveSessionName('');
       setSessionType('pushups');
       setSessionAuthMode('open');
+      setSessionCreatorUserId(null);
     }
   };
 
