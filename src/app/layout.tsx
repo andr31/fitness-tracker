@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     'A fun and interactive pushup competition tracker with live leaderboard animations',
   icons: {
     icon: '/favicon.svg',
-    apple: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
   },
 };
 
