@@ -105,10 +105,10 @@ export default function RaceTrack({
                     {hasMilestone && (
                       <span className="text-xs text-gray-400">
                         {player.totalPushups < milestone
-                          ? `${formatNumber(milestone - player.totalPushups)} ${activityUnit} to milestone`
+                          ? `${formatNumber(milestone - player.totalPushups)} away from milestone`
                           : player.totalPushups === milestone
                             ? 'Milestone reached'
-                            : `${formatNumber(player.totalPushups - milestone)} ${activityUnit} past milestone`}
+                            : `${formatNumber(player.totalPushups - milestone)} beyond milestone`}
                       </span>
                     )}
                   </div>
