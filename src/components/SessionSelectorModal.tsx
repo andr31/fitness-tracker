@@ -10,6 +10,8 @@ interface Session {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  sessionType?: 'pushups' | 'plank' | 'custom';
+  customExerciseName?: string | null;
   createdAtLocalDate?: string;
   lastActivityDate?: string | null;
   playerCount?: number;
@@ -331,6 +333,13 @@ export default function SessionSelectorModal({
                               </span>
                             )}
                           </div>
+                          <p className="text-xs text-gray-300 mt-1">
+                            {session.sessionType === 'custom'
+                              ? session.customExerciseName
+                              : session.sessionType === 'plank'
+                                ? 'Plank'
+                                : 'Pushups'}
+                          </p>
                           <p className="text-xs text-gray-400 mt-1">
                             Created:{' '}
                             {(() => {

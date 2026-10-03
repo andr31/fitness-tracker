@@ -36,9 +36,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeSessionName, setActiveSessionName] = useState<string>('');
-  const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
+  const [sessionType, setSessionType] = useState<'pushups' | 'plank' | 'custom'>(
     'pushups',
   );
+  const [customExerciseName, setCustomExerciseName] = useState<string>('');
   const [theme, setTheme] = useState<Theme>(() => getSeasonalTheme());
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [milestone, setMilestone] = useState<number>(1000);
@@ -70,6 +71,12 @@ export default function Home() {
   const canEditMilestone = sessionAuthMode !== 'account' || isSessionAdmin;
   const hasJoinedSession =
     sessionAuthMode === 'account' && players.some((p) => p.isMine);
+  const exerciseLabel =
+    sessionType === 'plank'
+      ? 'Plank'
+      : sessionType === 'custom'
+        ? customExerciseName || 'Exercise'
+        : 'Pushups';
 
   // Save theme to localStorage whenever it changes.
   // The seasonal schedule is the default behavior, so this keeps the active theme in sync with the current date.
@@ -125,12 +132,14 @@ export default function Home() {
         const session = await response.json();
         setActiveSessionName(session.name);
         setSessionType(session.sessionType || 'pushups');
+        setCustomExerciseName(session.customExerciseName || '');
         setSessionAuthMode(session.authMode || 'open');
         setSessionCreatorUserId(session.creatorUserId ?? null);
       } else {
         // No active session
         setActiveSessionName('');
         setSessionType('pushups');
+        setCustomExerciseName('');
         setSessionAuthMode('open');
         setSessionCreatorUserId(null);
       }
@@ -138,6 +147,7 @@ export default function Home() {
       console.error('Failed to fetch active session:', err);
       setActiveSessionName('');
       setSessionType('pushups');
+      setCustomExerciseName('');
       setSessionAuthMode('open');
       setSessionCreatorUserId(null);
     }
@@ -326,7 +336,7 @@ export default function Home() {
 
       setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
     } catch (err) {
-      setError('Failed to update pushups');
+      setError(`Failed to update ${exerciseLabel.toLowerCase()}`);
       console.error(err);
     }
   };
@@ -356,14 +366,21 @@ export default function Home() {
   const handleCreateSession = async (
     name: string,
     password: string,
-    sessionType: 'pushups' | 'plank',
+    sessionType: 'pushups' | 'plank' | 'custom',
     authMode: 'open' | 'account',
+    customExerciseName?: string,
   ) => {
     try {
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, password, sessionType, authMode }),
+        body: JSON.stringify({
+          name,
+          password,
+          sessionType,
+          authMode,
+          customExerciseName,
+        }),
       });
 
       if (!response.ok) {
@@ -476,7 +493,9 @@ export default function Home() {
                     ? 'Fitness Battle'
                     : sessionType === 'plank'
                       ? 'Plank Pos Battle'
-                      : 'PushUp Battle'}
+                      : sessionType === 'custom'
+                        ? `${exerciseLabel} Battle`
+                        : 'PushUp Battle'}
                 </h1>
                 {activeSessionName && (
                   <span className="text-xs font-medium text-blue-300 whitespace-nowrap flex-shrink-0 truncate max-w-[100px]">
@@ -762,7 +781,9 @@ export default function Home() {
                     ? 'Fitness Battle'
                     : sessionType === 'plank'
                       ? 'Plank Pos Battle'
-                      : 'PushUp Battle'}
+                      : sessionType === 'custom'
+                        ? `${exerciseLabel} Battle`
+                        : 'PushUp Battle'}
                 </h1>
               </motion.div>
 
@@ -1111,7 +1132,10 @@ export default function Home() {
                                 : 'rgb(250, 204, 21)',
                         }}
                       >
-                        🎖️ {champion.name} - {champion.totalPushups} pushups
+                        🎖️ {champion.name} - {champion.totalPushups}{' '}
+                        {sessionType === 'plank'
+                          ? 'minutes'
+                          : exerciseLabel.toLowerCase()}
                       </motion.div>
                     ))}
                 </div>
@@ -1204,6 +1228,7 @@ export default function Home() {
                             theme={theme}
                             milestone={milestone}
                             sessionType={sessionType}
+                            exerciseLabel={exerciseLabel}
                             accountMode={sessionAuthMode === 'account'}
                             isMine={player.isMine ?? true}
                             isAdmin={isSessionAdmin}
@@ -1223,7 +1248,14 @@ export default function Home() {
 
                 {/* Right side - Race Track */}
                 <div className="lg:col-span-2">
-                  <RaceTrack players={players} />
+                  <RaceTrack
+                    players={players}
+                    activityUnit={
+                      sessionType === 'plank'
+                        ? 'minutes'
+                        : exerciseLabel.toLowerCase()
+                    }
+                  />
                 </div>
               </div>
             )}

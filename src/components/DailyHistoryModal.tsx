@@ -18,7 +18,8 @@ interface DailyHistoryModalProps {
   playerId: number;
   playerName: string;
   theme?: Theme;
-  sessionType?: 'pushups' | 'plank';
+  sessionType?: 'pushups' | 'plank' | 'custom';
+  exerciseLabel?: string;
 }
 
 function getThemeColors(theme: Theme) {
@@ -66,8 +67,15 @@ export default function DailyHistoryModal({
   playerName,
   theme = 'cartoon',
   sessionType = 'pushups',
+  exerciseLabel = 'Pushups',
 }: DailyHistoryModalProps) {
   const colors = getThemeColors(theme);
+  const activityUnit =
+    sessionType === 'plank'
+      ? 'minutes'
+      : sessionType === 'custom'
+        ? exerciseLabel.toLowerCase()
+        : 'pushups';
   const [history, setHistory] = useState<DailyHistory[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -201,6 +209,7 @@ export default function DailyHistoryModal({
                     <div className="text-2xl font-bold text-white">
                       {formatNumber(totalPushups)}
                     </div>
+                    <div className="text-xs text-gray-400">{activityUnit}</div>
                   </div>
                   <div
                     className="rounded-lg p-3"
@@ -211,6 +220,9 @@ export default function DailyHistoryModal({
                     <div className="text-sm text-gray-300">Avg per Day</div>
                     <div className="text-2xl font-bold text-white">
                       {formatNumber(avgPerDay)}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {activityUnit}/day
                     </div>
                   </div>
                 </div>
@@ -225,7 +237,9 @@ export default function DailyHistoryModal({
                 </div>
               ) : history.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
-                  No history yet. Start adding pushups!
+                  No history yet. Start adding{' '}
+                  {activityUnit}
+                  !
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -267,6 +281,9 @@ export default function DailyHistoryModal({
                         />
                         <div className="text-2xl font-bold text-white">
                           {formatNumber(day.total)}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {activityUnit}
                         </div>
                       </div>
                     </motion.div>

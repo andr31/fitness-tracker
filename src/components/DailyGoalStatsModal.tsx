@@ -17,7 +17,8 @@ interface DailyGoalStatsModalProps {
   playerId: number;
   playerName: string;
   theme?: Theme;
-  sessionType?: 'pushups' | 'plank';
+  sessionType?: 'pushups' | 'plank' | 'custom';
+  exerciseLabel?: string;
 }
 
 function getThemeColors(theme: Theme) {
@@ -62,6 +63,7 @@ export default function DailyGoalStatsModal({
   playerName,
   theme = 'cartoon',
   sessionType = 'pushups',
+  exerciseLabel = 'Pushups',
 }: DailyGoalStatsModalProps) {
   const colors = getThemeColors(theme);
   const [data, setData] = useState<{
@@ -195,7 +197,9 @@ export default function DailyGoalStatsModal({
                         Target: {data.dailyGoal}{' '}
                         {sessionType === 'plank'
                           ? 'minutes/day'
-                          : 'pushups/day'}
+                          : sessionType === 'custom'
+                            ? `${exerciseLabel.toLowerCase()}/day`
+                            : 'pushups/day'}
                       </div>
                     </div>
                   </div>
@@ -232,7 +236,11 @@ export default function DailyGoalStatsModal({
                               {formatNumber(day.target)}
                             </div>
                             <div className="text-xs text-white opacity-50">
-                              {sessionType === 'plank' ? 'minutes' : 'pushups'}
+                              {sessionType === 'plank'
+                                ? 'minutes'
+                                : sessionType === 'custom'
+                                  ? exerciseLabel.toLowerCase()
+                                  : 'pushups'}
                             </div>
                           </div>
                         </motion.div>

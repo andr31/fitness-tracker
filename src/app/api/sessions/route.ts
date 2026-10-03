@@ -15,7 +15,7 @@ export async function getActiveSessionId(): Promise<number | null> {
 export async function GET() {
   try {
     const result = await sql`
-      SELECT s.id, s.name, s.isActive, s.createdAt, s.updatedAt, s.createdAtLocalDate, s.sessionType, s.authMode,
+      SELECT s.id, s.name, s.isActive, s.createdAt, s.updatedAt, s.createdAtLocalDate, s.sessionType, s.customExerciseName, s.authMode,
         (SELECT MAX(sub.localDate) FROM (
           SELECT ph.localDate FROM pushupHistory ph WHERE ph.sessionId = s.id GROUP BY ph.localDate HAVING SUM(ph.amount) > 0
         ) sub) as lastActivityDate,
@@ -33,6 +33,7 @@ export async function GET() {
         updatedAt: row.updatedat,
         createdAtLocalDate: row.createdatlocaldate,
         sessionType: row.sessiontype || 'pushups',
+        customExerciseName: row.customexercisename || null,
         authMode: row.authmode || 'open',
         lastActivityDate: row.lastactivitydate
           ? new Date(row.lastactivitydate).toISOString().split('T')[0]
@@ -52,7 +53,8 @@ export async function GET() {
 // POST /api/sessions - Create a new session
 export async function POST(request: NextRequest) {
   try {
-    const { name, password, sessionType, authMode } = await request.json();
+    const { name, password, sessionType, authMode, customExerciseName } =
+      await request.json();
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -66,7 +68,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate sessionType
-    const validSessionType = sessionType === 'plank' ? 'plank' : 'pushups';
+    const validSessionType =
+      sessionType === 'plank'
+        ? 'plank'
+        : sessionType === 'custom'
+          ? 'custom'
+          : 'pushups';
+
+    let trimmedCustomExerciseName: string | null = null;
+    if (validSessionType === 'custom') {
+      if (
+        !customExerciseName ||
+        typeof customExerciseName !== 'string' ||
+        !customExerciseName.trim()
+      ) {
+        return NextResponse.json(
+          { error: 'Exercise name is required for custom sessions' },
+          { status: 400 },
+        );
+      }
+      trimmedCustomExerciseName = customExerciseName.trim().slice(0, 50);
+    }
 
     // Validate authMode - account-based sessions require the creator to be logged in
     const validAuthMode = authMode === 'account' ? 'account' : 'open';
@@ -109,9 +131,9 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await sql`
-      INSERT INTO sessions (name, passwordHash, isActive, createdAtLocalDate, sessionType, authMode, creatorUserId) 
-      VALUES (${trimmedName}, ${passwordHash}, false, ${localDate}, ${validSessionType}, ${validAuthMode}, ${creatorUserId})
-      RETURNING id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, authMode
+      INSERT INTO sessions (name, passwordHash, isActive, createdAtLocalDate, sessionType, customExerciseName, authMode, creatorUserId)
+      VALUES (${trimmedName}, ${passwordHash}, false, ${localDate}, ${validSessionType}, ${trimmedCustomExerciseName}, ${validAuthMode}, ${creatorUserId})
+      RETURNING id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, customExerciseName, authMode
     `;
 
     const newSession = result.rows[0];
@@ -134,6 +156,7 @@ export async function POST(request: NextRequest) {
         updatedAt: newSession.updatedat,
         createdAtLocalDate: newSession.createdatlocaldate,
         sessionType: newSession.sessiontype,
+        customExerciseName: newSession.customexercisename || null,
         authMode: newSession.authmode,
       },
       { status: 201 },

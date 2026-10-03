@@ -87,6 +87,17 @@ export async function PUT(
       );
     }
 
+    const sessionResult = await sql`
+      SELECT sessionType FROM sessions WHERE id = ${sessionId}
+    `;
+    const sessionType = sessionResult.rows[0]?.sessiontype || 'pushups';
+    if (sessionType !== 'plank' && !Number.isInteger(dailyGoal)) {
+      return NextResponse.json(
+        { error: 'Rep-based daily goals must be whole numbers' },
+        { status: 400 },
+      );
+    }
+
     await sql`
       INSERT INTO dailyGoalSettings (playerId, dailyGoal, updatedAt, sessionId)
       VALUES (${playerId}, ${dailyGoal}, CURRENT_TIMESTAMP, ${sessionId})

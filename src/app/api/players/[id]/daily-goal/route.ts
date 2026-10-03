@@ -32,31 +32,40 @@ export async function POST(
 
     const { amount, date, dailyGoalTarget } = await request.json();
 
-    // Validate amount - allow decimals, must be a number
-    if (typeof amount !== 'number' || isNaN(amount)) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       return NextResponse.json(
         { error: 'Amount must be a valid number' },
         { status: 400 },
       );
     }
 
-    // For decimal amounts, validate they are multiples of 0.25
-    if (!Number.isInteger(amount)) {
-      const remainder = (amount * 100) % 25;
-      if (remainder !== 0) {
-        return NextResponse.json(
-          {
-            error:
-              'Decimal amounts must be in quarter increments (0.25, 0.5, 0.75, etc.)',
-          },
-          { status: 400 },
-        );
-      }
+    const sessionResult = await sql`
+      SELECT sessionType FROM sessions WHERE id = ${sessionId}
+    `;
+    const sessionType = sessionResult.rows[0]?.sessiontype || 'pushups';
+
+    if (sessionType === 'plank' && !Number.isInteger(amount * 4)) {
+      return NextResponse.json(
+        { error: 'Plank amounts must use quarter increments' },
+        { status: 400 },
+      );
+    }
+    if (sessionType !== 'plank' && !Number.isInteger(amount)) {
+      return NextResponse.json(
+        { error: 'Rep counts must be whole numbers' },
+        { status: 400 },
+      );
     }
 
     if (typeof dailyGoalTarget !== 'number' || dailyGoalTarget <= 0) {
       return NextResponse.json(
         { error: 'Daily goal target must be a positive number' },
+        { status: 400 },
+      );
+    }
+    if (sessionType !== 'plank' && !Number.isInteger(dailyGoalTarget)) {
+      return NextResponse.json(
+        { error: 'Rep-based daily goals must be whole numbers' },
         { status: 400 },
       );
     }

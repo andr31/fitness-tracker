@@ -27,9 +27,13 @@ const COLORS = [
 
 interface RaceTrackProps {
   players: Player[];
+  activityUnit?: string;
 }
 
-export default function RaceTrack({ players }: RaceTrackProps) {
+export default function RaceTrack({
+  players,
+  activityUnit = 'pushups',
+}: RaceTrackProps) {
   const maxPushups = Math.max(...players.map((p) => p.totalPushups), 100);
   const sortedPlayers = [...players].sort(
     (a, b) => b.totalPushups - a.totalPushups,
@@ -74,7 +78,7 @@ export default function RaceTrack({ players }: RaceTrackProps) {
                     transition={{ duration: 0.3 }}
                     className="text-xl font-bold text-white"
                   >
-                    {formatNumber(player.totalPushups)} 💪
+                    {formatNumber(player.totalPushups)} {activityUnit} 💪
                   </motion.span>
                 </div>
 

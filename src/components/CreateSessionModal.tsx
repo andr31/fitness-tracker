@@ -10,8 +10,9 @@ interface CreateSessionModalProps {
   onCreateSession: (
     name: string,
     password: string,
-    sessionType: 'pushups' | 'plank',
+    sessionType: 'pushups' | 'plank' | 'custom',
     authMode: 'open' | 'account',
+    customExerciseName?: string,
   ) => Promise<void>;
   isLoggedIn: boolean;
   onRequireLogin: () => void;
@@ -27,9 +28,10 @@ export default function CreateSessionModal({
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [sessionType, setSessionType] = useState<'pushups' | 'plank'>(
+  const [sessionType, setSessionType] = useState<'pushups' | 'plank' | 'custom'>(
     'pushups',
   );
+  const [customExerciseName, setCustomExerciseName] = useState('');
   const [authMode, setAuthMode] = useState<'open' | 'account'>('open');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +55,11 @@ export default function CreateSessionModal({
       return;
     }
 
+    if (sessionType === 'custom' && !customExerciseName.trim()) {
+      setError('Exercise name is required for custom sessions');
+      return;
+    }
+
     if (authMode === 'account' && !isLoggedIn) {
       onRequireLogin();
       return;
@@ -60,11 +67,18 @@ export default function CreateSessionModal({
 
     try {
       setIsSubmitting(true);
-      await onCreateSession(name.trim(), password, sessionType, authMode);
+      await onCreateSession(
+        name.trim(),
+        password,
+        sessionType,
+        authMode,
+        sessionType === 'custom' ? customExerciseName.trim() : undefined,
+      );
       setName('');
       setPassword('');
       setConfirmPassword('');
       setSessionType('pushups');
+      setCustomExerciseName('');
       setAuthMode('open');
       onClose();
     } catch (err: unknown) {
@@ -143,7 +157,9 @@ export default function CreateSessionModal({
                 id="sessionType"
                 value={sessionType}
                 onChange={(e) =>
-                  setSessionType(e.target.value as 'pushups' | 'plank')
+                  setSessionType(
+                    e.target.value as 'pushups' | 'plank' | 'custom',
+                  )
                 }
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
                 style={{
@@ -155,13 +171,42 @@ export default function CreateSessionModal({
               >
                 <option value="pushups">Pushups Session</option>
                 <option value="plank">Plank Position Session</option>
+                <option value="custom">Custom Exercise</option>
               </select>
               <p className="mt-1 text-xs text-gray-400">
                 {sessionType === 'pushups'
                   ? 'Track pushup counts with whole numbers'
-                  : 'Track plank time in quarters (0.25, 0.5, 0.75, 1, etc.)'}
+                  : sessionType === 'plank'
+                    ? 'Track plank time in quarters (0.25, 0.5, 0.75, 1, etc.)'
+                    : 'Track reps with whole numbers, just like pushups'}
               </p>
             </div>
+
+            {sessionType === 'custom' && (
+              <div>
+                <label
+                  htmlFor="customExerciseName"
+                  className="block text-sm font-medium text-gray-300 mb-1"
+                >
+                  Exercise Name
+                </label>
+                <input
+                  id="customExerciseName"
+                  type="text"
+                  value={customExerciseName}
+                  onChange={(e) => setCustomExerciseName(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors"
+                  style={{
+                    backgroundColor: 'rgb(55, 65, 81)',
+                    borderColor: 'rgb(75, 85, 99)',
+                    color: 'white',
+                  }}
+                  placeholder="e.g., Squats, Burpees, Sit-ups"
+                  disabled={isSubmitting}
+                  maxLength={50}
+                />
+              </div>
+            )}
 
             <div
               className="flex items-start gap-3 p-3 rounded-lg border"
