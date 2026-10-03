@@ -28,13 +28,27 @@ const COLORS = [
 interface RaceTrackProps {
   players: Player[];
   activityUnit?: string;
+  milestone?: number;
 }
 
 export default function RaceTrack({
   players,
   activityUnit = 'pushups',
+  milestone = 0,
 }: RaceTrackProps) {
-  const maxPushups = Math.max(...players.map((p) => p.totalPushups), 100);
+  const highestScore = Math.max(0, ...players.map((p) => p.totalPushups));
+  const hasMilestone = Number.isFinite(milestone) && milestone > 0;
+  const scaleMaximum =
+    hasMilestone
+      ? Math.max(highestScore, milestone)
+      : Math.max(highestScore, 100);
+  const scaleSource = hasMilestone
+    ? highestScore > milestone
+      ? 'current leader'
+      : 'milestone'
+    : highestScore >= 100
+      ? 'current leader'
+      : 'minimum scale';
   const sortedPlayers = [...players].sort(
     (a, b) => b.totalPushups - a.totalPushups,
   );
@@ -44,14 +58,21 @@ export default function RaceTrack({
       {players.length > 0 && (
         <div className="flex items-center gap-2 mb-8">
           <Trophy className="w-8 h-8 text-yellow-500" />
-          <h2 className="text-3xl font-bold text-white">Leaderboard</h2>
+          <div>
+            <h2 className="text-3xl font-bold text-white">Leaderboard</h2>
+            <p className="text-sm text-gray-400">
+              Scale: {formatNumber(scaleMaximum)} {activityUnit} · {scaleSource}
+            </p>
+          </div>
         </div>
       )}
 
       <div className="space-y-4">
         {sortedPlayers.map((player, index) => {
-          const percentage =
-            maxPushups > 0 ? (player.totalPushups / maxPushups) * 100 : 0;
+          const percentage = Math.min(
+            (player.totalPushups / scaleMaximum) * 100,
+            100,
+          );
           const color = COLORS[index % COLORS.length];
 
           return (
@@ -71,15 +92,26 @@ export default function RaceTrack({
                   <h3 className="text-lg font-semibold text-white">
                     {player.name}
                   </h3>
-                  <motion.span
-                    key={player.totalPushups}
-                    initial={{ scale: 1.2 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-xl font-bold text-white"
-                  >
-                    {formatNumber(player.totalPushups)} {activityUnit} 💪
-                  </motion.span>
+                  <div className="flex flex-col items-end">
+                    <motion.span
+                      key={player.totalPushups}
+                      initial={{ scale: 1.2 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                      className="text-xl font-bold text-white"
+                    >
+                      {formatNumber(player.totalPushups)} {activityUnit} 💪
+                    </motion.span>
+                    {hasMilestone && (
+                      <span className="text-xs text-gray-400">
+                        {player.totalPushups < milestone
+                          ? `${formatNumber(milestone - player.totalPushups)} away from milestone`
+                          : player.totalPushups === milestone
+                            ? 'Milestone reached'
+                            : `${formatNumber(player.totalPushups - milestone)} beyond milestone`}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="w-full bg-gray-700 rounded-full h-8 overflow-hidden">
