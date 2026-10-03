@@ -1250,6 +1250,7 @@ export default function Home() {
                 <div className="lg:col-span-2">
                   <RaceTrack
                     players={players}
+                    milestone={milestone}
                     activityUnit={
                       sessionType === 'plank'
                         ? 'minutes'
