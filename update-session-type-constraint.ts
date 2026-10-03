@@ -8,10 +8,6 @@ async function updateSessionTypeConstraint() {
     await sql`
       ALTER TABLE sessions
       DROP CONSTRAINT IF EXISTS sessions_sessiontype_check
-    `;
-
-    await sql`
-      ALTER TABLE sessions
       ADD CONSTRAINT sessions_sessiontype_check
       CHECK (sessionType IN ('pushups', 'plank', 'custom'))
     `;

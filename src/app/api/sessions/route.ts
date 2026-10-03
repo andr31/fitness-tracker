@@ -87,7 +87,13 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      trimmedCustomExerciseName = customExerciseName.trim().slice(0, 50);
+      trimmedCustomExerciseName = customExerciseName.trim();
+      if (trimmedCustomExerciseName.length > 50) {
+        return NextResponse.json(
+          { error: 'Exercise name must be 50 characters or fewer' },
+          { status: 400 },
+        );
+      }
     }
 
     // Validate authMode - account-based sessions require the creator to be logged in
