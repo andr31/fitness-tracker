@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const result = await sql`
-      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, authMode, creatorUserId
+      SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, authMode, creatorUserId, customExerciseName
       FROM sessions 
       WHERE id = ${sessionId}
     `;
@@ -31,6 +31,7 @@ export async function GET() {
       updatedAt: session.updatedat,
       createdAtLocalDate: session.createdatlocaldate,
       sessionType: session.sessiontype || 'pushups',
+      customExerciseName: session.customexercisename || null,
       authMode: session.authmode || 'open',
       creatorUserId: session.creatoruserid,
     });

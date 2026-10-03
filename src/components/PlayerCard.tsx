@@ -30,7 +30,9 @@ interface PlayerCardProps {
   onDelete: () => void;
   theme?: Theme;
   milestone?: number;
-  sessionType?: 'pushups' | 'plank';
+  sessionType?: 'pushups' | 'plank' | 'custom';
+  // Display name for custom sessions (e.g. "Squats"); ignored for pushups/plank.
+  exerciseLabel?: string;
   // Account-based sessions only: whether this card belongs to the logged-in user,
   // and whether they're the session admin (can kick others, but never edit their data).
   accountMode?: boolean;
@@ -101,12 +103,15 @@ export default function PlayerCard({
   theme = 'cartoon',
   milestone = 1000,
   sessionType = 'pushups',
+  exerciseLabel = 'Pushups',
   accountMode = false,
   isMine = true,
   isAdmin = false,
 }: PlayerCardProps) {
   const canEditData = !accountMode || isMine;
   const canDelete = !accountMode || isMine || isAdmin;
+  const activityUnit =
+    sessionType === 'plank' ? 'minutes' : exerciseLabel.toLowerCase();
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
@@ -307,9 +312,9 @@ export default function PlayerCard({
   const handleCustomAdd = () => {
     const amount = parseFloat(inputValue);
     if (!isNaN(amount) && amount > 0) {
-      // For pushup sessions, only allow integers
-      if (sessionType === 'pushups' && !Number.isInteger(amount)) {
-        alert('For pushup sessions, please enter whole numbers only.');
+      // Pushups and custom exercises are counted in whole reps
+      if (sessionType !== 'plank' && !Number.isInteger(amount)) {
+        alert('Please enter whole numbers only.');
         return;
       }
       // For plank sessions, validate that the amount is a multiple of 0.25
@@ -332,7 +337,7 @@ export default function PlayerCard({
   const handleDelete = () => {
     if (
       window.confirm(
-        `Are you sure you want to delete ${player.name}? This will remove all their pushup history.`,
+        `Are you sure you want to delete ${player.name}? This will remove all their activity history.`,
       )
     ) {
       onDelete();
@@ -342,9 +347,9 @@ export default function PlayerCard({
   const handleCustomRemove = () => {
     const amount = parseFloat(removeValue);
     if (!isNaN(amount) && amount > 0) {
-      // For pushup sessions, only allow integers
-      if (sessionType === 'pushups' && !Number.isInteger(amount)) {
-        alert('For pushup sessions, please enter whole numbers only.');
+      // Pushups and custom exercises are counted in whole reps
+      if (sessionType !== 'plank' && !Number.isInteger(amount)) {
+        alert('Please enter whole numbers only.');
         return;
       }
       // For plank sessions, validate that the amount is a multiple of 0.25
@@ -457,7 +462,7 @@ export default function PlayerCard({
               transition={{ duration: 0.4 }}
               className="text-2xl font-bold"
             >
-              {formatNumber(player.totalPushups)}
+              {formatNumber(player.totalPushups)} {activityUnit}
             </motion.p>
             {todayTotal > 0 && (
               <motion.button
@@ -472,7 +477,7 @@ export default function PlayerCard({
                 }}
               >
                 <Calendar className="w-3 h-3" />
-                Today: {formatNumber(todayTotal)}
+                Today: {formatNumber(todayTotal)} {activityUnit}
               </motion.button>
             )}
           </div>
@@ -609,7 +614,7 @@ export default function PlayerCard({
             placeholder={
               sessionType === 'plank'
                 ? 'Custom (quarters only)'
-                : 'Custom amount'
+                : `Add ${exerciseLabel.toLowerCase()}`
             }
             disabled={!canEditData}
             className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
@@ -669,7 +674,7 @@ export default function PlayerCard({
             placeholder={
               sessionType === 'plank'
                 ? 'Remove (quarters only)'
-                : 'Remove amount'
+                : `Remove ${exerciseLabel.toLowerCase()}`
             }
             disabled={!canEditData}
             className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
@@ -692,7 +697,6 @@ export default function PlayerCard({
         </div>
       </div>
 
-      {/* Daily Goal Section */}
       <div
         className="mt-6 pt-6 border-t"
         style={{
@@ -707,7 +711,7 @@ export default function PlayerCard({
             <span className="font-semibold">🎯 Daily Goal</span>
             {!editingDailyGoal && (
               <span className="text-sm opacity-70">
-                ({dailyGoalProgress}/{dailyGoal})
+                ({dailyGoalProgress}/{dailyGoal} {activityUnit})
               </span>
             )}
             {dailyGoalProgress >= dailyGoal && (
@@ -755,7 +759,7 @@ export default function PlayerCard({
               {!editingDailyGoal ? (
                 <>
                   <span className="text-sm text-white opacity-70">
-                    Target: {dailyGoal}
+                    Target: {dailyGoal} {activityUnit}
                   </span>
                   {canEditData && (
                     <motion.button
@@ -895,6 +899,7 @@ export default function PlayerCard({
         playerName={player.name}
         theme={theme}
         sessionType={sessionType}
+        exerciseLabel={exerciseLabel}
       />
 
       {/* Daily Goal Stats Modal */}
@@ -905,6 +910,7 @@ export default function PlayerCard({
         playerName={player.name}
         theme={theme}
         sessionType={sessionType}
+        exerciseLabel={exerciseLabel}
       />
     </motion.div>
   );

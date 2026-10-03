@@ -56,8 +56,7 @@ export async function POST(
     let { amount, date } = body;
     console.log('[API] Request body:', { amount, date, type: typeof amount });
 
-    // Validate amount - allow decimals for plank sessions, must be a number
-    if (typeof amount !== 'number' || isNaN(amount)) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) {
       console.log('[API] Invalid amount');
       return NextResponse.json(
         { error: 'Amount must be a valid number' },
@@ -65,20 +64,22 @@ export async function POST(
       );
     }
 
-    // For plank sessions, validate that decimal values are multiples of 0.25
-    if (!Number.isInteger(amount)) {
-      // Check if it's a valid quarter increment (multiple of 0.25)
-      const remainder = (amount * 100) % 25; // Multiply by 100 to avoid floating point issues
-      if (remainder !== 0) {
-        console.log('[API] Invalid quarter increment:', amount);
-        return NextResponse.json(
-          {
-            error:
-              'Decimal amounts must be in quarter increments (0.25, 0.5, 0.75, etc.)',
-          },
-          { status: 400 },
-        );
-      }
+    const sessionResult = await sql`
+      SELECT sessionType FROM sessions WHERE id = ${sessionId}
+    `;
+    const sessionType = sessionResult.rows[0]?.sessiontype || 'pushups';
+
+    if (sessionType === 'plank' && !Number.isInteger(amount * 4)) {
+      return NextResponse.json(
+        { error: 'Plank amounts must use quarter increments' },
+        { status: 400 },
+      );
+    }
+    if (sessionType !== 'plank' && !Number.isInteger(amount)) {
+      return NextResponse.json(
+        { error: 'Rep counts must be whole numbers' },
+        { status: 400 },
+      );
     }
 
     // Validate date if provided (format: YYYY-MM-DD)
