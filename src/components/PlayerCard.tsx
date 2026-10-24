@@ -213,6 +213,11 @@ export default function PlayerCard({
   const isAhead =
     hasPaceComparison && currentDailyAverage > requiredRawDailyAverage;
   const aheadBy = isAhead ? currentDailyAverage - requiredRawDailyAverage : 0;
+  // "Really behind": averaging under half of the pace needed from here
+  const isFarBehind =
+    hasPaceComparison &&
+    !isOnTrack &&
+    currentDailyAverage < requiredRawDailyAverage * 0.5;
 
   useEffect(() => {
     const interval = window.setInterval(() => setCurrentDate(new Date()), 60_000);
@@ -629,9 +634,13 @@ export default function PlayerCard({
             animate={{ opacity: 1, y: 0 }}
             className={`rounded-xl border-2 shadow-lg ${paceCollapsed ? 'px-3 py-2' : 'p-4'}`}
             style={{
-              background: `linear-gradient(135deg, ${colors.highlightBgStrong}, rgba(15, 23, 42, 0.8))`,
-              borderColor: colors.highlightColor,
-              boxShadow: `0 8px 24px ${colors.highlightBorder}`,
+              background: isFarBehind
+                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(15, 23, 42, 0.8))'
+                : `linear-gradient(135deg, ${colors.highlightBgStrong}, rgba(15, 23, 42, 0.8))`,
+              borderColor: isFarBehind ? 'rgb(239, 68, 68)' : colors.highlightColor,
+              boxShadow: isFarBehind
+                ? '0 8px 24px rgba(239, 68, 68, 0.35)'
+                : `0 8px 24px ${colors.highlightBorder}`,
             }}
           >
             <button
@@ -654,7 +663,7 @@ export default function PlayerCard({
                     ? 'Milestone reached! 🎉'
                     : daysRemaining === 0
                       ? `Deadline passed · ${formatNumber(remainingToMilestone)} ${activityUnit} left`
-                      : `${hasPaceComparison ? (isAhead ? '🚀 Ahead' : isOnTrack ? '✅ On track' : '💪 Catch up') + ' · ' : ''}${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}/day · ${daysRemaining}d left`}
+                      : `${hasPaceComparison ? (isAhead ? '🚀 Ahead' : isOnTrack ? '✅ On track' : isFarBehind ? '🚨 Far behind' : '💪 Catch up') + ' · ' : ''}${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}/day · ${daysRemaining}d left`}
                 </span>
               ) : (
                 <span className="flex-1 text-xs uppercase tracking-wider font-bold text-white/80">
@@ -714,7 +723,9 @@ export default function PlayerCard({
                         ? 'rgba(0, 0, 0, 0.25)'
                         : isOnTrack
                           ? 'rgba(34, 197, 94, 0.25)'
-                          : 'rgba(251, 191, 36, 0.2)',
+                          : isFarBehind
+                            ? 'rgba(239, 68, 68, 0.3)'
+                            : 'rgba(251, 191, 36, 0.2)',
                     }}
                   >
                     <p className="text-[10px] uppercase tracking-wider text-white/60">
@@ -738,12 +749,16 @@ export default function PlayerCard({
                       ? 'rgba(16, 185, 129, 0.25)'
                       : isOnTrack
                         ? 'rgba(34, 197, 94, 0.2)'
-                        : 'rgba(251, 191, 36, 0.18)',
+                        : isFarBehind
+                          ? 'rgba(239, 68, 68, 0.25)'
+                          : 'rgba(251, 191, 36, 0.18)',
                     color: isAhead
                       ? 'rgb(167, 243, 208)'
                       : isOnTrack
                         ? 'rgb(134, 239, 172)'
-                        : 'rgb(253, 230, 138)',
+                        : isFarBehind
+                          ? 'rgb(252, 165, 165)'
+                          : 'rgb(253, 230, 138)',
                   }}
                 >
                   {isAhead ? (
@@ -760,9 +775,9 @@ export default function PlayerCard({
                     </>
                   ) : (
                     <>
-                      💪 Averaging {formatNumber(currentDailyAverage)}{' '}
-                      {activityUnit}/day now — do{' '}
-                      {formatNumber(dailyPaceGap)} more per day to catch up
+                      {isFarBehind ? '🚨' : '💪'} Averaging{' '}
+                      {formatNumber(currentDailyAverage)} {activityUnit}/day now
+                      — do {formatNumber(dailyPaceGap)} more per day to catch up
                     </>
                   )}
                 </div>
