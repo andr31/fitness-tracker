@@ -23,7 +23,8 @@ export default function AuthModal({
   onAuthenticated,
   title = 'Sign in',
 }: AuthModalProps) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -38,6 +39,20 @@ export default function AuthModal({
     setIsSubmitting(true);
 
     try {
+      if (mode === 'forgot') {
+        const response = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Something went wrong');
+        }
+        setResetSent(true);
+        return;
+      }
+
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
       const body =
         mode === 'login'
@@ -93,15 +108,18 @@ export default function AuthModal({
 
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              {mode === 'login' ? (
-                <LogIn className="text-white" size={24} />
-              ) : (
+              {mode === 'register' ? (
                 <User className="text-white" size={24} />
+              ) : (
+                <LogIn className="text-white" size={24} />
               )}
             </div>
-            <h2 className="text-xl font-bold text-white">{title}</h2>
+            <h2 className="text-xl font-bold text-white">
+              {mode === 'forgot' ? 'Reset password' : title}
+            </h2>
           </div>
 
+          {mode !== 'forgot' && (
           <div className="flex mb-4 rounded-lg overflow-hidden border" style={{ borderColor: 'rgb(55, 65, 81)' }}>
             <button
               type="button"
@@ -126,7 +144,33 @@ export default function AuthModal({
               Create account
             </button>
           </div>
+          )}
 
+          {mode === 'forgot' && (
+            <p className="text-sm text-gray-300 mb-4">
+              Enter your email and we&apos;ll send you a link to reset your
+              password.
+            </p>
+          )}
+
+          {mode === 'forgot' && resetSent ? (
+            <div className="space-y-4">
+              <div className="bg-green-900/50 text-green-200 px-4 py-2 rounded-lg text-sm border border-green-800">
+                If an account exists for that email, a reset link has been sent.
+                Check your inbox.
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setResetSent(false);
+                }}
+                className="w-full text-sm text-blue-400 hover:text-blue-300"
+              >
+                Back to log in
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
@@ -168,6 +212,7 @@ export default function AuthModal({
               />
             </div>
 
+            {mode !== 'forgot' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Password
@@ -185,7 +230,20 @@ export default function AuthModal({
                 placeholder={mode === 'register' ? 'Minimum 6 characters' : 'Your password'}
                 disabled={isSubmitting}
               />
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('forgot');
+                    setError('');
+                  }}
+                  className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
+            )}
 
             {error && (
               <div className="bg-red-900/50 text-red-200 px-4 py-2 rounded-lg text-sm border border-red-800">
@@ -202,9 +260,24 @@ export default function AuthModal({
                 ? 'Please wait...'
                 : mode === 'login'
                   ? 'Log in'
-                  : 'Create account'}
+                  : mode === 'forgot'
+                    ? 'Send reset link'
+                    : 'Create account'}
             </button>
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setError('');
+                }}
+                className="w-full text-sm text-gray-400 hover:text-gray-300"
+              >
+                Back to log in
+              </button>
+            )}
           </form>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>
