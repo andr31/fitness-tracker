@@ -97,7 +97,7 @@ export default function AdminPage() {
           {s.playerCount ?? 0} players · last activity{' '}
           {s.lastActivityDate ?? 'none'}
           {s.archivedAt &&
-            ` · archived ${new Date(s.archivedAt + 'Z').toLocaleString()}`}
+            ` · archived ${new Date(s.archivedAt).toLocaleString()}`}
         </div>
       </div>
       <div className="flex gap-2">
