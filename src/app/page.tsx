@@ -74,6 +74,11 @@ export default function Home() {
   const canEditMilestone = sessionAuthMode !== 'account' || isSessionAdmin;
   const hasJoinedSession =
     sessionAuthMode === 'account' && players.some((p) => p.isMine);
+  // Earliest join date, shared by all cards so per-day averages are comparable
+  const paceStartDate = players
+    .map((p) => p.createdAt)
+    .filter((d) => d && Number.isFinite(new Date(d).getTime()))
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
   const exerciseLabel =
     sessionType === 'plank'
       ? 'Plank'
@@ -1236,6 +1241,7 @@ export default function Home() {
                             theme={theme}
                             milestone={milestone}
                             competitionEndDate={competitionEndDate}
+                            paceStartDate={paceStartDate}
                             sessionType={sessionType}
                             exerciseLabel={exerciseLabel}
                             accountMode={sessionAuthMode === 'account'}

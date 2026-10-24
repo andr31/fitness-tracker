@@ -15,8 +15,7 @@ import DailyHistoryModal from './DailyHistoryModal';
 import DailyGoalStatsModal from './DailyGoalStatsModal';
 import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
-import { getCalendarActivityStats } from '@/lib/dailyAverage';
-import type { DailyActivityEntry } from '@/lib/dailyAverage';
+import { getTotalDailyAverage } from '@/lib/dailyAverage';
 
 // Helper to format numbers: show decimals only if needed
 const formatNumber = (num: number | string): string => {
@@ -70,6 +69,8 @@ interface PlayerCardProps {
   theme?: Theme;
   milestone?: number;
   competitionEndDate?: Date | null;
+  // Common start for everyone's average (earliest join in the session) so averages compare fairly
+  paceStartDate?: string;
   sessionType?: 'pushups' | 'plank' | 'custom';
   // Display name for custom sessions (e.g. "Squats"); ignored for pushups/plank.
   exerciseLabel?: string;
@@ -148,6 +149,7 @@ export default function PlayerCard({
   isMine = true,
   isAdmin = false,
   competitionEndDate = null,
+  paceStartDate,
 }: PlayerCardProps) {
   const canEditData = !accountMode || isMine;
   const canDelete = !accountMode || isMine || isAdmin;
@@ -156,8 +158,6 @@ export default function PlayerCard({
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
-  const [dailyHistory, setDailyHistory] = useState<DailyActivityEntry[]>([]);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -204,10 +204,11 @@ export default function PlayerCard({
         )
       : null;
   const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
-  const currentDailyAverage = historyLoaded
-    ? getCalendarActivityStats(dailyHistory, player.createdAt, currentDate)
-        .average
-    : null;
+  const currentDailyAverage = getTotalDailyAverage(
+    player.totalPushups,
+    paceStartDate ?? player.createdAt,
+    currentDate,
+  );
   const requiredRawDailyAverage =
     daysRemaining && daysRemaining > 0
       ? remainingToMilestone / daysRemaining
@@ -244,8 +245,6 @@ export default function PlayerCard({
         return;
       }
       const data = await response.json();
-      setDailyHistory(data);
-      setHistoryLoaded(true);
       if (data.length > 0) {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
