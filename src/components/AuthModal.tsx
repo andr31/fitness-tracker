@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, LogIn } from 'lucide-react';
 
@@ -30,6 +30,15 @@ export default function AuthModal({
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setMode('login');
+    setResetSent(false);
+    setPassword('');
+    setDisplayName('');
+    setError('');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
