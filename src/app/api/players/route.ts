@@ -1,14 +1,7 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth';
-
-// Helper to get active session from cookies
-async function getActiveSessionId(): Promise<number | null> {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get('activeSessionId')?.value;
-  return sessionId ? parseInt(sessionId) : null;
-}
+import { getActiveSessionId } from '@/lib/sessionHelpers';
 
 // Helper to transform lowercase column names to camelCase
 function transformRow(row: any, currentUserId?: number) {

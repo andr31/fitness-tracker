@@ -1,15 +1,7 @@
 import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcryptjs';
-import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/lib/auth';
-
-// Helper to get active session from cookies
-export async function getActiveSessionId(): Promise<number | null> {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get('activeSessionId')?.value;
-  return sessionId ? parseInt(sessionId) : null;
-}
 
 // GET /api/sessions - List all sessions (without passwords)
 export async function GET() {
@@ -21,6 +13,7 @@ export async function GET() {
         ) sub) as lastActivityDate,
         (SELECT COUNT(*) FROM players p WHERE p.sessionId = s.id) as playerCount
       FROM sessions s
+      WHERE s.archivedAt IS NULL
       ORDER BY s.isActive DESC, s.createdAt DESC
     `;
 

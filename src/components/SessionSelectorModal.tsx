@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, History, Archive, Trash2, Share2, Check } from 'lucide-react';
+import { X, Plus, History, Share2, Check } from 'lucide-react';
 
 interface Session {
   id: number;
@@ -15,6 +15,7 @@ interface Session {
   createdAtLocalDate?: string;
   lastActivityDate?: string | null;
   playerCount?: number;
+  authMode?: 'open' | 'account';
 }
 
 interface SessionSelectorModalProps {
@@ -37,11 +38,6 @@ export default function SessionSelectorModal({
   const [selectedSession, setSelectedSession] = useState<number | null>(null);
   const [password, setPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
-  const [archiving, setArchiving] = useState<number | null>(null);
-  const [archivingSession, setArchivingSession] = useState<number | null>(null);
-  const [deletingSession, setDeletingSession] = useState<number | null>(null);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [archiveAdminPassword, setArchiveAdminPassword] = useState('');
   const [copiedSessionId, setCopiedSessionId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -117,98 +113,6 @@ export default function SessionSelectorModal({
       setError(errorMessage);
     } finally {
       setIsActivating(false);
-    }
-  };
-
-  const handleArchiveSession = async (sessionId: number) => {
-    setSelectedSession(null); // Clear selection when archiving
-    setArchivingSession(sessionId);
-  };
-
-  const confirmArchiveSession = async () => {
-    if (!archivingSession || !archiveAdminPassword) {
-      setError('Admin password is required to archive a session');
-      return;
-    }
-
-    if (
-      !confirm(
-        'Archive current session data? This will create a backup before switching.',
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setArchiving(archivingSession);
-      const response = await fetch(
-        `/api/sessions/${archivingSession}/archive`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ adminPassword: archiveAdminPassword }),
-        },
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to archive session');
-      }
-
-      alert('Session archived successfully!');
-      setArchivingSession(null);
-      setArchiveAdminPassword('');
-      fetchSessions();
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to archive session';
-      setError(errorMessage);
-    } finally {
-      setArchiving(null);
-    }
-  };
-
-  const handleDeleteSession = async (sessionId: number) => {
-    const session = sessions.find((s) => s.id === sessionId);
-    if (!session) return;
-
-    if (activeSessionId === sessionId) {
-      alert(
-        'Cannot delete active session. Please switch to another session first.',
-      );
-      return;
-    }
-
-    setSelectedSession(null); // Clear selection when deleting
-    setDeletingSession(sessionId);
-  };
-
-  const confirmDeleteSession = async () => {
-    if (!deletingSession || !adminPassword) {
-      setError('Admin password is required to delete a session');
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/sessions/${deletingSession}/delete`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminPassword }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete session');
-      }
-
-      alert('Session deleted successfully!');
-      setDeletingSession(null);
-      setAdminPassword('');
-      fetchSessions();
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to delete session';
-      setError(errorMessage);
     }
   };
 
@@ -315,7 +219,6 @@ export default function SessionSelectorModal({
                     }}
                     onClick={() => {
                       if (activeSessionId !== session.id) {
-                        setDeletingSession(null); // Clear deleting state when selecting
                         setSelectedSession(session.id);
                       }
                     }}
@@ -327,6 +230,14 @@ export default function SessionSelectorModal({
                             <h3 className="font-semibold text-white">
                               {session.name}
                             </h3>
+                            {session.authMode === 'account' && (
+                              <span
+                                className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-600 text-xs rounded-full flex-shrink-0"
+                                title="You need to sign in to take part in this session"
+                              >
+                                🔒 Auth required
+                              </span>
+                            )}
                             {activeSessionId === session.id && (
                               <span className="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full flex-shrink-0">
                                 Active
@@ -423,41 +334,6 @@ export default function SessionSelectorModal({
                             </>
                           )}
                         </button>
-                        {activeSessionId === session.id && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleArchiveSession(session.id);
-                            }}
-                            disabled={archiving === session.id}
-                            className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-colors disabled:opacity-50 border text-gray-300 hover:bg-gray-600"
-                            style={{
-                              backgroundColor: 'rgb(75, 85, 99)',
-                              borderColor: 'rgb(107, 114, 128)',
-                            }}
-                          >
-                            <Archive size={14} />
-                            {archiving === session.id
-                              ? 'Archiving...'
-                              : 'Archive'}
-                          </button>
-                        )}
-                        {activeSessionId !== session.id && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSession(session.id);
-                            }}
-                            className="px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 transition-colors border text-red-300 hover:bg-red-900/30"
-                            style={{
-                              backgroundColor: 'rgb(75, 85, 99)',
-                              borderColor: 'rgb(127, 29, 29)',
-                            }}
-                          >
-                            <Trash2 size={14} />
-                            Delete
-                          </button>
-                        )}
                       </div>
                     </div>
 
@@ -470,7 +346,7 @@ export default function SessionSelectorModal({
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="overflow-hidden"
+                            className="overflow-hidden -mx-1 px-1 pb-1"
                           >
                             <div
                               className="mt-3 pt-3 border-t"
@@ -532,129 +408,6 @@ export default function SessionSelectorModal({
               </div>
             )}
 
-            {archivingSession && (
-              <div
-                className="mt-6 p-4 rounded-lg border"
-                style={{
-                  backgroundColor: 'rgb(55, 45, 29)',
-                  borderColor: 'rgb(120, 53, 15)',
-                }}
-              >
-                <label
-                  htmlFor="archiveAdminPassword"
-                  className="block text-sm font-medium text-amber-200 mb-2"
-                >
-                  Enter admin password to archive session
-                </label>
-                <input
-                  id="archiveAdminPassword"
-                  type="password"
-                  value={archiveAdminPassword}
-                  onChange={(e) => {
-                    setArchiveAdminPassword(e.target.value);
-                    setError(''); // Clear error when typing
-                  }}
-                  onKeyDown={(e) =>
-                    e.key === 'Enter' && confirmArchiveSession()
-                  }
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors"
-                  style={{
-                    backgroundColor: 'rgb(70, 55, 35)',
-                    borderColor: 'rgb(120, 53, 15)',
-                    color: 'white',
-                  }}
-                  placeholder="Admin password"
-                />
-                {error && (
-                  <div className="mt-2 bg-amber-900/50 text-amber-200 px-3 py-2 rounded-lg text-sm border border-amber-800">
-                    {error}
-                  </div>
-                )}
-                <div className="flex gap-3 mt-3">
-                  <button
-                    onClick={() => {
-                      setArchivingSession(null);
-                      setArchiveAdminPassword('');
-                      setError(''); // Clear error when canceling
-                    }}
-                    className="flex-1 px-4 py-2 border rounded-lg transition-colors text-gray-300"
-                    style={{
-                      borderColor: 'rgb(120, 53, 15)',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmArchiveSession}
-                    disabled={!archiveAdminPassword || archiving !== null}
-                    className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all disabled:opacity-50"
-                  >
-                    {archiving ? 'Archiving...' : 'Archive Session'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {deletingSession && (
-              <div
-                className="mt-6 p-4 rounded-lg border"
-                style={{
-                  backgroundColor: 'rgb(75, 29, 29)',
-                  borderColor: 'rgb(127, 29, 29)',
-                }}
-              >
-                <label
-                  htmlFor="adminPassword"
-                  className="block text-sm font-medium text-red-200 mb-2"
-                >
-                  Enter admin password to delete session
-                </label>
-                <input
-                  id="adminPassword"
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => {
-                    setAdminPassword(e.target.value);
-                    setError(''); // Clear error when typing
-                  }}
-                  onKeyDown={(e) => e.key === 'Enter' && confirmDeleteSession()}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-colors"
-                  style={{
-                    backgroundColor: 'rgb(95, 40, 40)',
-                    borderColor: 'rgb(127, 29, 29)',
-                    color: 'white',
-                  }}
-                  placeholder="Admin password"
-                />
-                {error && (
-                  <div className="mt-2 bg-red-900/50 text-red-200 px-3 py-2 rounded-lg text-sm border border-red-800">
-                    {error}
-                  </div>
-                )}
-                <div className="flex gap-3 mt-3">
-                  <button
-                    onClick={() => {
-                      setDeletingSession(null);
-                      setAdminPassword('');
-                      setError(''); // Clear error when canceling
-                    }}
-                    className="flex-1 px-4 py-2 border rounded-lg transition-colors text-gray-300"
-                    style={{
-                      borderColor: 'rgb(127, 29, 29)',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDeleteSession}
-                    disabled={!adminPassword}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
-                  >
-                    Delete Session
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           <div

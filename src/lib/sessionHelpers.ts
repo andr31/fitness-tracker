@@ -1,13 +1,23 @@
+import { sql } from '@/lib/db';
 import { cookies } from 'next/headers';
 
 /**
- * Get the active session ID from cookies
- * @returns The active session ID or null if not found
+ * Get the active session ID from cookies, unless the session is archived.
  */
 export async function getActiveSessionId(): Promise<number | null> {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get('activeSessionId')?.value;
-  return sessionId ? parseInt(sessionId) : null;
+  if (!sessionId) return null;
+
+  const parsedSessionId = Number.parseInt(sessionId, 10);
+  if (!Number.isInteger(parsedSessionId)) return null;
+
+  const result = await sql`
+    SELECT id FROM sessions
+    WHERE id = ${parsedSessionId} AND archivedAt IS NULL
+  `;
+
+  return result.rows.length > 0 ? parsedSessionId : null;
 }
 
 /**
