@@ -14,7 +14,7 @@ export async function GET() {
     const result = await sql`
       SELECT id, name, isActive, createdAt, updatedAt, createdAtLocalDate, sessionType, authMode, creatorUserId, customExerciseName
       FROM sessions 
-      WHERE id = ${sessionId}
+      WHERE id = ${sessionId} AND archivedAt IS NULL
     `;
 
     if (result.rows.length === 0) {

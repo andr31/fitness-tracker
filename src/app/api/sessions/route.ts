@@ -21,6 +21,7 @@ export async function GET() {
         ) sub) as lastActivityDate,
         (SELECT COUNT(*) FROM players p WHERE p.sessionId = s.id) as playerCount
       FROM sessions s
+      WHERE s.archivedAt IS NULL
       ORDER BY s.isActive DESC, s.createdAt DESC
     `;
 

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const sessionResult = await sql`
       SELECT id, name, passwordHash, isActive 
       FROM sessions 
-      WHERE id = ${sessionId}
+      WHERE id = ${sessionId} AND archivedAt IS NULL
     `;
 
     if (sessionResult.rows.length === 0) {

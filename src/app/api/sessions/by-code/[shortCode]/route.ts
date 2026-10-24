@@ -12,7 +12,7 @@ export async function GET(
     const result = await sql`
       SELECT id, name, sessiontype, authMode, customExerciseName
       FROM sessions 
-      WHERE short_code = ${shortCode}
+      WHERE short_code = ${shortCode} AND archivedAt IS NULL
     `;
 
     console.log('Query returned:', result.rows.length, 'rows');
