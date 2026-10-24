@@ -40,24 +40,6 @@ function getCalendarDaysRemaining(endDate: Date, currentDate: Date): number {
   return Math.floor((deadline - today) / 86_400_000) + 1;
 }
 
-function getCalendarDaysSince(
-  startDate: string | undefined,
-  currentDate: Date,
-): number | null {
-  const start = new Date(startDate ?? '');
-  if (!Number.isFinite(start.getTime())) return null;
-  if (start.getTime() > currentDate.getTime()) return 1;
-
-  const startDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
-  const today = Date.UTC(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    currentDate.getDate(),
-  );
-
-  return Math.max(1, Math.floor((today - startDay) / 86_400_000) + 1);
-}
-
 function roundUpToActivityIncrement(value: number, increment: number): number {
   return Math.ceil((value - Number.EPSILON) / increment) * increment;
 }
@@ -192,6 +174,10 @@ export default function PlayerCard({
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [daysSinceActive, setDaysSinceActive] = useState<number | null>(null);
+  // Same "avg per day" shown in the history modal: total ÷ days with entries
+  const [currentDailyAverage, setCurrentDailyAverage] = useState<number | null>(
+    null,
+  );
 
   const colors = getThemeColors(theme);
   const remainingToMilestone = Math.max(0, milestone - player.totalPushups);
@@ -210,9 +196,6 @@ export default function PlayerCard({
         )
       : null;
   const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
-  const daysSinceJoined = getCalendarDaysSince(player.createdAt, currentDate);
-  const currentDailyAverage =
-    daysSinceJoined !== null ? player.totalPushups / daysSinceJoined : null;
   const requiredRawDailyAverage =
     daysRemaining && daysRemaining > 0
       ? remainingToMilestone / daysRemaining
@@ -249,6 +232,14 @@ export default function PlayerCard({
           (d: { date: string; total: number }) => d.date === today,
         );
         setTodayTotal(todayEntry ? todayEntry.total : 0);
+        // History is newest-first; average over days that have entries
+        setCurrentDailyAverage(
+          data.reduce(
+            (sum: number, d: { total: number | string }) =>
+              sum + parseFloat(String(d.total)),
+            0,
+          ) / data.length,
+        );
 
         // Calculate days since last activity for sleepy badge
         // Only count days with positive net total (ignore add+remove to zero)
@@ -279,6 +270,7 @@ export default function PlayerCard({
         }
       } else {
         setTodayTotal(0);
+        setCurrentDailyAverage(0);
         // No history — use player creation date
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -703,6 +695,41 @@ export default function PlayerCard({
                   {formatNumber(remainingToMilestone)} {activityUnit} to go ·{' '}
                   {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left
                 </p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+                  <div className="rounded-lg bg-black/25 px-2 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wider text-white/60">
+                      You need
+                    </p>
+                    <p className="text-lg font-extrabold text-white">
+                      {formatNumber(requiredDailyAverage ?? 0)}
+                      <span className="text-xs font-semibold text-white/70">
+                        /day
+                      </span>
+                    </p>
+                  </div>
+                  <div
+                    className="rounded-lg px-2 py-1.5"
+                    style={{
+                      backgroundColor: !hasPaceComparison
+                        ? 'rgba(0, 0, 0, 0.25)'
+                        : isOnTrack
+                          ? 'rgba(34, 197, 94, 0.25)'
+                          : 'rgba(251, 191, 36, 0.2)',
+                    }}
+                  >
+                    <p className="text-[10px] uppercase tracking-wider text-white/60">
+                      You&apos;re at
+                    </p>
+                    <p className="text-lg font-extrabold text-white">
+                      {currentDailyAverage !== null
+                        ? formatNumber(currentDailyAverage)
+                        : '…'}
+                      <span className="text-xs font-semibold text-white/70">
+                        /day
+                      </span>
+                    </p>
+                  </div>
+                </div>
                 {hasPaceComparison && (
                 <div
                   className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold"
@@ -739,6 +766,25 @@ export default function PlayerCard({
                     </>
                   )}
                 </div>
+                )}
+                {!hasPaceComparison && (
+                  <div
+                    className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold"
+                    style={{
+                      backgroundColor:
+                        todayTotal >= (requiredDailyAverage ?? 0)
+                          ? 'rgba(34, 197, 94, 0.2)'
+                          : 'rgba(251, 191, 36, 0.18)',
+                      color:
+                        todayTotal >= (requiredDailyAverage ?? 0)
+                          ? 'rgb(134, 239, 172)'
+                          : 'rgb(253, 230, 138)',
+                    }}
+                  >
+                    {todayTotal >= (requiredDailyAverage ?? 0)
+                      ? `✅ Today's target hit — ${formatNumber(todayTotal)} ${activityUnit}`
+                      : `💪 Today: ${formatNumber(todayTotal)} of ${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}`}
+                  </div>
                 )}
               </>
             )}
