@@ -69,8 +69,6 @@ interface PlayerCardProps {
   theme?: Theme;
   milestone?: number;
   competitionEndDate?: Date | null;
-  // Common start for everyone's average (earliest join in the session) so averages compare fairly
-  paceStartDate?: string;
   sessionType?: 'pushups' | 'plank' | 'custom';
   // Display name for custom sessions (e.g. "Squats"); ignored for pushups/plank.
   exerciseLabel?: string;
@@ -149,7 +147,6 @@ export default function PlayerCard({
   isMine = true,
   isAdmin = false,
   competitionEndDate = null,
-  paceStartDate,
 }: PlayerCardProps) {
   const canEditData = !accountMode || isMine;
   const canDelete = !accountMode || isMine || isAdmin;
@@ -206,7 +203,7 @@ export default function PlayerCard({
   const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
   const currentDailyAverage = getTotalDailyAverage(
     player.totalPushups,
-    paceStartDate ?? player.createdAt,
+    player.createdAt,
     currentDate,
   );
   const requiredRawDailyAverage =
@@ -713,7 +710,7 @@ export default function PlayerCard({
                 <div className="mt-3 grid grid-cols-2 gap-2 text-center">
                   <div className="rounded-lg bg-black/25 px-2 py-1.5">
                     <p className="text-[10px] uppercase tracking-wider text-white/60">
-                      You need
+                      Needed per day
                     </p>
                     <p className="text-lg font-extrabold text-white">
                       {formatNumber(requiredDailyAverage ?? 0)}
@@ -734,8 +731,11 @@ export default function PlayerCard({
                             : 'rgba(251, 191, 36, 0.2)',
                     }}
                   >
-                    <p className="text-[10px] uppercase tracking-wider text-white/60">
-                      You&apos;re at
+                    <p
+                      className="text-[10px] uppercase tracking-wider text-white/60"
+                      title="Your total exercise divided by calendar days since you joined"
+                    >
+                      Avg since joining
                     </p>
                     <p className="text-lg font-extrabold text-white">
                       {currentDailyAverage !== null
@@ -747,6 +747,10 @@ export default function PlayerCard({
                     </p>
                   </div>
                 </div>
+                <p className="mt-1 text-[11px] text-white/60">
+                  Pace uses your total since joining; History shows a recent
+                  average (up to 30 days).
+                </p>
                 {hasPaceComparison && (
                 <div
                   className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold"

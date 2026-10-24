@@ -217,7 +217,12 @@ export default function DailyHistoryModal({
                       backgroundColor: colors.statBox2,
                     }}
                   >
-                    <div className="text-sm text-gray-300">Avg per Day</div>
+                    <div
+                      className="text-sm text-gray-300"
+                      title={`Average across the most recent ${statsDays} calendar days`}
+                    >
+                      Recent avg · {statsDays}d
+                    </div>
                     <div className="text-2xl font-bold text-white">
                       {formatNumber(avgPerDay)}
                     </div>
