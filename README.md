@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Password reset
+
+"Forgot password?" emails a one-hour, single-use reset link over SMTP. Any free provider works, e.g. Gmail with an [app password](https://myaccount.google.com/apppasswords) (`smtp.gmail.com`, port 587) or Brevo's free SMTP tier. Set in `.env.local` / Vercel:
+
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM="Fitness Tracker <you@gmail.com>"   # optional
+APP_URL=https://your-app.vercel.app            # optional, defaults to the request origin
+```
+
+Run `npx tsx create-password-resets-table.ts` to create/update the reset-token and rate-limit tables. It is safe to rerun.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

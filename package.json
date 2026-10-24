@@ -18,12 +18,14 @@
     "jose": "^6.2.12",
     "lucide-react": "^0.560.0",
     "next": "^16.1.6",
+    "nodemailer": "^10.2.1",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
