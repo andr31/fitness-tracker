@@ -346,7 +346,7 @@ export default function SessionSelectorModal({
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="overflow-hidden"
+                            className="overflow-hidden -mx-1 px-1 pb-1"
                           >
                             <div
                               className="mt-3 pt-3 border-t"
