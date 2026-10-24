@@ -338,7 +338,10 @@ export default function Home() {
         }, 120000);
       }
 
-      setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
+      // The endpoint returns a partial player; merge so createdAt/isMine/role survive
+      setPlayers(
+        players.map((p) => (p.id === playerId ? { ...p, ...updatedPlayer } : p)),
+      );
     } catch (err) {
       setError(`Failed to update ${exerciseLabel.toLowerCase()}`);
       console.error(err);

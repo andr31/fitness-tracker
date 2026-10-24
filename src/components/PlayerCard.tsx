@@ -40,11 +40,13 @@ function getCalendarDaysRemaining(endDate: Date, currentDate: Date): number {
   return Math.floor((deadline - today) / 86_400_000) + 1;
 }
 
-function getCalendarDaysSince(startDate: string, currentDate: Date): number {
-  const start = new Date(startDate);
-  if (!Number.isFinite(start.getTime()) || start.getTime() > currentDate.getTime()) {
-    return 1;
-  }
+function getCalendarDaysSince(
+  startDate: string | undefined,
+  currentDate: Date,
+): number | null {
+  const start = new Date(startDate ?? '');
+  if (!Number.isFinite(start.getTime())) return null;
+  if (start.getTime() > currentDate.getTime()) return 1;
 
   const startDay = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
   const today = Date.UTC(
@@ -208,30 +210,26 @@ export default function PlayerCard({
         )
       : null;
   const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
+  const daysSinceJoined = getCalendarDaysSince(player.createdAt, currentDate);
   const currentDailyAverage =
-    player.totalPushups / getCalendarDaysSince(player.createdAt, currentDate);
+    daysSinceJoined !== null ? player.totalPushups / daysSinceJoined : null;
   const requiredRawDailyAverage =
     daysRemaining && daysRemaining > 0
       ? remainingToMilestone / daysRemaining
       : null;
-  const dailyPaceGap =
-    requiredRawDailyAverage !== null
-      ? roundUpToActivityIncrement(
-          Math.max(0, requiredRawDailyAverage - currentDailyAverage),
-          activityIncrement,
-        )
-      : 0;
+  const hasPaceComparison =
+    currentDailyAverage !== null && requiredRawDailyAverage !== null;
+  const dailyPaceGap = hasPaceComparison
+    ? roundUpToActivityIncrement(
+        Math.max(0, requiredRawDailyAverage - currentDailyAverage),
+        activityIncrement,
+      )
+    : 0;
   const isOnTrack =
-    requiredRawDailyAverage !== null &&
-    currentDailyAverage >= requiredRawDailyAverage;
+    hasPaceComparison && currentDailyAverage >= requiredRawDailyAverage;
   const isAhead =
-    isOnTrack &&
-    requiredRawDailyAverage !== null &&
-    currentDailyAverage > requiredRawDailyAverage;
-  const aheadBy =
-    isAhead && requiredRawDailyAverage !== null
-      ? currentDailyAverage - requiredRawDailyAverage
-      : 0;
+    hasPaceComparison && currentDailyAverage > requiredRawDailyAverage;
+  const aheadBy = isAhead ? currentDailyAverage - requiredRawDailyAverage : 0;
 
   useEffect(() => {
     const interval = window.setInterval(() => setCurrentDate(new Date()), 60_000);
@@ -664,7 +662,7 @@ export default function PlayerCard({
                     ? 'Milestone reached! 🎉'
                     : daysRemaining === 0
                       ? `Deadline passed · ${formatNumber(remainingToMilestone)} ${activityUnit} left`
-                      : `${isAhead ? '🚀 Ahead' : isOnTrack ? '✅ On track' : '💪 Catch up'} · ${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}/day · ${daysRemaining}d left`}
+                      : `${hasPaceComparison ? (isAhead ? '🚀 Ahead' : isOnTrack ? '✅ On track' : '💪 Catch up') + ' · ' : ''}${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}/day · ${daysRemaining}d left`}
                 </span>
               ) : (
                 <span className="flex-1 text-xs uppercase tracking-wider font-bold text-white/80">
@@ -705,6 +703,7 @@ export default function PlayerCard({
                   {formatNumber(remainingToMilestone)} {activityUnit} to go ·{' '}
                   {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left
                 </p>
+                {hasPaceComparison && (
                 <div
                   className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold"
                   style={{
@@ -740,6 +739,7 @@ export default function PlayerCard({
                     </>
                   )}
                 </div>
+                )}
               </>
             )}
 
