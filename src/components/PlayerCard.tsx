@@ -2,12 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Minus, Trash2, Calendar } from 'lucide-react';
+import {
+  Plus,
+  Minus,
+  Trash2,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
 import DailyHistoryModal from './DailyHistoryModal';
 import DailyGoalStatsModal from './DailyGoalStatsModal';
 import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
+import { getTotalDailyAverage } from '@/lib/dailyAverage';
 
 // Helper to format numbers: show decimals only if needed
 const formatNumber = (num: number | string): string => {
@@ -15,6 +23,36 @@ const formatNumber = (num: number | string): string => {
   if (isNaN(n)) return '0';
   return n % 1 === 0 ? n.toString() : n.toFixed(2).replace(/\.?0+$/, '');
 };
+
+function getCalendarDaysRemaining(endDate: Date, currentDate: Date): number {
+  if (endDate.getTime() <= currentDate.getTime()) return 0;
+
+  const today = Date.UTC(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    currentDate.getDate(),
+  );
+  const lastActivityDate = new Date(endDate);
+  if (
+    lastActivityDate.getHours() === 0 &&
+    lastActivityDate.getMinutes() === 0 &&
+    lastActivityDate.getSeconds() === 0 &&
+    lastActivityDate.getMilliseconds() === 0
+  ) {
+    lastActivityDate.setDate(lastActivityDate.getDate() - 1);
+  }
+  const deadline = Date.UTC(
+    lastActivityDate.getFullYear(),
+    lastActivityDate.getMonth(),
+    lastActivityDate.getDate(),
+  );
+
+  return Math.max(0, Math.floor((deadline - today) / 86_400_000) + 1);
+}
+
+function roundUpToActivityIncrement(value: number, increment: number): number {
+  return Math.ceil((value - Number.EPSILON) / increment) * increment;
+}
 
 interface Player {
   id: number;
@@ -30,6 +68,7 @@ interface PlayerCardProps {
   onDelete: () => void;
   theme?: Theme;
   milestone?: number;
+  competitionEndDate?: Date | null;
   sessionType?: 'pushups' | 'plank' | 'custom';
   // Display name for custom sessions (e.g. "Squats"); ignored for pushups/plank.
   exerciseLabel?: string;
@@ -107,6 +146,7 @@ export default function PlayerCard({
   accountMode = false,
   isMine = true,
   isAdmin = false,
+  competitionEndDate = null,
 }: PlayerCardProps) {
   const canEditData = !accountMode || isMine;
   const canDelete = !accountMode || isMine || isAdmin;
@@ -115,9 +155,21 @@ export default function PlayerCard({
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
+  const [currentDate, setCurrentDate] = useState(() => new Date());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  // Last choice is remembered so cards start in that state after a reload
+  const [paceCollapsed, setPaceCollapsed] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      localStorage.getItem('fitness-tracker-pace-collapsed') === '1',
+  );
+  const togglePaceCollapsed = () => {
+    const next = !paceCollapsed;
+    setPaceCollapsed(next);
+    localStorage.setItem('fitness-tracker-pace-collapsed', next ? '1' : '0');
+  };
 
   // Daily Goal states
   const [dailyGoal, setDailyGoal] = useState<number>(100);
@@ -132,13 +184,63 @@ export default function PlayerCard({
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [daysSinceActive, setDaysSinceActive] = useState<number | null>(null);
-
   const colors = getThemeColors(theme);
+  const remainingToMilestone = Math.max(0, milestone - player.totalPushups);
+  const daysRemaining = competitionEndDate
+    ? getCalendarDaysRemaining(competitionEndDate, currentDate)
+    : null;
+  const goalProgress =
+    milestone > 0
+      ? Math.max(0, Math.min(100, (player.totalPushups / milestone) * 100))
+      : 0;
+  const requiredDailyAverage =
+    daysRemaining && daysRemaining > 0
+      ? roundUpToActivityIncrement(
+          remainingToMilestone / daysRemaining,
+          sessionType === 'plank' ? 0.25 : 1,
+        )
+      : null;
+  const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
+  const currentDailyAverage = getTotalDailyAverage(
+    player.totalPushups,
+    player.createdAt,
+    currentDate,
+  );
+  const requiredRawDailyAverage =
+    daysRemaining && daysRemaining > 0
+      ? remainingToMilestone / daysRemaining
+      : null;
+  const hasPaceComparison =
+    currentDailyAverage !== null && requiredRawDailyAverage !== null;
+  const dailyPaceGap = hasPaceComparison
+    ? roundUpToActivityIncrement(
+        Math.max(0, requiredRawDailyAverage - currentDailyAverage),
+        activityIncrement,
+      )
+    : 0;
+  const isOnTrack =
+    hasPaceComparison && currentDailyAverage >= requiredRawDailyAverage;
+  const isAhead =
+    hasPaceComparison && currentDailyAverage > requiredRawDailyAverage;
+  const aheadBy = isAhead ? currentDailyAverage - requiredRawDailyAverage : 0;
+  // "Really behind": averaging under half of the pace needed from here
+  const isFarBehind =
+    hasPaceComparison &&
+    !isOnTrack &&
+    currentDailyAverage < requiredRawDailyAverage * 0.5;
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setCurrentDate(new Date()), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const fetchTodayTotal = async () => {
     try {
       const response = await fetch(`/api/players/${player.id}/history`);
-      if (!response.ok) return;
+      if (!response.ok) {
+        console.error('Failed to fetch player history for pace and today total');
+        return;
+      }
       const data = await response.json();
       if (data.length > 0) {
         const now = new Date();
@@ -148,7 +250,6 @@ export default function PlayerCard({
           (d: { date: string; total: number }) => d.date === today,
         );
         setTodayTotal(todayEntry ? todayEntry.total : 0);
-
         // Calculate days since last activity for sleepy badge
         // Only count days with positive net total (ignore add+remove to zero)
         const lastActiveEntry = data.find(
@@ -530,6 +631,210 @@ export default function PlayerCard({
       )}
 
       <div className="space-y-4">
+        {milestone > 0 && competitionEndDate && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-xl border-2 shadow-lg ${paceCollapsed ? 'px-3 py-2' : 'p-4'}`}
+            style={{
+              background: isFarBehind
+                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(15, 23, 42, 0.8))'
+                : `linear-gradient(135deg, ${colors.highlightBgStrong}, rgba(15, 23, 42, 0.8))`,
+              borderColor: isFarBehind ? 'rgb(239, 68, 68)' : colors.highlightColor,
+              boxShadow: isFarBehind
+                ? '0 8px 24px rgba(239, 68, 68, 0.35)'
+                : `0 8px 24px ${colors.highlightBorder}`,
+            }}
+          >
+            <button
+              type="button"
+              onClick={togglePaceCollapsed}
+              aria-expanded={!paceCollapsed}
+              className={`flex w-full items-center gap-2 text-left ${paceCollapsed ? '' : 'mb-2'}`}
+              title={paceCollapsed ? 'Show daily game plan' : 'Minimize'}
+            >
+              <motion.span
+                animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.12, 1] }}
+                transition={{ duration: 2.5, repeat: Infinity }}
+                aria-hidden="true"
+              >
+                🔥
+              </motion.span>
+              {paceCollapsed ? (
+                <span className="flex-1 text-sm font-bold text-white truncate">
+                  {remainingToMilestone === 0
+                    ? 'Milestone reached! 🎉'
+                    : daysRemaining === 0
+                      ? `Deadline passed · ${formatNumber(remainingToMilestone)} ${activityUnit} left`
+                      : `${hasPaceComparison ? (isAhead ? '🚀 Ahead' : isOnTrack ? '✅ On track' : isFarBehind ? '🚨 Far behind' : '💪 Catch up') + ' · ' : ''}${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}/day · ${daysRemaining}d left`}
+                </span>
+              ) : (
+                <span className="flex-1 text-xs uppercase tracking-wider font-bold text-white/80">
+                  Your daily game plan
+                </span>
+              )}
+              {paceCollapsed ? (
+                <ChevronDown className="w-4 h-4 text-white/70" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-white/70" />
+              )}
+            </button>
+
+            {paceCollapsed ? null : remainingToMilestone === 0 ? (
+              <p className="text-lg font-extrabold text-white">
+                Goal crushed — milestone reached! 🎉
+              </p>
+            ) : daysRemaining === 0 ? (
+              <p className="text-sm font-bold text-white">
+                Deadline passed · {formatNumber(remainingToMilestone)}{' '}
+                {activityUnit} left to reach your goal
+              </p>
+            ) : (
+              <>
+                <p className="text-base font-semibold text-white">
+                  To reach your {formatNumber(milestone)} goal, you need to do
+                </p>
+                <motion.p
+                  key={requiredDailyAverage}
+                  initial={{ scale: 1.15, opacity: 0.6 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-3xl sm:text-4xl font-black text-white leading-tight mt-1"
+                >
+                  {formatNumber(requiredDailyAverage ?? 0)}{' '}
+                  <span className="text-lg font-bold">{activityUnit} / day</span>
+                </motion.p>
+                <p className="text-xs text-white/80 mt-1">
+                  {formatNumber(remainingToMilestone)} {activityUnit} to go ·{' '}
+                  {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} left
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+                  <div className="rounded-lg bg-black/25 px-2 py-1.5">
+                    <p className="text-[10px] uppercase tracking-wider text-white/60">
+                      Needed per day
+                    </p>
+                    <p className="text-lg font-extrabold text-white">
+                      {formatNumber(requiredDailyAverage ?? 0)}
+                      <span className="text-xs font-semibold text-white/70">
+                        /day
+                      </span>
+                    </p>
+                  </div>
+                  <div
+                    className="rounded-lg px-2 py-1.5"
+                    style={{
+                      backgroundColor: !hasPaceComparison
+                        ? 'rgba(0, 0, 0, 0.25)'
+                        : isOnTrack
+                          ? 'rgba(34, 197, 94, 0.25)'
+                          : isFarBehind
+                            ? 'rgba(239, 68, 68, 0.3)'
+                            : 'rgba(251, 191, 36, 0.2)',
+                    }}
+                  >
+                    <p
+                      className="text-[10px] uppercase tracking-wider text-white/60"
+                      title="Your total exercise divided by calendar days since you joined"
+                    >
+                      Avg since joining
+                    </p>
+                    <p className="text-lg font-extrabold text-white">
+                      {currentDailyAverage !== null
+                        ? formatNumber(currentDailyAverage)
+                        : '…'}
+                      <span className="text-xs font-semibold text-white/70">
+                        /day
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-1 text-[11px] text-white/60">
+                  Pace uses your total since joining; History shows a recent
+                  average (up to 30 days).
+                </p>
+                {hasPaceComparison && (
+                <div
+                  className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold"
+                  style={{
+                    backgroundColor: isAhead
+                      ? 'rgba(16, 185, 129, 0.25)'
+                      : isOnTrack
+                        ? 'rgba(34, 197, 94, 0.2)'
+                        : isFarBehind
+                          ? 'rgba(239, 68, 68, 0.25)'
+                          : 'rgba(251, 191, 36, 0.18)',
+                    color: isAhead
+                      ? 'rgb(167, 243, 208)'
+                      : isOnTrack
+                        ? 'rgb(134, 239, 172)'
+                        : isFarBehind
+                          ? 'rgb(252, 165, 165)'
+                          : 'rgb(253, 230, 138)',
+                  }}
+                >
+                  {isAhead ? (
+                    <>
+                      🚀 Ahead of pace by {formatNumber(aheadBy)}{' '}
+                      {activityUnit}/day — averaging{' '}
+                      {formatNumber(currentDailyAverage)} {activityUnit}/day.
+                      Keep it up!
+                    </>
+                  ) : isOnTrack ? (
+                    <>
+                      ✅ You&apos;re on track — averaging{' '}
+                      {formatNumber(currentDailyAverage)} {activityUnit}/day
+                    </>
+                  ) : (
+                    <>
+                      {isFarBehind ? '🚨' : '💪'} Averaging{' '}
+                      {formatNumber(currentDailyAverage)} {activityUnit}/day now
+                      — do {formatNumber(dailyPaceGap)} more per day to catch up
+                    </>
+                  )}
+                </div>
+                )}
+                {!hasPaceComparison && (
+                  <div
+                    className="mt-3 rounded-lg px-3 py-2 text-sm font-semibold"
+                    style={{
+                      backgroundColor:
+                        todayTotal >= (requiredDailyAverage ?? 0)
+                          ? 'rgba(34, 197, 94, 0.2)'
+                          : 'rgba(251, 191, 36, 0.18)',
+                      color:
+                        todayTotal >= (requiredDailyAverage ?? 0)
+                          ? 'rgb(134, 239, 172)'
+                          : 'rgb(253, 230, 138)',
+                    }}
+                  >
+                    {todayTotal >= (requiredDailyAverage ?? 0)
+                      ? `✅ Today's target hit — ${formatNumber(todayTotal)} ${activityUnit}`
+                      : `💪 Today: ${formatNumber(todayTotal)} of ${formatNumber(requiredDailyAverage ?? 0)} ${activityUnit}`}
+                  </div>
+                )}
+              </>
+            )}
+
+            <div
+              className={`rounded-full overflow-hidden bg-black/25 ${paceCollapsed ? 'h-1.5 mt-2' : 'h-2.5 mt-3'}`}
+              role="progressbar"
+              aria-label={`${exerciseLabel} milestone progress`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(goalProgress)}
+            >
+              <motion.div
+                className="h-full rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${goalProgress}%` }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                style={{
+                  background: `linear-gradient(90deg, ${colors.highlightColor}, rgb(250, 204, 21))`,
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+
         {/* Date Picker Toggle */}
         <div className="flex items-center gap-2">
           <motion.button
@@ -897,6 +1202,7 @@ export default function PlayerCard({
         onClose={() => setIsHistoryOpen(false)}
         playerId={player.id}
         playerName={player.name}
+        playerCreatedAt={player.createdAt}
         theme={theme}
         sessionType={sessionType}
         exerciseLabel={exerciseLabel}

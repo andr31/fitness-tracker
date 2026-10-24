@@ -45,6 +45,9 @@ export default function Home() {
   const [milestone, setMilestone] = useState<number>(1000);
   const [editingMilestone, setEditingMilestone] = useState(false);
   const [milestoneInput, setMilestoneInput] = useState('1000');
+  const [competitionEndDate, setCompetitionEndDate] = useState<Date | null>(
+    null,
+  );
   const [headerExpanded, setHeaderExpanded] = useState(false);
   const [celebratingPlayer, setCelebratingPlayer] = useState<string | null>(
     null,
@@ -126,6 +129,7 @@ export default function Home() {
   }, []);
 
   const fetchActiveSession = async () => {
+    setCompetitionEndDate(null);
     try {
       const response = await fetch('/api/sessions/active');
       if (response.ok) {
@@ -334,7 +338,10 @@ export default function Home() {
         }, 120000);
       }
 
-      setPlayers(players.map((p) => (p.id === playerId ? updatedPlayer : p)));
+      // The endpoint returns a partial player; merge so createdAt/isMine/role survive
+      setPlayers(
+        players.map((p) => (p.id === playerId ? { ...p, ...updatedPlayer } : p)),
+      );
     } catch (err) {
       setError(`Failed to update ${exerciseLabel.toLowerCase()}`);
       console.error(err);
@@ -1066,6 +1073,7 @@ export default function Home() {
               key={activeSessionName}
               theme={theme}
               canEdit={canEditMilestone}
+              onEndDateChange={setCompetitionEndDate}
             />
           </div>
 
@@ -1227,6 +1235,7 @@ export default function Home() {
                             player={player}
                             theme={theme}
                             milestone={milestone}
+                            competitionEndDate={competitionEndDate}
                             sessionType={sessionType}
                             exerciseLabel={exerciseLabel}
                             accountMode={sessionAuthMode === 'account'}

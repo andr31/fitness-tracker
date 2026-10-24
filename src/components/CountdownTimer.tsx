@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Theme } from '@/lib/emojis';
 
 interface CountdownTimerProps {
   theme?: Theme;
   canEdit?: boolean;
+  onEndDateChange?: (endDate: Date | null) => void;
 }
 
 function getThemeColors(theme: Theme) {
@@ -45,6 +46,7 @@ function getThemeColors(theme: Theme) {
 export default function CountdownTimer({
   theme = 'cartoon',
   canEdit = true,
+  onEndDateChange,
 }: CountdownTimerProps) {
   const colors = getThemeColors(theme);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -57,24 +59,15 @@ export default function CountdownTimer({
   });
   const [editingEndDate, setEditingEndDate] = useState(false);
   const [dateInput, setDateInput] = useState('');
-  const [mounted, setMounted] = useState(false);
 
-  const fetchEndDate = async () => {
-    try {
-      const response = await fetch('/api/competition');
-      if (response.ok) {
-        const data = await response.json();
-        // Parse the UTC date and use it directly (JS Date handles timezone conversion)
-        setEndDate(new Date(data.endDate));
-      } else {
-        // Clear competition date if not found (e.g., new session)
-        setEndDate(null);
-      }
-    } catch (error) {
-      console.error('Error fetching competition end date:', error);
-      setEndDate(null);
-    }
-  };
+  const fetchEndDate = useCallback(async (): Promise<Date | null> => {
+    const response = await fetch('/api/competition');
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    // Parse the UTC date and use it directly (JS Date handles timezone conversion)
+    return new Date(data.endDate);
+  }, []);
 
   const updateEndDate = async () => {
     if (!dateInput) return;
@@ -87,7 +80,9 @@ export default function CountdownTimer({
       });
       
       if (response.ok) {
-        await fetchEndDate();
+        const nextEndDate = await fetchEndDate();
+        setEndDate(nextEndDate);
+        onEndDateChange?.(nextEndDate);
         setEditingEndDate(false);
       }
     } catch (error) {
@@ -96,9 +91,24 @@ export default function CountdownTimer({
   };
 
   useEffect(() => {
-    setMounted(true);
-    fetchEndDate();
-  }, []);
+    let isCurrent = true;
+    fetchEndDate()
+      .then((nextEndDate) => {
+        if (!isCurrent) return;
+        setEndDate(nextEndDate);
+        onEndDateChange?.(nextEndDate);
+      })
+      .catch((error) => {
+        console.error('Error fetching competition end date:', error);
+        if (!isCurrent) return;
+        setEndDate(null);
+        onEndDateChange?.(null);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [fetchEndDate, onEndDateChange]);
 
   useEffect(() => {
     if (!endDate) return;
@@ -233,14 +243,14 @@ export default function CountdownTimer({
           )}
           {endDate && (
             <p className="text-center text-sm text-white opacity-70 mt-4">
-              {mounted ? endDate.toLocaleString('en-US', {
+              {endDate.toLocaleString('en-US', {
                 weekday: 'short',
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
-              }) : 'Loading...'}
+              })}
             </p>
           )}
         </>
