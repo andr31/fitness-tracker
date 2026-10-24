@@ -67,27 +67,37 @@ function ResetPasswordForm() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label
+                htmlFor="new-password"
+                className="block text-sm font-medium text-gray-300 mb-1"
+              >
                 New password
               </label>
               <input
+                id="new-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={inputClass}
                 placeholder="Minimum 6 characters"
+                autoComplete="new-password"
                 disabled={isSubmitting}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label
+                htmlFor="confirm-password"
+                className="block text-sm font-medium text-gray-300 mb-1"
+              >
                 Confirm password
               </label>
               <input
+                id="confirm-password"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 className={inputClass}
+                autoComplete="new-password"
                 disabled={isSubmitting}
               />
             </div>

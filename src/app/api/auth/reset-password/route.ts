@@ -20,27 +20,27 @@ export async function POST(request: NextRequest) {
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const passwordHash = await hashPassword(password);
 
-    // Atomically consume the token so it can only be used once
-    const consumed = await sql`
-      UPDATE password_resets
-      SET usedAt = NOW()
-      WHERE tokenHash = ${tokenHash}
-        AND usedAt IS NULL
-        AND expiresAt > NOW()
-      RETURNING userId
+    const updated = await sql`
+      WITH consumed AS (
+        UPDATE password_resets
+        SET usedAt = NOW()
+        WHERE tokenHash = ${tokenHash}
+          AND usedAt IS NULL
+          AND expiresAt > NOW()
+        RETURNING userId
+      )
+      UPDATE users
+      SET passwordHash = ${passwordHash}, updatedAt = CURRENT_TIMESTAMP
+      FROM consumed
+      WHERE users.id = consumed.userId
+      RETURNING users.id
     `;
-    if (consumed.rows.length === 0) {
+    if (updated.rows.length === 0) {
       return NextResponse.json(
         { error: 'This reset link is invalid or has expired' },
         { status: 400 },
       );
     }
-
-    await sql`
-      UPDATE users
-      SET passwordHash = ${passwordHash}, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ${consumed.rows[0].userid}
-    `;
 
     return NextResponse.json({ message: 'Password updated' });
   } catch (error) {

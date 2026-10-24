@@ -33,7 +33,7 @@ SMTP_FROM="Fitness Tracker <you@gmail.com>"   # optional
 APP_URL=https://your-app.vercel.app            # optional, defaults to the request origin
 ```
 
-Create the table once with `npx tsx create-password-resets-table.ts`.
+Run `npx tsx create-password-resets-table.ts` to create/update the reset-token and rate-limit tables. It is safe to rerun.
 
 ## Learn More
 
