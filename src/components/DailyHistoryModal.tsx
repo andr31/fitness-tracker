@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, TrendingUp } from 'lucide-react';
 import { Theme } from '@/lib/emojis';
+import { getCalendarActivityStats } from '@/lib/dailyAverage';
 
 interface DailyHistory {
   date: string;
@@ -17,6 +18,7 @@ interface DailyHistoryModalProps {
   onClose: () => void;
   playerId: number;
   playerName: string;
+  playerCreatedAt: string;
   theme?: Theme;
   sessionType?: 'pushups' | 'plank' | 'custom';
   exerciseLabel?: string;
@@ -65,6 +67,7 @@ export default function DailyHistoryModal({
   onClose,
   playerId,
   playerName,
+  playerCreatedAt,
   theme = 'cartoon',
   sessionType = 'pushups',
   exerciseLabel = 'Pushups',
@@ -133,11 +136,8 @@ export default function DailyHistoryModal({
     }
   };
 
-  const totalPushups = history.reduce(
-    (sum, day) => sum + parseFloat(day.total.toString()),
-    0,
-  );
-  const avgPerDay = history.length > 0 ? totalPushups / history.length : 0;
+  const { total: totalPushups, average: avgPerDay, days: statsDays } =
+    getCalendarActivityStats(history, playerCreatedAt);
 
   // Helper to format numbers: show decimals only if needed
   const formatNumber = (num: number | string): string => {
@@ -204,7 +204,7 @@ export default function DailyHistoryModal({
                     }}
                   >
                     <div className="text-sm text-gray-300">
-                      Total (Last 30d)
+                      Total (Last {statsDays}d)
                     </div>
                     <div className="text-2xl font-bold text-white">
                       {formatNumber(totalPushups)}

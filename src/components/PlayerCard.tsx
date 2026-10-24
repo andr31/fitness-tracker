@@ -15,6 +15,8 @@ import DailyHistoryModal from './DailyHistoryModal';
 import DailyGoalStatsModal from './DailyGoalStatsModal';
 import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
+import { getCalendarActivityStats } from '@/lib/dailyAverage';
+import type { DailyActivityEntry } from '@/lib/dailyAverage';
 
 // Helper to format numbers: show decimals only if needed
 const formatNumber = (num: number | string): string => {
@@ -154,6 +156,8 @@ export default function PlayerCard({
   const [inputValue, setInputValue] = useState('');
   const [removeValue, setRemoveValue] = useState('');
   const [todayTotal, setTodayTotal] = useState<number>(0);
+  const [dailyHistory, setDailyHistory] = useState<DailyActivityEntry[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -183,11 +187,6 @@ export default function PlayerCard({
   const [isGoalStatsModalOpen, setIsGoalStatsModalOpen] = useState(false);
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [daysSinceActive, setDaysSinceActive] = useState<number | null>(null);
-  // Same "avg per day" shown in the history modal: total ÷ days with entries
-  const [currentDailyAverage, setCurrentDailyAverage] = useState<number | null>(
-    null,
-  );
-
   const colors = getThemeColors(theme);
   const remainingToMilestone = Math.max(0, milestone - player.totalPushups);
   const daysRemaining = competitionEndDate
@@ -205,6 +204,10 @@ export default function PlayerCard({
         )
       : null;
   const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
+  const currentDailyAverage = historyLoaded
+    ? getCalendarActivityStats(dailyHistory, player.createdAt, currentDate)
+        .average
+    : null;
   const requiredRawDailyAverage =
     daysRemaining && daysRemaining > 0
       ? remainingToMilestone / daysRemaining
@@ -236,8 +239,13 @@ export default function PlayerCard({
   const fetchTodayTotal = async () => {
     try {
       const response = await fetch(`/api/players/${player.id}/history`);
-      if (!response.ok) return;
+      if (!response.ok) {
+        console.error('Failed to fetch player history for pace and today total');
+        return;
+      }
       const data = await response.json();
+      setDailyHistory(data);
+      setHistoryLoaded(true);
       if (data.length > 0) {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -246,15 +254,6 @@ export default function PlayerCard({
           (d: { date: string; total: number }) => d.date === today,
         );
         setTodayTotal(todayEntry ? todayEntry.total : 0);
-        // History is newest-first; average over days that have entries
-        setCurrentDailyAverage(
-          data.reduce(
-            (sum: number, d: { total: number | string }) =>
-              sum + parseFloat(String(d.total)),
-            0,
-          ) / data.length,
-        );
-
         // Calculate days since last activity for sleepy badge
         // Only count days with positive net total (ignore add+remove to zero)
         const lastActiveEntry = data.find(
@@ -284,7 +283,6 @@ export default function PlayerCard({
         }
       } else {
         setTodayTotal(0);
-        setCurrentDailyAverage(0);
         // No history — use player creation date
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -1201,6 +1199,7 @@ export default function PlayerCard({
         onClose={() => setIsHistoryOpen(false)}
         playerId={player.id}
         playerName={player.name}
+        playerCreatedAt={player.createdAt}
         theme={theme}
         sessionType={sessionType}
         exerciseLabel={exerciseLabel}
