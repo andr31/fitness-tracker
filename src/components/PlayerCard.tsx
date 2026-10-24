@@ -31,13 +31,22 @@ function getCalendarDaysRemaining(endDate: Date, currentDate: Date): number {
     currentDate.getMonth(),
     currentDate.getDate(),
   );
+  const lastActivityDate = new Date(endDate);
+  if (
+    lastActivityDate.getHours() === 0 &&
+    lastActivityDate.getMinutes() === 0 &&
+    lastActivityDate.getSeconds() === 0 &&
+    lastActivityDate.getMilliseconds() === 0
+  ) {
+    lastActivityDate.setDate(lastActivityDate.getDate() - 1);
+  }
   const deadline = Date.UTC(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate(),
+    lastActivityDate.getFullYear(),
+    lastActivityDate.getMonth(),
+    lastActivityDate.getDate(),
   );
 
-  return Math.floor((deadline - today) / 86_400_000) + 1;
+  return Math.max(0, Math.floor((deadline - today) / 86_400_000) + 1);
 }
 
 function roundUpToActivityIncrement(value: number, increment: number): number {
