@@ -34,6 +34,41 @@ export async function setActiveSessionId(sessionId: number): Promise<void> {
   });
 }
 
+const KNOWN_SESSIONS_COOKIE = 'knownSessionIds';
+const MAX_KNOWN_SESSIONS = 50;
+
+/**
+ * Session IDs this browser has unlocked or created (including the current active one).
+ */
+export async function getKnownSessionIds(): Promise<number[]> {
+  const cookieStore = await cookies();
+  const ids = (cookieStore.get(KNOWN_SESSIONS_COOKIE)?.value ?? '')
+    .split(',')
+    .map((v) => Number.parseInt(v, 10))
+    .filter((n) => Number.isInteger(n));
+  const active = Number.parseInt(
+    cookieStore.get('activeSessionId')?.value ?? '',
+    10,
+  );
+  if (Number.isInteger(active) && !ids.includes(active)) ids.push(active);
+  return ids;
+}
+
+/**
+ * Remember a session for this browser so it shows up on the dashboard.
+ */
+export async function addKnownSessionId(sessionId: number): Promise<void> {
+  const cookieStore = await cookies();
+  const ids = (await getKnownSessionIds()).filter((id) => id !== sessionId);
+  ids.unshift(sessionId);
+  cookieStore.set(KNOWN_SESSIONS_COOKIE, ids.slice(0, MAX_KNOWN_SESSIONS).join(','), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
 /**
  * Clear the active session ID from cookies
  */
