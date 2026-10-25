@@ -244,7 +244,12 @@ export default function SessionSelectorModal({
                             : 'rgb(55, 65, 81)',
                     }}
                     onClick={() => {
-                      if (session.isMember && activeSessionId !== session.id) {
+                      if (isPage && activeSessionId === session.id) {
+                        onSessionChange();
+                      } else if (
+                        session.isMember &&
+                        activeSessionId !== session.id
+                      ) {
                         handleActivateSession(session.id);
                       } else if (activeSessionId !== session.id) {
                         setSelectedSession(session.id);
