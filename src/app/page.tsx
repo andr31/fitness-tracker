@@ -34,6 +34,7 @@ export default function Home() {
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dashboardKey, setDashboardKey] = useState(0);
   const [error, setError] = useState('');
   const [activeSessionName, setActiveSessionName] = useState<string>('');
   const [sessionType, setSessionType] = useState<'pushups' | 'plank' | 'custom'>(
@@ -170,13 +171,18 @@ export default function Home() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
-    // Refresh ownership flags (isMine/role) so controls don't stay stale for account-mode sessions
-    fetchPlayers();
+    // Leave the session: account sessions need a login, so refetch to drop the stale state
+    setPlayers([]);
+    await fetchActiveSession();
+    await fetchPlayers();
   };
 
   const handleAuthenticated = async (user: CurrentUser) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
+    // A saved session cookie becomes valid again after login, so resync it too
+    await Promise.all([fetchActiveSession(), fetchSettings()]);
+    setDashboardKey((k) => k + 1);
     // Re-sync isMine/role now that we're logged in, without needing a page refresh
     const updatedPlayers = await fetchPlayers();
     const alreadyJoined = updatedPlayers.some((p) => p.isMine);
@@ -201,8 +207,7 @@ export default function Home() {
       const response = await fetch('/api/players');
       if (!response.ok) {
         if (response.status === 401) {
-          // No active session, show session selector
-          setIsSessionSelectorOpen(true);
+          // No active session: the dashboard is shown instead
           setLoading(false);
           return [];
         }
@@ -397,7 +402,11 @@ export default function Home() {
 
       setError('');
       setIsCreateSessionOpen(false);
-      setIsSessionSelectorOpen(true);
+      if (activeSessionName) {
+        setIsSessionSelectorOpen(true);
+      } else {
+        setDashboardKey((k) => k + 1);
+      }
     } catch (err: any) {
       throw new Error(err.message || 'Failed to create session');
     }
@@ -1010,60 +1019,14 @@ export default function Home() {
 
       {/* Show session-dependent content only when a session is active */}
       {!activeSessionName && !loading ? (
-        <div className="max-w-7xl mx-auto px-4 mt-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16 rounded-xl border backdrop-blur-md"
-            style={{
-              background:
-                theme === 'gameofthrones'
-                  ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(28, 25, 23, 0.5))'
-                  : theme === 'christmas'
-                    ? 'linear-gradient(135deg, rgba(127, 29, 29, 0.5), rgba(20, 83, 45, 0.3))'
-                    : theme === 'halloween'
-                      ? 'linear-gradient(135deg, rgba(46, 16, 74, 0.6), rgba(10, 6, 20, 0.5))'
-                      : 'linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.6))',
-              borderColor:
-                theme === 'gameofthrones'
-                  ? 'rgb(120, 53, 15)'
-                  : theme === 'christmas'
-                    ? 'rgb(220, 38, 38)'
-                    : theme === 'halloween'
-                      ? 'rgb(249, 115, 22)'
-                      : 'rgb(55, 65, 81)',
-            }}
-          >
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ repeat: Infinity, duration: 2.5 }}
-              className="text-5xl mb-4"
-            >
-              🏋️
-            </motion.div>
-            <h2 className="text-2xl font-bold text-white mb-2">
-              No Active Session
-            </h2>
-            <p className="text-gray-400 mb-6">
-              Select or create a session to get started
-            </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setIsSessionSelectorOpen(true)}
-              className="text-white font-bold px-8 py-3 rounded-lg inline-flex items-center gap-2 transition-all shadow-lg"
-              style={{ backgroundColor: 'rgb(59, 130, 246)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgb(37, 99, 235)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgb(59, 130, 246)';
-              }}
-            >
-              <History className="w-5 h-5" />
-              Open Sessions
-            </motion.button>
-          </motion.div>
+        <div className="max-w-7xl mx-auto px-4 mt-8">
+          <SessionSelectorModal
+            key={dashboardKey}
+            variant="page"
+            isOpen
+            onCreateNew={() => setIsCreateSessionOpen(true)}
+            onSessionChange={handleSessionChange}
+          />
         </div>
       ) : activeSessionName ? (
         <>

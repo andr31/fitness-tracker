@@ -16,21 +16,25 @@ interface Session {
   lastActivityDate?: string | null;
   playerCount?: number;
   authMode?: 'open' | 'account';
+  isMember?: boolean;
 }
 
 interface SessionSelectorModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onCreateNew: () => void;
   onSessionChange: () => void;
+  variant?: 'modal' | 'page';
 }
 
 export default function SessionSelectorModal({
   isOpen,
-  onClose,
+  onClose = () => {},
   onCreateNew,
   onSessionChange,
+  variant = 'modal',
 }: SessionSelectorModalProps) {
+  const isPage = variant === 'page';
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,7 +68,9 @@ export default function SessionSelectorModal({
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/sessions');
+      const response = await fetch(
+        isPage ? '/api/sessions?scope=mine' : '/api/sessions',
+      );
       if (!response.ok) throw new Error('Failed to fetch sessions');
       const data = await response.json();
       setSessions(data);
@@ -78,8 +84,9 @@ export default function SessionSelectorModal({
     }
   };
 
-  const handleActivateSession = async () => {
-    if (!selectedSession || !password) {
+  const handleActivateSession = async (memberSessionId?: number) => {
+    const targetId = memberSessionId ?? selectedSession;
+    if (!targetId || (!memberSessionId && !password)) {
       setError('Please select a session and enter the password');
       return;
     }
@@ -88,11 +95,11 @@ export default function SessionSelectorModal({
       setIsActivating(true);
       setError(''); // Clear any previous errors
       const response = await fetch(
-        `/api/sessions/${selectedSession}/activate`,
+        `/api/sessions/${targetId}/activate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
+          body: JSON.stringify({ password: memberSessionId ? undefined : password }),
         },
       );
 
@@ -110,6 +117,11 @@ export default function SessionSelectorModal({
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to activate session';
+      if (memberSessionId) {
+        // Membership may be stale (logged out elsewhere): refresh and fall back to the password form
+        setSelectedSession(memberSessionId);
+        await fetchSessions();
+      }
       setError(errorMessage);
     } finally {
       setIsActivating(false);
@@ -137,14 +149,14 @@ export default function SessionSelectorModal({
 
   const activeSession = sessions.find((s) => s.isActive);
 
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  const panel = (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, scale: isPage ? 1 : 0.9, y: isPage ? 20 : 0 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col border"
+          className={`rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col border ${
+            isPage ? 'max-w-5xl' : 'max-w-2xl max-h-[80vh]'
+          }`}
           style={{
             backgroundColor: 'rgb(31, 41, 55)',
             borderColor: 'rgb(55, 65, 81)',
@@ -161,8 +173,13 @@ export default function SessionSelectorModal({
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white">
-                    Session Manager
+                    {isPage ? 'Your Sessions' : 'Session Manager'}
                   </h2>
+                  {isPage && !activeSession && (
+                    <p className="text-sm text-gray-400">
+                      Pick a session to jump in, or create a new one
+                    </p>
+                  )}
                   {activeSession && (
                     <p className="text-sm text-gray-400">
                       Active:{' '}
@@ -173,12 +190,22 @@ export default function SessionSelectorModal({
                   )}
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-300 transition-colors"
-              >
-                <X size={24} />
-              </button>
+              {isPage ? (
+                <button
+                  onClick={onCreateNew}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2"
+                >
+                  <Plus size={18} />
+                  New Session
+                </button>
+              ) : (
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -198,7 +225,11 @@ export default function SessionSelectorModal({
                 </button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div
+                className={
+                  isPage ? 'grid grid-cols-1 md:grid-cols-2 gap-3' : 'space-y-3'
+                }
+              >
                 {sessions.map((session) => (
                   <div
                     key={session.id}
@@ -218,7 +249,14 @@ export default function SessionSelectorModal({
                             : 'rgb(55, 65, 81)',
                     }}
                     onClick={() => {
-                      if (activeSessionId !== session.id) {
+                      if (isPage && activeSessionId === session.id) {
+                        onSessionChange();
+                      } else if (
+                        session.isMember &&
+                        activeSessionId !== session.id
+                      ) {
+                        handleActivateSession(session.id);
+                      } else if (activeSessionId !== session.id) {
                         setSelectedSession(session.id);
                       }
                     }}
@@ -236,6 +274,11 @@ export default function SessionSelectorModal({
                                 title="You need to sign in to take part in this session"
                               >
                                 🔒 Auth required
+                              </span>
+                            )}
+                            {session.isMember && (
+                              <span className="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-600 text-xs rounded-full flex-shrink-0">
+                                Member · no password needed
                               </span>
                             )}
                             {activeSessionId === session.id && (
@@ -410,25 +453,37 @@ export default function SessionSelectorModal({
 
           </div>
 
-          <div
-            className="p-6 border-t"
-            style={{
-              borderColor: 'rgb(55, 65, 81)',
-              backgroundColor: 'rgb(55, 65, 81)',
-            }}
-          >
-            <button
-              onClick={onCreateNew}
-              className="w-full px-4 py-2 border rounded-lg transition-colors flex items-center justify-center gap-2 text-gray-300 hover:bg-gray-600"
+          {!isPage && (
+            <div
+              className="p-6 border-t"
               style={{
-                borderColor: 'rgb(75, 85, 99)',
+                borderColor: 'rgb(55, 65, 81)',
+                backgroundColor: 'rgb(55, 65, 81)',
               }}
             >
-              <Plus size={20} />
-              Create New Session
-            </button>
-          </div>
+              <button
+                onClick={onCreateNew}
+                className="w-full px-4 py-2 border rounded-lg transition-colors flex items-center justify-center gap-2 text-gray-300 hover:bg-gray-600"
+                style={{
+                  borderColor: 'rgb(75, 85, 99)',
+                }}
+              >
+                <Plus size={20} />
+                Create New Session
+              </button>
+            </div>
+          )}
         </motion.div>
+  );
+
+  if (isPage) {
+    return <div className="flex justify-center">{panel}</div>;
+  }
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        {panel}
       </div>
     </AnimatePresence>
   );

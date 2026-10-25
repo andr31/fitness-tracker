@@ -2,18 +2,42 @@ import { sql } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcryptjs';
 import { getCurrentUser } from '@/lib/auth';
+import { addKnownSessionId, getKnownSessionIds } from '@/lib/sessionHelpers';
 
 // GET /api/sessions - List all sessions (without passwords)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // scope=mine: only sessions this browser unlocked/created, or that the
+    // logged-in account created or joined
+    const mine = request.nextUrl.searchParams.get('scope') === 'mine';
+    let knownIds: number[] = [];
+    let userId: number | null = null;
+    userId = (await getCurrentUser())?.id ?? null;
+    if (mine) {
+      knownIds = await getKnownSessionIds();
+    }
+
     const result = await sql`
       SELECT s.id, s.name, s.isActive, s.createdAt, s.updatedAt, s.createdAtLocalDate, s.sessionType, s.customExerciseName, s.authMode,
         (SELECT MAX(sub.localDate) FROM (
           SELECT ph.localDate FROM pushupHistory ph WHERE ph.sessionId = s.id GROUP BY ph.localDate HAVING SUM(ph.amount) > 0
         ) sub) as lastActivityDate,
-        (SELECT COUNT(*) FROM players p WHERE p.sessionId = s.id) as playerCount
+        (SELECT COUNT(*) FROM players p WHERE p.sessionId = s.id) as playerCount,
+        (s.authMode = 'account' AND ${userId}::int IS NOT NULL AND (
+          s.creatorUserId = ${userId}::int
+          OR EXISTS (SELECT 1 FROM players mm WHERE mm.sessionId = s.id AND mm.userId = ${userId}::int)
+        )) as isMember
       FROM sessions s
       WHERE s.archivedAt IS NULL
+        AND (
+          ${!mine}
+          OR (s.id = ANY(${`{${knownIds.join(',')}}`}::int[])
+            AND (s.authMode <> 'account' OR ${userId}::int IS NOT NULL))
+          OR (${userId}::int IS NOT NULL AND (
+            s.creatorUserId = ${userId}::int
+            OR EXISTS (SELECT 1 FROM players mp WHERE mp.sessionId = s.id AND mp.userId = ${userId}::int)
+          ))
+        )
       ORDER BY s.isActive DESC, s.createdAt DESC
     `;
 
@@ -32,6 +56,7 @@ export async function GET() {
           ? new Date(row.lastactivitydate).toISOString().split('T')[0]
           : null,
         playerCount: parseInt(row.playercount) || 0,
+        isMember: row.ismember === true,
       })),
     );
   } catch (error) {
@@ -145,6 +170,8 @@ export async function POST(request: NextRequest) {
         VALUES (${creatorDisplayName}, 0, ${newSession.id}, ${creatorUserId}, 'admin')
       `;
     }
+
+    await addKnownSessionId(newSession.id);
 
     return NextResponse.json(
       {

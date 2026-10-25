@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { getCurrentUser } from '@/lib/auth';
 
 /**
  * Get the active session ID from cookies, unless the session is archived.
@@ -13,11 +14,17 @@ export async function getActiveSessionId(): Promise<number | null> {
   if (!Number.isInteger(parsedSessionId)) return null;
 
   const result = await sql`
-    SELECT id FROM sessions
+    SELECT id, authMode FROM sessions
     WHERE id = ${parsedSessionId} AND archivedAt IS NULL
   `;
+  if (result.rows.length === 0) return null;
 
-  return result.rows.length > 0 ? parsedSessionId : null;
+  // Account sessions require a logged-in user even if the cookie is still set
+  if (result.rows[0].authmode === 'account' && !(await getCurrentUser())) {
+    return null;
+  }
+
+  return parsedSessionId;
 }
 
 /**
@@ -31,6 +38,41 @@ export async function setActiveSessionId(sessionId: number): Promise<void> {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+}
+
+const KNOWN_SESSIONS_COOKIE = 'knownSessionIds';
+const MAX_KNOWN_SESSIONS = 50;
+
+/**
+ * Session IDs this browser has unlocked or created (including the current active one).
+ */
+export async function getKnownSessionIds(): Promise<number[]> {
+  const cookieStore = await cookies();
+  const ids = (cookieStore.get(KNOWN_SESSIONS_COOKIE)?.value ?? '')
+    .split(',')
+    .map((v) => Number.parseInt(v, 10))
+    .filter((n) => Number.isInteger(n));
+  const active = Number.parseInt(
+    cookieStore.get('activeSessionId')?.value ?? '',
+    10,
+  );
+  if (Number.isInteger(active) && !ids.includes(active)) ids.push(active);
+  return ids;
+}
+
+/**
+ * Remember a session for this browser so it shows up on the dashboard.
+ */
+export async function addKnownSessionId(sessionId: number): Promise<void> {
+  const cookieStore = await cookies();
+  const ids = (await getKnownSessionIds()).filter((id) => id !== sessionId);
+  ids.unshift(sessionId);
+  cookieStore.set(KNOWN_SESSIONS_COOKIE, ids.slice(0, MAX_KNOWN_SESSIONS).join(','), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 60 * 60 * 24 * 365,
   });
 }
 
