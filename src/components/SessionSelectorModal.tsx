@@ -163,16 +163,16 @@ export default function SessionSelectorModal({
           }}
         >
           <div
-            className="p-6 border-b"
+            className="p-4 sm:p-6 border-b"
             style={{ borderColor: 'rgb(55, 65, 81)' }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <History className="text-white" size={24} />
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">
+                <div className="min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
                     {isPage ? 'Your Sessions' : 'Session Manager'}
                   </h2>
                   {isPage && !activeSession && (
@@ -193,7 +193,7 @@ export default function SessionSelectorModal({
               {isPage ? (
                 <button
                   onClick={onCreateNew}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2"
+                  className="w-full sm:w-auto justify-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2"
                 >
                   <Plus size={18} />
                   New Session
@@ -209,7 +209,7 @@ export default function SessionSelectorModal({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6">
             {loading ? (
               <div className="text-center py-8 text-gray-400">
                 Loading sessions...
@@ -308,7 +308,7 @@ export default function SessionSelectorModal({
                               });
                             })()}
                           </p>
-                          <div className="flex items-center gap-3 mt-1">
+                          <div className="flex items-center gap-x-3 gap-y-1 mt-1 flex-wrap">
                             {session.playerCount !== undefined && (
                               <span className="text-xs text-gray-400">
                                 👥 {session.playerCount} player
