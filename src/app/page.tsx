@@ -181,7 +181,7 @@ export default function Home() {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
     // A saved session cookie becomes valid again after login, so resync it too
-    await fetchActiveSession();
+    await Promise.all([fetchActiveSession(), fetchSettings()]);
     setDashboardKey((k) => k + 1);
     // Re-sync isMine/role now that we're logged in, without needing a page refresh
     const updatedPlayers = await fetchPlayers();
