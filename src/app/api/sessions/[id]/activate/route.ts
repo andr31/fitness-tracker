@@ -62,6 +62,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Remember the previously active session before the cookie is overwritten
+    await addKnownSessionId(sessionId);
+
     // Set cookie with session ID (no database isActive update needed - each user has their own cookie)
     const cookieStore = await cookies();
     cookieStore.set('activeSessionId', sessionId.toString(), {
@@ -70,8 +73,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 30, // 30 days
     });
-
-    await addKnownSessionId(sessionId);
 
     return NextResponse.json({
       success: true,

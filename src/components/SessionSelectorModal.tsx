@@ -117,6 +117,11 @@ export default function SessionSelectorModal({
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to activate session';
+      if (memberSessionId) {
+        // Membership may be stale (logged out elsewhere): refresh and fall back to the password form
+        setSelectedSession(memberSessionId);
+        await fetchSessions();
+      }
       setError(errorMessage);
     } finally {
       setIsActivating(false);
