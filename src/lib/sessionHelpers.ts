@@ -1,5 +1,6 @@
 import { sql } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { getCurrentUser } from '@/lib/auth';
 
 /**
  * Get the active session ID from cookies, unless the session is archived.
@@ -13,11 +14,17 @@ export async function getActiveSessionId(): Promise<number | null> {
   if (!Number.isInteger(parsedSessionId)) return null;
 
   const result = await sql`
-    SELECT id FROM sessions
+    SELECT id, authMode FROM sessions
     WHERE id = ${parsedSessionId} AND archivedAt IS NULL
   `;
+  if (result.rows.length === 0) return null;
 
-  return result.rows.length > 0 ? parsedSessionId : null;
+  // Account sessions require a logged-in user even if the cookie is still set
+  if (result.rows[0].authmode === 'account' && !(await getCurrentUser())) {
+    return null;
+  }
+
+  return parsedSessionId;
 }
 
 /**

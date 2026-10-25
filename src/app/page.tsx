@@ -171,8 +171,10 @@ export default function Home() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
-    // Refresh ownership flags (isMine/role) so controls don't stay stale for account-mode sessions
-    fetchPlayers();
+    // Leave the session: account sessions need a login, so refetch to drop the stale state
+    setPlayers([]);
+    await fetchActiveSession();
+    await fetchPlayers();
   };
 
   const handleAuthenticated = async (user: CurrentUser) => {

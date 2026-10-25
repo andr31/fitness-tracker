@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
       WHERE s.archivedAt IS NULL
         AND (
           ${!mine}
-          OR s.id = ANY(${`{${knownIds.join(',')}}`}::int[])
+          OR (s.id = ANY(${`{${knownIds.join(',')}}`}::int[])
+            AND (s.authMode <> 'account' OR ${userId}::int IS NOT NULL))
           OR (${userId}::int IS NOT NULL AND (
             s.creatorUserId = ${userId}::int
             OR EXISTS (SELECT 1 FROM players mp WHERE mp.sessionId = s.id AND mp.userId = ${userId}::int)
