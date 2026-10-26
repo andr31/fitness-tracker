@@ -36,6 +36,7 @@ interface Player {
 export default function Home() {
   const toast = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshInFlight = useRef(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
@@ -136,8 +137,9 @@ export default function Home() {
     fetchCurrentUser();
   }, []);
 
-  const fetchActiveSession = async () => {
-    setCompetitionEndDate(null);
+  const fetchActiveSession = async (silent = false) => {
+    // The countdown only refetches its end date on mount, so keep it on silent refreshes
+    if (!silent) setCompetitionEndDate(null);
     try {
       const response = await fetch('/api/sessions/active');
       if (response.ok) {
@@ -451,10 +453,26 @@ export default function Home() {
   };
 
   const refreshAll = async () => {
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
     setIsRefreshing(true);
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      await Promise.all([fetchPlayers(true), fetchSettings(), fetchActiveSession()]);
+      const timeout = new Promise<'timeout'>((resolve) => {
+        timer = setTimeout(() => resolve('timeout'), 15000);
+      });
+      const result = await Promise.race([
+        Promise.all([
+          fetchPlayers(true),
+          fetchSettings(),
+          fetchActiveSession(true),
+        ]),
+        timeout,
+      ]);
+      if (result === 'timeout') toast.error('Refresh is taking too long. Try again.');
     } finally {
+      clearTimeout(timer);
+      refreshInFlight.current = false;
       setIsRefreshing(false);
     }
   };
