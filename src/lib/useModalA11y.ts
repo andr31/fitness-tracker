@@ -65,7 +65,7 @@ export function useModalA11y<T extends HTMLElement>(
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
-      if (e.shiftKey && (active === first || !node.contains(active))) {
+      if (e.shiftKey && (active === first || active === node || !node.contains(active))) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && (active === last || !node.contains(active))) {
