@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Trophy } from 'lucide-react';
+import AnimatedNumber from './AnimatedNumber';
 
 // Helper to format numbers: show decimals only if needed
 const formatNumber = (num: number): string => {
@@ -93,15 +94,13 @@ export default function RaceTrack({
                     {player.name}
                   </h3>
                   <div className="flex flex-col items-end">
-                    <motion.span
-                      key={player.totalPushups}
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-xl font-bold text-white"
-                    >
-                      {formatNumber(player.totalPushups)} {activityUnit} 💪
-                    </motion.span>
+                    <span className="text-xl font-bold text-white">
+                      <AnimatedNumber
+                        value={player.totalPushups}
+                        format={formatNumber}
+                      />{' '}
+                      {activityUnit} 💪
+                    </span>
                     {hasMilestone && (
                       <span className="text-xs text-gray-400">
                         {player.totalPushups < milestone

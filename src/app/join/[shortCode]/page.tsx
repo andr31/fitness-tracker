@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/Skeleton';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -169,9 +170,15 @@ export default function JoinSession() {
   if (loading && !needsPassword) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-yellow-400 animate-spin mx-auto mb-4" />
-          <p className="text-white text-lg">Loading session...</p>
+        <div
+          className="w-full max-w-md p-6 space-y-4"
+          role="status"
+          aria-label="Loading session"
+        >
+          <Skeleton className="h-8 w-2/3 mx-auto" />
+          <Skeleton className="h-4 w-1/2 mx-auto" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
       </div>
     );

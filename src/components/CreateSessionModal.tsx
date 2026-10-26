@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalA11y } from '@/lib/useModalA11y';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock } from 'lucide-react';
@@ -90,16 +91,23 @@ export default function CreateSessionModal({
     }
   };
 
+    const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Create new session"
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="rounded-2xl shadow-2xl max-w-md w-full p-8 relative border"
+          className="outline-none rounded-2xl shadow-2xl max-w-md w-full p-8 relative border"
           style={{
             backgroundColor: 'rgb(31, 41, 55)',
             borderColor: 'rgb(55, 65, 81)',
@@ -107,6 +115,8 @@ export default function CreateSessionModal({
         >
           <button
             onClick={onClose}
+            type="button"
+            aria-label="Close"
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-300 transition-colors"
             disabled={isSubmitting}
           >

@@ -1,8 +1,11 @@
 'use client';
 
+import { useModalA11y } from '@/lib/useModalA11y';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, History, Share2, Check } from 'lucide-react';
+import { SessionCardSkeleton } from '@/components/Skeleton';
+import { useToast } from '@/components/Providers';
 
 interface Session {
   id: number;
@@ -35,6 +38,7 @@ export default function SessionSelectorModal({
   variant = 'modal',
 }: SessionSelectorModalProps) {
   const isPage = variant === 'page';
+  const toast = useToast();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -111,6 +115,7 @@ export default function SessionSelectorModal({
       setPassword('');
       setSelectedSession(null);
       setError(''); // Clear error on success
+      toast.success('Session activated');
       await fetchActiveSession(); // Refresh active session indicator
       onSessionChange();
       onClose();
@@ -135,15 +140,18 @@ export default function SessionSelectorModal({
         const data = await response.json();
         await navigator.clipboard.writeText(data.shareUrl);
         setCopiedSessionId(sessionId);
+        toast.success('Share link copied');
         setTimeout(() => setCopiedSessionId(null), 2000);
       } else {
-        setError('Failed to generate share link');
+        toast.error('Failed to generate share link');
       }
     } catch (err) {
       console.error('Error sharing session:', err);
-      setError('Failed to copy share link');
+      toast.error('Failed to copy share link');
     }
   };
+
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen && !isPage, onClose);
 
   if (!isOpen) return null;
 
@@ -151,10 +159,15 @@ export default function SessionSelectorModal({
 
   const panel = (
         <motion.div
+          ref={isPage ? undefined : dialogRef}
+          role={isPage ? undefined : 'dialog'}
+          aria-modal={isPage ? undefined : true}
+          aria-label={isPage ? undefined : 'Session manager'}
+          tabIndex={isPage ? undefined : -1}
           initial={{ opacity: 0, scale: isPage ? 1 : 0.9, y: isPage ? 20 : 0 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className={`rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col border ${
+          className={`outline-none rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col border ${
             isPage ? 'max-w-5xl' : 'max-w-2xl max-h-[80vh]'
           }`}
           style={{
@@ -201,7 +214,8 @@ export default function SessionSelectorModal({
               ) : (
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-300 transition-colors"
+                  aria-label="Close"
+                  className="text-gray-400 hover:text-gray-300 transition-colors p-2"
                 >
                   <X size={24} />
                 </button>
@@ -211,8 +225,16 @@ export default function SessionSelectorModal({
 
           <div className="flex-1 overflow-y-auto p-3 sm:p-6">
             {loading ? (
-              <div className="text-center py-8 text-gray-400">
-                Loading sessions...
+              <div
+                className={
+                  isPage ? 'grid grid-cols-1 md:grid-cols-2 gap-3' : 'space-y-3'
+                }
+                role="status"
+                aria-label="Loading sessions"
+              >
+                {[0, 1, 2, 3].slice(0, isPage ? 4 : 3).map((i) => (
+                  <SessionCardSkeleton key={i} />
+                ))}
               </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8">
@@ -233,7 +255,7 @@ export default function SessionSelectorModal({
                 {sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="border rounded-lg p-4 transition-all cursor-pointer"
+                    className="border rounded-lg p-4 transition-all cursor-pointer hover:brightness-110 active:scale-[0.98]"
                     style={{
                       borderColor:
                         selectedSession === session.id

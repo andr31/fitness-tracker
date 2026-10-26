@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalA11y } from '@/lib/useModalA11y';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
@@ -58,6 +59,7 @@ export default function AddPlayerModal({
   joinDisplayName,
 }: AddPlayerModalProps) {
   const colors = getThemeColors(theme);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
@@ -93,10 +95,15 @@ export default function AddPlayerModal({
           />
 
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={accountMode ? 'Join session' : 'Add player'}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-2xl border z-50 w-[calc(100%-2rem)] sm:w-full max-w-sm p-6 sm:p-8"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg shadow-2xl border outline-none z-50 w-[calc(100%-2rem)] sm:w-full max-w-sm p-6 sm:p-8"
             style={{
               backgroundColor: colors.modalBg,
               borderColor: colors.modalBorder,
@@ -109,7 +116,9 @@ export default function AddPlayerModal({
               <motion.button
                 whileHover={{ rotate: 90 }}
                 onClick={onClose}
-                className="transition-colors flex-shrink-0 ml-2"
+                type="button"
+                aria-label="Close"
+                className="transition-colors flex-shrink-0 ml-2 p-2"
                 style={{
                   color: colors.closeIcon,
                 }}

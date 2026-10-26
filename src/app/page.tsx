@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, ChevronDown, ChevronUp, History, LogIn, LogOut } from 'lucide-react';
+import { Dumbbell, Plus, ChevronDown, ChevronUp, History, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
+import { PlayerCardSkeleton, Skeleton } from '@/components/Skeleton';
 import SessionSelectorModal from '@/components/SessionSelectorModal';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
@@ -14,6 +15,9 @@ import HalloweenBackground from '@/components/HalloweenBackground';
 import CountdownTimer from '@/components/CountdownTimer';
 import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
+import { useToast } from '@/components/Providers';
+import { usePullToRefresh } from '@/lib/usePullToRefresh';
+import { haptic } from '@/lib/haptics';
 import { Theme } from '@/lib/emojis';
 import { getSeasonalTheme } from '@/lib/themeConfig';
 import AuthModal, { CurrentUser } from '@/components/AuthModal';
@@ -26,9 +30,13 @@ interface Player {
   createdAt: string;
   role?: string;
   isMine?: boolean;
+  pending?: boolean;
 }
 
 export default function Home() {
+  const toast = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshInFlight = useRef(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
@@ -129,8 +137,9 @@ export default function Home() {
     fetchCurrentUser();
   }, []);
 
-  const fetchActiveSession = async () => {
-    setCompetitionEndDate(null);
+  const fetchActiveSession = async (silent = false) => {
+    // The countdown only refetches its end date on mount, so keep it on silent refreshes
+    if (!silent) setCompetitionEndDate(null);
     try {
       const response = await fetch('/api/sessions/active');
       if (response.ok) {
@@ -171,6 +180,7 @@ export default function Home() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
+    toast.info('Logged out');
     // Leave the session: account sessions need a login, so refetch to drop the stale state
     setPlayers([]);
     await fetchActiveSession();
@@ -180,6 +190,7 @@ export default function Home() {
   const handleAuthenticated = async (user: CurrentUser) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
+    toast.success(`Welcome, ${user.displayName}`);
     // A saved session cookie becomes valid again after login, so resync it too
     await Promise.all([fetchActiveSession(), fetchSettings()]);
     setDashboardKey((k) => k + 1);
@@ -201,9 +212,9 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const fetchPlayers = async (): Promise<Player[]> => {
+  const fetchPlayers = async (silent = false): Promise<Player[]> => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await fetch('/api/players');
       if (!response.ok) {
         if (response.status === 401) {
@@ -256,7 +267,7 @@ export default function Home() {
   const handleSaveMilestone = async () => {
     const value = parseInt(milestoneInput);
     if (isNaN(value) || value <= 0) {
-      setError('Please enter a valid milestone');
+      toast.error('Please enter a valid milestone');
       return;
     }
 
@@ -272,8 +283,9 @@ export default function Home() {
       setMilestone(value);
       setEditingMilestone(false);
       setError('');
+      toast.success('Milestone updated');
     } catch (err) {
-      setError('Failed to save milestone');
+      toast.error('Failed to save milestone');
       console.error(err);
     }
   };
@@ -292,65 +304,130 @@ export default function Home() {
       }
 
       const newPlayer = await response.json();
-      setPlayers([...players, newPlayer]);
+      setPlayers((ps) => [...ps, newPlayer]);
       setIsModalOpen(false);
       setError('');
+      toast.success(
+        sessionAuthMode === 'account' ? 'You joined the session' : 'Player added',
+      );
     } catch (err: any) {
       setIsModalOpen(false);
-      setError(err.message || 'Failed to add player');
+      toast.error(err.message || 'Failed to add player');
     }
   };
 
-  const handleAddPushups = async (
+  // Updates are sent one at a time per player so server totals and rollbacks stay consistent
+  const updateQueues = useRef<Map<number, Promise<void>>>(new Map());
+  const pendingCounts = useRef<Map<number, number>>(new Map());
+
+  const handleAddPushups = (
     playerId: number,
     amount: number,
     date?: string,
-  ) => {
-    try {
-      const body: { amount: number; date?: string } = { amount };
-      if (date) body.date = date;
+  ): Promise<void> => {
+    const previousPlayer = players.find((p) => p.id === playerId);
+    // Optimistic update: show the new total right away and roll back on failure
+    const appliedDelta = previousPlayer
+      ? Math.max(0, previousPlayer.totalPushups + amount) -
+        previousPlayer.totalPushups
+      : 0;
+    pendingCounts.current.set(
+      playerId,
+      (pendingCounts.current.get(playerId) ?? 0) + 1,
+    );
+    setPlayers((ps) =>
+      ps.map((p) =>
+        p.id === playerId
+          ? { ...p, totalPushups: p.totalPushups + appliedDelta, pending: true }
+          : p,
+      ),
+    );
 
-      const response = await fetch(`/api/players/${playerId}/pushups`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+    const run = async () => {
+      let succeeded = false;
+      let updatedPlayer: Player | null = null;
+      try {
+        const body: { amount: number; date?: string } = { amount };
+        if (date) body.date = date;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API Error:', errorData);
-        throw new Error(
-          errorData.details || errorData.error || 'Failed to update pushups',
+        const response = await fetch(`/api/players/${playerId}/pushups`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('API Error:', errorData);
+          throw new Error(
+            errorData.details || errorData.error || 'Failed to update pushups',
+          );
+        }
+
+        updatedPlayer = await response.json();
+        succeeded = true;
+      } catch (err) {
+        toast.error(`Failed to update ${exerciseLabel.toLowerCase()}`);
+        console.error(err);
+      }
+
+      const remaining = (pendingCounts.current.get(playerId) ?? 1) - 1;
+      pendingCounts.current.set(playerId, remaining);
+
+      if (succeeded && updatedPlayer) {
+        const confirmed = updatedPlayer;
+        // Check if player just reached milestone
+        if (
+          previousPlayer &&
+          previousPlayer.totalPushups < milestone &&
+          confirmed.totalPushups >= milestone &&
+          !playersReachedMilestone.has(playerId)
+        ) {
+          setCelebratingPlayer(confirmed.name);
+          setPlayersReachedMilestone((prev) => new Set(prev).add(playerId));
+          haptic('success');
+
+          // Auto-stop celebration after 2 minutes
+          setTimeout(() => {
+            setCelebratingPlayer(null);
+          }, 120000);
+        }
+
+        // The endpoint returns a partial player; merge so createdAt/isMine/role survive.
+        // While more updates are queued, keep the optimistic total instead of the older server one.
+        setPlayers((ps) =>
+          ps.map((p) =>
+            p.id === playerId
+              ? {
+                  ...p,
+                  ...confirmed,
+                  totalPushups:
+                    remaining > 0 ? p.totalPushups : confirmed.totalPushups,
+                  pending: remaining > 0,
+                }
+              : p,
+          ),
+        );
+      } else {
+        setPlayers((ps) =>
+          ps.map((p) =>
+            p.id === playerId
+              ? {
+                  ...p,
+                  totalPushups: p.totalPushups - appliedDelta,
+                  pending: remaining > 0,
+                }
+              : p,
+          ),
         );
       }
+    };
 
-      const updatedPlayer = await response.json();
-      const previousPlayer = players.find((p) => p.id === playerId);
-
-      // Check if player just reached milestone
-      if (
-        previousPlayer &&
-        previousPlayer.totalPushups < milestone &&
-        updatedPlayer.totalPushups >= milestone &&
-        !playersReachedMilestone.has(playerId)
-      ) {
-        setCelebratingPlayer(updatedPlayer.name);
-        setPlayersReachedMilestone((prev) => new Set(prev).add(playerId));
-
-        // Auto-stop celebration after 2 minutes
-        setTimeout(() => {
-          setCelebratingPlayer(null);
-        }, 120000);
-      }
-
-      // The endpoint returns a partial player; merge so createdAt/isMine/role survive
-      setPlayers(
-        players.map((p) => (p.id === playerId ? { ...p, ...updatedPlayer } : p)),
-      );
-    } catch (err) {
-      setError(`Failed to update ${exerciseLabel.toLowerCase()}`);
-      console.error(err);
-    }
+    const next = (updateQueues.current.get(playerId) ?? Promise.resolve()).then(
+      run,
+    );
+    updateQueues.current.set(playerId, next);
+    return next;
   };
 
   const handleRemovePushups = async (playerId: number, amount: number) => {
@@ -368,9 +445,10 @@ export default function Home() {
 
       if (!response.ok) throw new Error('Failed to delete player');
 
-      setPlayers(players.filter((p) => p.id !== playerId));
+      setPlayers((ps) => ps.filter((p) => p.id !== playerId));
+      toast.success('Player removed');
     } catch (err) {
-      setError('Failed to delete player');
+      toast.error('Failed to delete player');
       console.error(err);
     }
   };
@@ -402,6 +480,7 @@ export default function Home() {
 
       setError('');
       setIsCreateSessionOpen(false);
+      toast.success('Session created');
       if (activeSessionName) {
         setIsSessionSelectorOpen(true);
       } else {
@@ -411,6 +490,37 @@ export default function Home() {
       throw new Error(err.message || 'Failed to create session');
     }
   };
+
+  const refreshAll = async () => {
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
+    setIsRefreshing(true);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeout = new Promise<'timeout'>((resolve) => {
+        timer = setTimeout(() => resolve('timeout'), 15000);
+      });
+      const result = await Promise.race([
+        Promise.all([
+          fetchPlayers(true),
+          fetchSettings(),
+          fetchActiveSession(true),
+        ]),
+        timeout,
+      ]);
+      if (result === 'timeout') toast.error('Refresh is taking too long. Try again.');
+    } finally {
+      clearTimeout(timer);
+      refreshInFlight.current = false;
+      setIsRefreshing(false);
+    }
+  };
+
+  const {
+    pull,
+    refreshing: isPullRefreshing,
+    threshold,
+  } = usePullToRefresh(refreshAll, !!activeSessionName);
 
   const handleSessionChange = () => {
     // Reload data after session change
@@ -438,6 +548,26 @@ export default function Home() {
       {theme === 'christmas' && <ChristmasBackground />}
       {theme === 'gameofthrones' && <BattleBackground />}
       {theme === 'halloween' && <HalloweenBackground />}
+      {/* Pull-to-refresh indicator */}
+      {(pull > 0 || isPullRefreshing) && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          style={{ top: Math.max(8, (isPullRefreshing ? threshold * 0.6 : pull) - 24) }}
+          role="status"
+          aria-label={isPullRefreshing ? 'Refreshing' : 'Pull to refresh'}
+        >
+          <div className="rounded-full bg-gray-800/90 border border-gray-600 p-2 shadow-lg">
+            <RefreshCw
+              className={`w-5 h-5 text-white ${isPullRefreshing ? 'animate-spin' : ''}`}
+              style={
+                isPullRefreshing
+                  ? undefined
+                  : { transform: `rotate(${(pull / threshold) * 360}deg)` }
+              }
+            />
+          </div>
+        </div>
+      )}
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -1137,7 +1267,16 @@ export default function Home() {
                       : 'rgb(254, 226, 226)',
                 }}
               >
-                {error}
+                <div className="flex items-center justify-between gap-3">
+                  <span>{error}</span>
+                  <button
+                    type="button"
+                    onClick={refreshAll}
+                    className="px-3 py-1.5 rounded-md text-sm font-semibold bg-white/10 hover:bg-white/20"
+                  >
+                    Retry
+                  </button>
+                </div>
               </motion.div>
             )}
 
@@ -1145,23 +1284,46 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex items-center justify-center h-96"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                role="status"
+                aria-label="Loading players"
               >
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1 }}
-                  className="w-12 h-12 border-4 border-gray-700 border-t-yellow-400 rounded-full"
-                />
+                <div className="lg:col-span-1 space-y-4">
+                  {[0, 1, 2].map((i) => (
+                    <PlayerCardSkeleton key={i} />
+                  ))}
+                </div>
+                <div className="lg:col-span-2 space-y-4">
+                  <Skeleton className="h-10 w-1/3" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
               </motion.div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left side - Players */}
                 <div className="lg:col-span-1 space-y-4">
-                  {players.length > 0 && (
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      Players
-                    </h2>
-                  )}
+                  <div className="flex items-center justify-between mb-4">
+                    {players.length > 0 ? (
+                      <h2 className="text-2xl font-bold text-white">Players</h2>
+                    ) : (
+                      <span />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic('tap');
+                        refreshAll();
+                      }}
+                      disabled={isRefreshing}
+                      aria-label="Refresh players"
+                      title="Refresh"
+                      className="p-3 sm:p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 disabled:opacity-60"
+                    >
+                      <RefreshCw
+                        className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}
+                      />
+                    </button>
+                  </div>
                   <AnimatePresence>
                     {players.length === 0 ? (
                       <motion.div
@@ -1178,12 +1340,27 @@ export default function Home() {
                                 : 'rgb(156, 163, 175)',
                         }}
                       >
-                        <p className="mb-4">No players yet!</p>
-                        <p className="text-sm">
-                          {sessionAuthMode === 'account'
-                            ? 'Click "Join Session" to get started 🚀'
-                            : 'Click "Add Player" to get started 🚀'}
+                        <div className="text-5xl mb-3" aria-hidden="true">
+                          🏁
+                        </div>
+                        <p className="text-lg font-semibold text-white mb-1">
+                          No players yet
                         </p>
+                        <p className="text-sm mb-5">
+                          {sessionAuthMode === 'account'
+                            ? 'Join the session to start logging and see the race begin.'
+                            : 'Add the first player to start the race.'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddPlayer}
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-lg font-bold text-white bg-blue-500 hover:bg-blue-600 shadow-lg"
+                        >
+                          <Plus className="w-5 h-5" />
+                          {sessionAuthMode === 'account'
+                            ? 'Join Session'
+                            : 'Add Player'}
+                        </button>
                       </motion.div>
                     ) : (
                       players.map((player) => (
