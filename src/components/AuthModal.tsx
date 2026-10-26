@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalA11y } from '@/lib/useModalA11y';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, LogIn } from 'lucide-react';
@@ -39,6 +40,8 @@ export default function AuthModal({
     setDisplayName('');
     setError('');
   }, [isOpen]);
+
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -96,10 +99,15 @@ export default function AuthModal({
     <AnimatePresence>
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
         <motion.div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sign in"
+          tabIndex={-1}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="rounded-2xl shadow-2xl max-w-sm w-full p-8 relative border"
+          className="outline-none rounded-2xl shadow-2xl max-w-sm w-full p-8 relative border"
           style={{
             backgroundColor: 'rgb(31, 41, 55)',
             borderColor: 'rgb(55, 65, 81)',

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dumbbell, Plus, ChevronDown, ChevronUp, History, LogIn, LogOut } from 'lucide-react';
+import { Dumbbell, Plus, ChevronDown, ChevronUp, History, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
@@ -15,6 +15,9 @@ import HalloweenBackground from '@/components/HalloweenBackground';
 import CountdownTimer from '@/components/CountdownTimer';
 import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
+import { useToast } from '@/components/Providers';
+import { usePullToRefresh } from '@/lib/usePullToRefresh';
+import { haptic } from '@/lib/haptics';
 import { Theme } from '@/lib/emojis';
 import { getSeasonalTheme } from '@/lib/themeConfig';
 import AuthModal, { CurrentUser } from '@/components/AuthModal';
@@ -27,9 +30,12 @@ interface Player {
   createdAt: string;
   role?: string;
   isMine?: boolean;
+  pending?: boolean;
 }
 
 export default function Home() {
+  const toast = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
@@ -172,6 +178,7 @@ export default function Home() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
+    toast.info('Logged out');
     // Leave the session: account sessions need a login, so refetch to drop the stale state
     setPlayers([]);
     await fetchActiveSession();
@@ -181,6 +188,7 @@ export default function Home() {
   const handleAuthenticated = async (user: CurrentUser) => {
     setCurrentUser(user);
     setIsAuthModalOpen(false);
+    toast.success(`Welcome, ${user.displayName}`);
     // A saved session cookie becomes valid again after login, so resync it too
     await Promise.all([fetchActiveSession(), fetchSettings()]);
     setDashboardKey((k) => k + 1);
@@ -202,9 +210,9 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const fetchPlayers = async (): Promise<Player[]> => {
+  const fetchPlayers = async (silent = false): Promise<Player[]> => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await fetch('/api/players');
       if (!response.ok) {
         if (response.status === 401) {
@@ -257,7 +265,7 @@ export default function Home() {
   const handleSaveMilestone = async () => {
     const value = parseInt(milestoneInput);
     if (isNaN(value) || value <= 0) {
-      setError('Please enter a valid milestone');
+      toast.error('Please enter a valid milestone');
       return;
     }
 
@@ -273,8 +281,9 @@ export default function Home() {
       setMilestone(value);
       setEditingMilestone(false);
       setError('');
+      toast.success('Milestone updated');
     } catch (err) {
-      setError('Failed to save milestone');
+      toast.error('Failed to save milestone');
       console.error(err);
     }
   };
@@ -293,12 +302,15 @@ export default function Home() {
       }
 
       const newPlayer = await response.json();
-      setPlayers([...players, newPlayer]);
+      setPlayers((ps) => [...ps, newPlayer]);
       setIsModalOpen(false);
       setError('');
+      toast.success(
+        sessionAuthMode === 'account' ? 'You joined the session' : 'Player added',
+      );
     } catch (err: any) {
       setIsModalOpen(false);
-      setError(err.message || 'Failed to add player');
+      toast.error(err.message || 'Failed to add player');
     }
   };
 
@@ -307,6 +319,20 @@ export default function Home() {
     amount: number,
     date?: string,
   ) => {
+    const previousPlayer = players.find((p) => p.id === playerId);
+    // Optimistic update: show the new total right away and roll back on failure
+    const appliedDelta = previousPlayer
+      ? Math.max(0, previousPlayer.totalPushups + amount) -
+        previousPlayer.totalPushups
+      : 0;
+    setPlayers((ps) =>
+      ps.map((p) =>
+        p.id === playerId
+          ? { ...p, totalPushups: p.totalPushups + appliedDelta, pending: true }
+          : p,
+      ),
+    );
+
     try {
       const body: { amount: number; date?: string } = { amount };
       if (date) body.date = date;
@@ -326,7 +352,6 @@ export default function Home() {
       }
 
       const updatedPlayer = await response.json();
-      const previousPlayer = players.find((p) => p.id === playerId);
 
       // Check if player just reached milestone
       if (
@@ -337,6 +362,7 @@ export default function Home() {
       ) {
         setCelebratingPlayer(updatedPlayer.name);
         setPlayersReachedMilestone((prev) => new Set(prev).add(playerId));
+        haptic('success');
 
         // Auto-stop celebration after 2 minutes
         setTimeout(() => {
@@ -345,11 +371,20 @@ export default function Home() {
       }
 
       // The endpoint returns a partial player; merge so createdAt/isMine/role survive
-      setPlayers(
-        players.map((p) => (p.id === playerId ? { ...p, ...updatedPlayer } : p)),
+      setPlayers((ps) =>
+        ps.map((p) =>
+          p.id === playerId ? { ...p, ...updatedPlayer, pending: false } : p,
+        ),
       );
     } catch (err) {
-      setError(`Failed to update ${exerciseLabel.toLowerCase()}`);
+      setPlayers((ps) =>
+        ps.map((p) =>
+          p.id === playerId
+            ? { ...p, totalPushups: p.totalPushups - appliedDelta, pending: false }
+            : p,
+        ),
+      );
+      toast.error(`Failed to update ${exerciseLabel.toLowerCase()}`);
       console.error(err);
     }
   };
@@ -369,9 +404,10 @@ export default function Home() {
 
       if (!response.ok) throw new Error('Failed to delete player');
 
-      setPlayers(players.filter((p) => p.id !== playerId));
+      setPlayers((ps) => ps.filter((p) => p.id !== playerId));
+      toast.success('Player removed');
     } catch (err) {
-      setError('Failed to delete player');
+      toast.error('Failed to delete player');
       console.error(err);
     }
   };
@@ -403,6 +439,7 @@ export default function Home() {
 
       setError('');
       setIsCreateSessionOpen(false);
+      toast.success('Session created');
       if (activeSessionName) {
         setIsSessionSelectorOpen(true);
       } else {
@@ -412,6 +449,21 @@ export default function Home() {
       throw new Error(err.message || 'Failed to create session');
     }
   };
+
+  const refreshAll = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([fetchPlayers(true), fetchSettings(), fetchActiveSession()]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const {
+    pull,
+    refreshing: isPullRefreshing,
+    threshold,
+  } = usePullToRefresh(refreshAll, !!activeSessionName);
 
   const handleSessionChange = () => {
     // Reload data after session change
@@ -439,6 +491,26 @@ export default function Home() {
       {theme === 'christmas' && <ChristmasBackground />}
       {theme === 'gameofthrones' && <BattleBackground />}
       {theme === 'halloween' && <HalloweenBackground />}
+      {/* Pull-to-refresh indicator */}
+      {(pull > 0 || isPullRefreshing) && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          style={{ top: Math.max(8, (isPullRefreshing ? threshold * 0.6 : pull) - 24) }}
+          role="status"
+          aria-label={isPullRefreshing ? 'Refreshing' : 'Pull to refresh'}
+        >
+          <div className="rounded-full bg-gray-800/90 border border-gray-600 p-2 shadow-lg">
+            <RefreshCw
+              className={`w-5 h-5 text-white ${isPullRefreshing ? 'animate-spin' : ''}`}
+              style={
+                isPullRefreshing
+                  ? undefined
+                  : { transform: `rotate(${(pull / threshold) * 360}deg)` }
+              }
+            />
+          </div>
+        </div>
+      )}
       {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -1138,7 +1210,16 @@ export default function Home() {
                       : 'rgb(254, 226, 226)',
                 }}
               >
-                {error}
+                <div className="flex items-center justify-between gap-3">
+                  <span>{error}</span>
+                  <button
+                    type="button"
+                    onClick={refreshAll}
+                    className="px-3 py-1.5 rounded-md text-sm font-semibold bg-white/10 hover:bg-white/20"
+                  >
+                    Retry
+                  </button>
+                </div>
               </motion.div>
             )}
 
@@ -1164,11 +1245,28 @@ export default function Home() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left side - Players */}
                 <div className="lg:col-span-1 space-y-4">
-                  {players.length > 0 && (
-                    <h2 className="text-2xl font-bold text-white mb-4">
-                      Players
-                    </h2>
-                  )}
+                  <div className="flex items-center justify-between mb-4">
+                    {players.length > 0 ? (
+                      <h2 className="text-2xl font-bold text-white">Players</h2>
+                    ) : (
+                      <span />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic('tap');
+                        refreshAll();
+                      }}
+                      disabled={isRefreshing}
+                      aria-label="Refresh players"
+                      title="Refresh"
+                      className="p-3 sm:p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 disabled:opacity-60"
+                    >
+                      <RefreshCw
+                        className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`}
+                      />
+                    </button>
+                  </div>
                   <AnimatePresence>
                     {players.length === 0 ? (
                       <motion.div
@@ -1185,12 +1283,27 @@ export default function Home() {
                                 : 'rgb(156, 163, 175)',
                         }}
                       >
-                        <p className="mb-4">No players yet!</p>
-                        <p className="text-sm">
-                          {sessionAuthMode === 'account'
-                            ? 'Click "Join Session" to get started 🚀'
-                            : 'Click "Add Player" to get started 🚀'}
+                        <div className="text-5xl mb-3" aria-hidden="true">
+                          🏁
+                        </div>
+                        <p className="text-lg font-semibold text-white mb-1">
+                          No players yet
                         </p>
+                        <p className="text-sm mb-5">
+                          {sessionAuthMode === 'account'
+                            ? 'Join the session to start logging and see the race begin.'
+                            : 'Add the first player to start the race.'}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddPlayer}
+                          className="inline-flex items-center gap-2 px-5 py-3 rounded-lg font-bold text-white bg-blue-500 hover:bg-blue-600 shadow-lg"
+                        >
+                          <Plus className="w-5 h-5" />
+                          {sessionAuthMode === 'account'
+                            ? 'Join Session'
+                            : 'Add Player'}
+                        </button>
                       </motion.div>
                     ) : (
                       players.map((player) => (

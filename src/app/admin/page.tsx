@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Archive, ArchiveRestore, Trash2 } from 'lucide-react';
+import { useConfirm } from '@/components/Providers';
 
 interface AdminSession {
   id: number;
@@ -13,6 +14,7 @@ interface AdminSession {
 }
 
 export default function AdminPage() {
+  const confirm = useConfirm();
   const [password, setPassword] = useState('');
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [unlocked, setUnlocked] = useState(false);
@@ -53,13 +55,19 @@ export default function AdminPage() {
     session: AdminSession,
     action: 'archive' | 'restore' | 'delete',
   ) => {
-    const prompt =
+    const message =
       action === 'delete'
         ? `Permanently delete "${session.name}" and all its data?`
         : action === 'archive'
           ? `Archive "${session.name}"? It will be hidden from users but can be restored.`
           : `Restore "${session.name}"? It will be visible to users again.`;
-    if (!confirm(prompt)) return;
+    const confirmed = await confirm({
+      title: `${action[0].toUpperCase()}${action.slice(1)} session?`,
+      message,
+      confirmLabel: action[0].toUpperCase() + action.slice(1),
+      destructive: action === 'delete',
+    });
+    if (!confirmed) return;
 
     setBusyId(session.id);
     setError('');

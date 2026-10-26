@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalA11y } from '@/lib/useModalA11y';
 import { ListRowSkeleton } from '@/components/Skeleton';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -74,6 +75,7 @@ export default function DailyHistoryModal({
   exerciseLabel = 'Pushups',
 }: DailyHistoryModalProps) {
   const colors = getThemeColors(theme);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   const activityUnit =
     sessionType === 'plank'
       ? 'minutes'
@@ -163,10 +165,15 @@ export default function DailyHistoryModal({
 
           {/* Modal */}
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Daily progress for ${playerName}`}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md rounded-xl shadow-2xl z-50 max-h-[80vh] overflow-hidden"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 outline-none w-full max-w-md rounded-xl shadow-2xl z-50 max-h-[80vh] overflow-hidden"
             style={{
               backgroundColor: colors.modalBg,
               border: `2px solid ${colors.modalBorder}`,
@@ -189,7 +196,8 @@ export default function DailyHistoryModal({
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  aria-label="Close"
+                  className="text-gray-400 hover:text-white transition-colors p-2"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -242,10 +250,12 @@ export default function DailyHistoryModal({
                   <ListRowSkeleton />
                 </div>
               ) : history.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  No history yet. Start adding{' '}
-                  {activityUnit}
-                  !
+                <div className="text-center py-10 text-gray-400">
+                  <div className="text-4xl mb-2" aria-hidden="true">📅</div>
+                  <p className="font-semibold text-gray-200">No history yet</p>
+                  <p className="text-sm mt-1">
+                    Log some {activityUnit} and your daily progress will show up here.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">

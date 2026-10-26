@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalA11y } from '@/lib/useModalA11y';
 import { Skeleton } from '@/components/Skeleton';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,6 +68,7 @@ export default function DailyGoalStatsModal({
   exerciseLabel = 'Pushups',
 }: DailyGoalStatsModalProps) {
   const colors = getThemeColors(theme);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   const [data, setData] = useState<{
     goalsMet: number;
     dailyGoal: number;
@@ -140,10 +142,15 @@ export default function DailyGoalStatsModal({
 
           {/* Modal */}
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${playerName} daily goals`}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-lg shadow-2xl"
+            className="outline-none fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-lg shadow-2xl"
             style={{
               backgroundColor: colors.modalBg,
               border: `2px solid ${colors.modalBorder}`,
@@ -164,7 +171,8 @@ export default function DailyGoalStatsModal({
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-white transition-colors"
+                aria-label="Close"
+                className="text-gray-400 hover:text-white transition-colors p-2"
               >
                 <X className="w-6 h-6" />
               </button>

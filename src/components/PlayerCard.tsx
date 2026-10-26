@@ -11,6 +11,9 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import AnimatedIcon from './AnimatedIcon';
+import AnimatedNumber from './AnimatedNumber';
+import { useConfirm, useToast } from './Providers';
+import { haptic } from '@/lib/haptics';
 import DailyHistoryModal from './DailyHistoryModal';
 import DailyGoalStatsModal from './DailyGoalStatsModal';
 import EncouragementAnimation from './EncouragementAnimation';
@@ -59,6 +62,7 @@ interface Player {
   name: string;
   totalPushups: number;
   createdAt: string;
+  pending?: boolean;
 }
 
 interface PlayerCardProps {
@@ -148,6 +152,8 @@ export default function PlayerCard({
   isAdmin = false,
   competitionEndDate = null,
 }: PlayerCardProps) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const canEditData = !accountMode || isMine;
   const canDelete = !accountMode || isMine || isAdmin;
   const activityUnit =
@@ -389,12 +395,14 @@ export default function PlayerCard({
   };
 
   useEffect(() => {
+    // Wait for the server to confirm an optimistic update before refetching stats
+    if (player.pending) return;
     fetchTodayTotal();
     fetchDailyGoal();
     fetchDailyGoalProgress();
     fetchDailyGoalStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player.totalPushups]);
+  }, [player.totalPushups, player.pending]);
 
   const showEncouragementAnimation = () => {
     setShowEncouragement(true);
@@ -402,6 +410,7 @@ export default function PlayerCard({
   };
 
   const handleQuickAdd = (amount: number) => {
+    haptic('tap');
     onAddPushups(amount, selectedDate || undefined);
     showEncouragementAnimation();
     if (selectedDate) {
@@ -415,16 +424,17 @@ export default function PlayerCard({
     if (!isNaN(amount) && amount > 0) {
       // Pushups and custom exercises are counted in whole reps
       if (sessionType !== 'plank' && !Number.isInteger(amount)) {
-        alert('Please enter whole numbers only.');
+        toast.error('Please enter whole numbers only.');
         return;
       }
       // For plank sessions, validate that the amount is a multiple of 0.25
       if (sessionType === 'plank' && amount % 0.25 !== 0) {
-        alert(
+        toast.error(
           'For plank sessions, please enter values in quarter increments (0.25, 0.5, 0.75, 1, 1.25, etc.)',
         );
         return;
       }
+      haptic('tap');
       onAddPushups(amount, selectedDate || undefined);
       showEncouragementAnimation();
       setInputValue('');
@@ -435,14 +445,14 @@ export default function PlayerCard({
     }
   };
 
-  const handleDelete = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${player.name}? This will remove all their activity history.`,
-      )
-    ) {
-      onDelete();
-    }
+  const handleDelete = async () => {
+    const confirmed = await confirm({
+      title: isMine ? 'Leave this session?' : `Remove ${player.name}?`,
+      message: `This will delete ${player.name} and all their activity history. This can't be undone.`,
+      confirmLabel: isMine ? 'Leave session' : 'Remove player',
+      destructive: true,
+    });
+    if (confirmed) onDelete();
   };
 
   const handleCustomRemove = () => {
@@ -450,16 +460,17 @@ export default function PlayerCard({
     if (!isNaN(amount) && amount > 0) {
       // Pushups and custom exercises are counted in whole reps
       if (sessionType !== 'plank' && !Number.isInteger(amount)) {
-        alert('Please enter whole numbers only.');
+        toast.error('Please enter whole numbers only.');
         return;
       }
       // For plank sessions, validate that the amount is a multiple of 0.25
       if (sessionType === 'plank' && amount % 0.25 !== 0) {
-        alert(
+        toast.error(
           'For plank sessions, please enter values in quarter increments (0.25, 0.5, 0.75, 1, 1.25, etc.)',
         );
         return;
       }
+      haptic('tap');
       onRemovePushups(amount);
       setRemoveValue('');
     }
@@ -563,7 +574,11 @@ export default function PlayerCard({
               transition={{ duration: 0.4 }}
               className="text-2xl font-bold"
             >
-              {formatNumber(player.totalPushups)} {activityUnit}
+              <AnimatedNumber
+                value={player.totalPushups}
+                format={formatNumber}
+              />{' '}
+              {activityUnit}
             </motion.p>
             {todayTotal > 0 && (
               <motion.button
@@ -589,11 +604,12 @@ export default function PlayerCard({
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsHistoryOpen(true)}
-            className="p-2 rounded-lg transition-colors"
+            className="p-3 sm:p-2 rounded-lg transition-colors"
             style={{
               backgroundColor: colors.highlightBgSoft,
             }}
             title="View daily history"
+            aria-label={`View daily history for ${player.name}`}
           >
             <Calendar
               className="w-5 h-5"
@@ -607,11 +623,12 @@ export default function PlayerCard({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleDelete}
-              className="p-2 rounded-lg transition-colors"
+              className="p-3 sm:p-2 rounded-lg transition-colors"
               style={{
                 backgroundColor: 'rgba(239, 68, 68, 0.2)',
               }}
               title={isMine ? 'Leave session' : 'Remove player'}
+              aria-label={isMine ? 'Leave session' : `Remove ${player.name}`}
             >
               <Trash2
                 className="w-5 h-5"
@@ -890,7 +907,7 @@ export default function PlayerCard({
                 whileTap={{ scale: canEditData ? 0.95 : 1 }}
                 onClick={() => canEditData && handleQuickAdd(amount)}
                 disabled={!canEditData}
-                className="font-bold py-2 rounded transition-colors border disabled:opacity-40 disabled:cursor-not-allowed"
+                className="font-bold py-3 sm:py-2 rounded transition-colors border disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: 'rgba(34, 197, 94, 0.2)',
                   color: colors.quickAddColor,
@@ -922,7 +939,7 @@ export default function PlayerCard({
                 : `Add ${exerciseLabel.toLowerCase()}`
             }
             disabled={!canEditData}
-            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 min-w-0 rounded px-3 py-3 sm:py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: colors.inputBg,
               borderColor: colors.inputBorder,
@@ -934,7 +951,7 @@ export default function PlayerCard({
             whileTap={{ scale: canEditData ? 0.95 : 1 }}
             onClick={handleCustomAdd}
             disabled={!canEditData}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-3 sm:py-2 rounded transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Add
@@ -951,7 +968,7 @@ export default function PlayerCard({
                 whileTap={{ scale: canEditData ? 0.95 : 1 }}
                 onClick={() => canEditData && onRemovePushups(amount)}
                 disabled={!canEditData}
-                className="font-bold py-2 rounded transition-colors border text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="font-bold py-3 sm:py-2 rounded transition-colors border text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: 'rgba(239, 68, 68, 0.2)',
                   color: 'rgb(252, 165, 165)',
@@ -982,7 +999,7 @@ export default function PlayerCard({
                 : `Remove ${exerciseLabel.toLowerCase()}`
             }
             disabled={!canEditData}
-            className="flex-1 rounded px-3 py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 min-w-0 rounded px-3 py-3 sm:py-2 border outline-none transition-colors text-white disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: colors.removeInputBg,
               borderColor: 'rgb(239, 68, 68)',
@@ -994,7 +1011,7 @@ export default function PlayerCard({
             whileTap={{ scale: canEditData ? 0.95 : 1 }}
             onClick={handleCustomRemove}
             disabled={!canEditData}
-            className="bg-red-500/40 hover:bg-red-500/60 text-red-300 font-bold px-4 py-2 rounded transition-colors border border-red-500/30 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="bg-red-500/40 hover:bg-red-500/60 text-red-300 font-bold px-4 py-3 sm:py-2 rounded transition-colors border border-red-500/30 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Minus className="w-4 h-4" />
             Remove
