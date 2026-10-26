@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/Skeleton';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trophy } from 'lucide-react';
@@ -172,9 +173,13 @@ export default function DailyGoalStatsModal({
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
               {loading ? (
-                <div className="text-center text-white py-8">
-                  <div className="animate-spin text-4xl mb-2">⏳</div>
-                  <p className="opacity-70">Loading stats...</p>
+                <div className="space-y-4 py-2" role="status" aria-label="Loading stats">
+                  <div className="grid grid-cols-3 gap-3">
+                    <Skeleton className="h-20" />
+                    <Skeleton className="h-20" />
+                    <Skeleton className="h-20" />
+                  </div>
+                  <Skeleton className="h-40 w-full" />
                 </div>
               ) : (
                 <>

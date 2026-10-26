@@ -6,6 +6,7 @@ import { Dumbbell, Plus, ChevronDown, ChevronUp, History, LogIn, LogOut } from '
 import PlayerCard from '@/components/PlayerCard';
 import RaceTrack from '@/components/RaceTrack';
 import AddPlayerModal from '@/components/AddPlayerModal';
+import { PlayerCardSkeleton, Skeleton } from '@/components/Skeleton';
 import SessionSelectorModal from '@/components/SessionSelectorModal';
 import CreateSessionModal from '@/components/CreateSessionModal';
 import ChristmasBackground from '@/components/ChristmasBackground';
@@ -1145,13 +1146,19 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex items-center justify-center h-96"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+                role="status"
+                aria-label="Loading players"
               >
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1 }}
-                  className="w-12 h-12 border-4 border-gray-700 border-t-yellow-400 rounded-full"
-                />
+                <div className="lg:col-span-1 space-y-4">
+                  {[0, 1, 2].map((i) => (
+                    <PlayerCardSkeleton key={i} />
+                  ))}
+                </div>
+                <div className="lg:col-span-2 space-y-4">
+                  <Skeleton className="h-10 w-1/3" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
               </motion.div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

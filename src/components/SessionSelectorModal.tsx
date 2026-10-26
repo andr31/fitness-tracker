@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, History, Share2, Check } from 'lucide-react';
+import { SessionCardSkeleton } from '@/components/Skeleton';
 
 interface Session {
   id: number;
@@ -211,8 +212,16 @@ export default function SessionSelectorModal({
 
           <div className="flex-1 overflow-y-auto p-3 sm:p-6">
             {loading ? (
-              <div className="text-center py-8 text-gray-400">
-                Loading sessions...
+              <div
+                className={
+                  isPage ? 'grid grid-cols-1 md:grid-cols-2 gap-3' : 'space-y-3'
+                }
+                role="status"
+                aria-label="Loading sessions"
+              >
+                {[0, 1, 2, 3].slice(0, isPage ? 4 : 3).map((i) => (
+                  <SessionCardSkeleton key={i} />
+                ))}
               </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8">
@@ -233,7 +242,7 @@ export default function SessionSelectorModal({
                 {sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="border rounded-lg p-4 transition-all cursor-pointer"
+                    className="border rounded-lg p-4 transition-all cursor-pointer hover:brightness-110 active:scale-[0.98]"
                     style={{
                       borderColor:
                         selectedSession === session.id

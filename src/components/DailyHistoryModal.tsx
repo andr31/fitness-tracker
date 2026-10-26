@@ -1,5 +1,6 @@
 'use client';
 
+import { ListRowSkeleton } from '@/components/Skeleton';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, TrendingUp } from 'lucide-react';
@@ -237,8 +238,8 @@ export default function DailyHistoryModal({
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[50vh]">
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                <div className="py-2" role="status" aria-label="Loading history">
+                  <ListRowSkeleton />
                 </div>
               ) : history.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
