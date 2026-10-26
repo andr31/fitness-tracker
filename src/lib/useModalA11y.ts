@@ -32,7 +32,15 @@ export function useModalA11y<T extends HTMLElement>(
       const node = ref.current;
       if (!node || node.contains(document.activeElement)) return;
       const first = node.querySelector<HTMLElement>(FOCUSABLE);
-      (first ?? node).focus();
+      // On touch devices focusing a text field opens the keyboard and shifts the layout
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      const isTextField = first?.matches('input:not([type=checkbox]):not([type=radio]), textarea');
+      if (isTouch && isTextField) {
+        node.setAttribute('tabindex', '-1');
+        node.focus({ preventScroll: true });
+        return;
+      }
+      (first ?? node).focus({ preventScroll: true });
     }, 50);
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -57,7 +65,7 @@ export function useModalA11y<T extends HTMLElement>(
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
-      if (e.shiftKey && (active === first || !node.contains(active))) {
+      if (e.shiftKey && (active === first || active === node || !node.contains(active))) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && (active === last || !node.contains(active))) {
@@ -72,7 +80,7 @@ export function useModalA11y<T extends HTMLElement>(
       document.removeEventListener('keydown', onKeyDown);
       const index = modalStack.indexOf(id);
       if (index >= 0) modalStack.splice(index, 1);
-      previouslyFocused?.focus?.();
+      previouslyFocused?.focus?.({ preventScroll: true });
     };
   }, [isOpen]);
 

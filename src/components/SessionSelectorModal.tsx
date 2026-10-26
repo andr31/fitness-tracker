@@ -238,13 +238,7 @@ export default function SessionSelectorModal({
               </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-400 mb-4">No sessions found</p>
-                <button
-                  onClick={onCreateNew}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
-                >
-                  Create First Session
-                </button>
+                <p className="text-gray-400">No sessions found</p>
               </div>
             ) : (
               <div
