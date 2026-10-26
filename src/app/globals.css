@@ -62,3 +62,8 @@ button:disabled {
     transition-duration: 0.01ms !important;
   }
 }
+
+html.app-pull-refresh,
+html.app-pull-refresh body {
+  overscroll-behavior-y: contain;
+}

@@ -23,6 +23,9 @@ export function usePullToRefresh(
   useEffect(() => {
     if (!enabled) return;
 
+    // Stop the browser's own pull-to-refresh from reloading the whole page
+    document.documentElement.classList.add('app-pull-refresh');
+
     const onStart = (e: TouchEvent) => {
       if (window.scrollY > 0 || e.touches.length !== 1) return;
       if (document.querySelector('[aria-modal="true"]')) return;
@@ -61,6 +64,7 @@ export function usePullToRefresh(
     window.addEventListener('touchend', onEnd);
     window.addEventListener('touchcancel', onEnd);
     return () => {
+      document.documentElement.classList.remove('app-pull-refresh');
       window.removeEventListener('touchstart', onStart);
       window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onEnd);

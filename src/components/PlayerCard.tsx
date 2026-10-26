@@ -564,22 +564,15 @@ export default function PlayerCard({
                 </motion.span>
               )}
             </div>
-            <motion.p
-              key={player.totalPushups}
-              initial={{
-                scale: 1.3,
-                color: colors.flashColor,
-              }}
-              animate={{ scale: 1, color: '#FFFFFF' }}
-              transition={{ duration: 0.4 }}
-              className="text-2xl font-bold"
-            >
+            <p className="text-2xl font-bold text-white">
               <AnimatedNumber
                 value={player.totalPushups}
                 format={formatNumber}
+                pulse={1.3}
+                flashColor={colors.flashColor}
               />{' '}
               {activityUnit}
-            </motion.p>
+            </p>
             {todayTotal > 0 && (
               <motion.button
                 initial={{ opacity: 0, y: -5 }}

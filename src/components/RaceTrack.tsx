@@ -94,16 +94,13 @@ export default function RaceTrack({
                     {player.name}
                   </h3>
                   <div className="flex flex-col items-end">
-                    <motion.span
-                      key={player.totalPushups}
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-xl font-bold text-white"
-                    >
-                      <AnimatedNumber value={player.totalPushups} format={formatNumber} />{' '}
+                    <span className="text-xl font-bold text-white">
+                      <AnimatedNumber
+                        value={player.totalPushups}
+                        format={formatNumber}
+                      />{' '}
                       {activityUnit} 💪
-                    </motion.span>
+                    </span>
                     {hasMilestone && (
                       <span className="text-xs text-gray-400">
                         {player.totalPushups < milestone

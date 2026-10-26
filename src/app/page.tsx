@@ -316,17 +316,25 @@ export default function Home() {
     }
   };
 
-  const handleAddPushups = async (
+  // Updates are sent one at a time per player so server totals and rollbacks stay consistent
+  const updateQueues = useRef<Map<number, Promise<void>>>(new Map());
+  const pendingCounts = useRef<Map<number, number>>(new Map());
+
+  const handleAddPushups = (
     playerId: number,
     amount: number,
     date?: string,
-  ) => {
+  ): Promise<void> => {
     const previousPlayer = players.find((p) => p.id === playerId);
     // Optimistic update: show the new total right away and roll back on failure
     const appliedDelta = previousPlayer
       ? Math.max(0, previousPlayer.totalPushups + amount) -
         previousPlayer.totalPushups
       : 0;
+    pendingCounts.current.set(
+      playerId,
+      (pendingCounts.current.get(playerId) ?? 0) + 1,
+    );
     setPlayers((ps) =>
       ps.map((p) =>
         p.id === playerId
@@ -335,60 +343,91 @@ export default function Home() {
       ),
     );
 
-    try {
-      const body: { amount: number; date?: string } = { amount };
-      if (date) body.date = date;
+    const run = async () => {
+      let succeeded = false;
+      let updatedPlayer: Player | null = null;
+      try {
+        const body: { amount: number; date?: string } = { amount };
+        if (date) body.date = date;
 
-      const response = await fetch(`/api/players/${playerId}/pushups`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+        const response = await fetch(`/api/players/${playerId}/pushups`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API Error:', errorData);
-        throw new Error(
-          errorData.details || errorData.error || 'Failed to update pushups',
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('API Error:', errorData);
+          throw new Error(
+            errorData.details || errorData.error || 'Failed to update pushups',
+          );
+        }
+
+        updatedPlayer = await response.json();
+        succeeded = true;
+      } catch (err) {
+        toast.error(`Failed to update ${exerciseLabel.toLowerCase()}`);
+        console.error(err);
+      }
+
+      const remaining = (pendingCounts.current.get(playerId) ?? 1) - 1;
+      pendingCounts.current.set(playerId, remaining);
+
+      if (succeeded && updatedPlayer) {
+        const confirmed = updatedPlayer;
+        // Check if player just reached milestone
+        if (
+          previousPlayer &&
+          previousPlayer.totalPushups < milestone &&
+          confirmed.totalPushups >= milestone &&
+          !playersReachedMilestone.has(playerId)
+        ) {
+          setCelebratingPlayer(confirmed.name);
+          setPlayersReachedMilestone((prev) => new Set(prev).add(playerId));
+          haptic('success');
+
+          // Auto-stop celebration after 2 minutes
+          setTimeout(() => {
+            setCelebratingPlayer(null);
+          }, 120000);
+        }
+
+        // The endpoint returns a partial player; merge so createdAt/isMine/role survive.
+        // While more updates are queued, keep the optimistic total instead of the older server one.
+        setPlayers((ps) =>
+          ps.map((p) =>
+            p.id === playerId
+              ? {
+                  ...p,
+                  ...confirmed,
+                  totalPushups:
+                    remaining > 0 ? p.totalPushups : confirmed.totalPushups,
+                  pending: remaining > 0,
+                }
+              : p,
+          ),
+        );
+      } else {
+        setPlayers((ps) =>
+          ps.map((p) =>
+            p.id === playerId
+              ? {
+                  ...p,
+                  totalPushups: p.totalPushups - appliedDelta,
+                  pending: remaining > 0,
+                }
+              : p,
+          ),
         );
       }
+    };
 
-      const updatedPlayer = await response.json();
-
-      // Check if player just reached milestone
-      if (
-        previousPlayer &&
-        previousPlayer.totalPushups < milestone &&
-        updatedPlayer.totalPushups >= milestone &&
-        !playersReachedMilestone.has(playerId)
-      ) {
-        setCelebratingPlayer(updatedPlayer.name);
-        setPlayersReachedMilestone((prev) => new Set(prev).add(playerId));
-        haptic('success');
-
-        // Auto-stop celebration after 2 minutes
-        setTimeout(() => {
-          setCelebratingPlayer(null);
-        }, 120000);
-      }
-
-      // The endpoint returns a partial player; merge so createdAt/isMine/role survive
-      setPlayers((ps) =>
-        ps.map((p) =>
-          p.id === playerId ? { ...p, ...updatedPlayer, pending: false } : p,
-        ),
-      );
-    } catch (err) {
-      setPlayers((ps) =>
-        ps.map((p) =>
-          p.id === playerId
-            ? { ...p, totalPushups: p.totalPushups - appliedDelta, pending: false }
-            : p,
-        ),
-      );
-      toast.error(`Failed to update ${exerciseLabel.toLowerCase()}`);
-      console.error(err);
-    }
+    const next = (updateQueues.current.get(playerId) ?? Promise.resolve()).then(
+      run,
+    );
+    updateQueues.current.set(playerId, next);
+    return next;
   };
 
   const handleRemovePushups = async (playerId: number, amount: number) => {
