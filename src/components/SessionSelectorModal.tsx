@@ -28,6 +28,9 @@ interface SessionSelectorModalProps {
   onCreateNew: () => void;
   onSessionChange: () => void;
   variant?: 'modal' | 'page';
+  isLoggedIn?: boolean;
+  onBrowse?: () => void;
+  onSignIn?: () => void;
 }
 
 export default function SessionSelectorModal({
@@ -36,6 +39,9 @@ export default function SessionSelectorModal({
   onCreateNew,
   onSessionChange,
   variant = 'modal',
+  isLoggedIn = false,
+  onBrowse,
+  onSignIn,
 }: SessionSelectorModalProps) {
   const isPage = variant === 'page';
   const toast = useToast();
@@ -162,7 +168,7 @@ export default function SessionSelectorModal({
           ref={isPage ? undefined : dialogRef}
           role={isPage ? undefined : 'dialog'}
           aria-modal={isPage ? undefined : true}
-          aria-label={isPage ? undefined : 'Session manager'}
+          aria-label={isPage ? undefined : 'Browse sessions'}
           tabIndex={isPage ? undefined : -1}
           initial={{ opacity: 0, scale: isPage ? 1 : 0.9, y: isPage ? 20 : 0 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -186,11 +192,11 @@ export default function SessionSelectorModal({
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-xl sm:text-2xl font-bold text-white">
-                    {isPage ? 'Your Sessions' : 'Session Manager'}
+                    {isPage ? 'Your Sessions' : 'Browse Sessions'}
                   </h2>
                   {isPage && !activeSession && (
                     <p className="text-sm text-gray-400">
-                      Pick a session to jump in, or create a new one
+                      Sessions opened on this browser or joined with your account
                     </p>
                   )}
                   {activeSession && (
@@ -203,7 +209,7 @@ export default function SessionSelectorModal({
                   )}
                 </div>
               </div>
-              {isPage ? (
+              {isPage && (loading || sessions.length > 0) ? (
                 <button
                   onClick={onCreateNew}
                   className="w-full sm:w-auto justify-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2"
@@ -211,7 +217,7 @@ export default function SessionSelectorModal({
                   <Plus size={18} />
                   New Session
                 </button>
-              ) : (
+              ) : !isPage ? (
                 <button
                   onClick={onClose}
                   aria-label="Close"
@@ -219,8 +225,20 @@ export default function SessionSelectorModal({
                 >
                   <X size={24} />
                 </button>
-              )}
+              ) : null}
             </div>
+            {isPage && !isLoggedIn && onSignIn && (
+              <p className="mt-4 text-sm text-gray-400">
+                <button
+                  type="button"
+                  onClick={onSignIn}
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  Sign in
+                </button>{' '}
+                to find your account sessions.
+              </p>
+            )}
           </div>
 
           <div className="flex-1 overflow-y-auto p-3 sm:p-6">
@@ -235,6 +253,30 @@ export default function SessionSelectorModal({
                 {[0, 1, 2, 3].slice(0, isPage ? 4 : 3).map((i) => (
                   <SessionCardSkeleton key={i} />
                 ))}
+              </div>
+            ) : sessions.length === 0 && error ? (
+              <div role="alert" className="text-center py-8 text-red-200">
+                {error}
+              </div>
+            ) : sessions.length === 0 && isPage ? (
+              <div className="text-center py-8">
+                <p className="text-gray-300">You haven&apos;t joined a session yet.</p>
+                <div className="mt-4 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onBrowse}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
+                  >
+                    Browse Sessions
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onCreateNew}
+                    className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Create Session
+                  </button>
+                </div>
               </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8">
