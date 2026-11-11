@@ -185,6 +185,7 @@ export default function Home() {
     setPlayers([]);
     await fetchActiveSession();
     await fetchPlayers();
+    setDashboardKey((k) => k + 1);
   };
 
   const handleAuthenticated = async (user: CurrentUser) => {
@@ -851,7 +852,7 @@ export default function Home() {
                       }}
                     >
                       <History className="w-5 h-5" />
-                      Sessions
+                      Browse Sessions
                     </motion.button>
 
                     {/* Account Button */}
@@ -1114,7 +1115,7 @@ export default function Home() {
                   }}
                 >
                   <History className="w-5 h-5" />
-                  Sessions
+                  Browse Sessions
                 </motion.button>
 
                 {/* Account Button */}
@@ -1154,6 +1155,9 @@ export default function Home() {
             key={dashboardKey}
             variant="page"
             isOpen
+            isLoggedIn={!!currentUser}
+            onBrowse={() => setIsSessionSelectorOpen(true)}
+            onSignIn={() => setIsAuthModalOpen(true)}
             onCreateNew={() => setIsCreateSessionOpen(true)}
             onSessionChange={handleSessionChange}
           />
