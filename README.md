@@ -27,7 +27,22 @@ The app can be installed from its HTTPS website without an app store:
 - **iPhone:** Open the site in Safari, tap Share, then Add to Home Screen. If shown, leave "Open as Web App" enabled.
 - **Android:** Open the site in Chrome, then use the browser menu to choose Install app or Add to Home screen.
 
-The installed app uses the same server and requires an internet connection. Offline access and push notifications are not yet supported.
+The installed app uses the same server and requires an internet connection. Offline access is not supported.
+
+## Daily reminders
+
+Members of account-based sessions can opt in to a daily push reminder on each device. Around 7 PM in the device's local time, a reminder is sent if today's net exercise is below the current "needed per day" pace shown in the app. It includes the daily pace and progress toward the milestone. A future deadline and an unfinished milestone are required. Reminders pause when the user logs out, switches to an open session, leaves the session, or the session is archived. The device's timezone is refreshed when its reminder settings are loaded. On iPhone, open the installed Home Screen app to enable notifications.
+
+Older exercise entries without a selected date were recorded in Los Angeles time and are not automatically corrected.
+
+To configure reminders:
+
+1. Generate VAPID keys with `npx web-push generate-vapid-keys` and add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or HTTPS URL) to the deployment environment. Keep the private key secret.
+2. Set `CRON_SECRET` to a random secret of at least 16 characters in Vercel. Vercel uses it to authorize the scheduled endpoint.
+3. Run `npx tsx create-push-subscriptions-table.ts` against the deployment database before deploying.
+4. Deploy the app with Vercel Schedules enabled. The schedule in `vercel.json` runs every 15 minutes; Hobby scheduling can add up to 15 minutes of jitter and has a monthly execution limit. Preview schedules are inactive by default.
+
+Push delivery is subject to device permissions, network connectivity, and the push service. It is not guaranteed to arrive exactly at 7 PM.
 
 ## Password reset
 

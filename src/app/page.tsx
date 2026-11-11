@@ -16,9 +16,11 @@ import CountdownTimer from '@/components/CountdownTimer';
 import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
 import InstallHelp from '@/components/InstallHelp';
+import ReminderSettings from '@/components/ReminderSettings';
 import { useToast } from '@/components/Providers';
 import { usePullToRefresh } from '@/lib/usePullToRefresh';
 import { haptic } from '@/lib/haptics';
+import { formatLocalDate } from '@/lib/dailyAverage';
 import { Theme } from '@/lib/emojis';
 import { getSeasonalTheme } from '@/lib/themeConfig';
 import AuthModal, { CurrentUser } from '@/components/AuthModal';
@@ -46,6 +48,7 @@ export default function Home() {
   const [dashboardKey, setDashboardKey] = useState(0);
   const [error, setError] = useState('');
   const [activeSessionName, setActiveSessionName] = useState<string>('');
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [sessionType, setSessionType] = useState<'pushups' | 'plank' | 'custom'>(
     'pushups',
   );
@@ -146,6 +149,7 @@ export default function Home() {
       if (response.ok) {
         const session = await response.json();
         setActiveSessionName(session.name);
+        setActiveSessionId(session.id);
         setSessionType(session.sessionType || 'pushups');
         setCustomExerciseName(session.customExerciseName || '');
         setSessionAuthMode(session.authMode || 'open');
@@ -153,6 +157,7 @@ export default function Home() {
       } else {
         // No active session
         setActiveSessionName('');
+        setActiveSessionId(null);
         setSessionType('pushups');
         setCustomExerciseName('');
         setSessionAuthMode('open');
@@ -161,6 +166,7 @@ export default function Home() {
     } catch (err) {
       console.error('Failed to fetch active session:', err);
       setActiveSessionName('');
+      setActiveSessionId(null);
       setSessionType('pushups');
       setCustomExerciseName('');
       setSessionAuthMode('open');
@@ -179,7 +185,14 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('Logout request failed');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+      toast.error('Failed to log out. Please try again.');
+      return;
+    }
     setCurrentUser(null);
     toast.info('Logged out');
     // Leave the session: account sessions need a login, so refetch to drop the stale state
@@ -327,6 +340,7 @@ export default function Home() {
     amount: number,
     date?: string,
   ): Promise<void> => {
+    const activityDate = date ?? formatLocalDate(new Date());
     const previousPlayer = players.find((p) => p.id === playerId);
     // Optimistic update: show the new total right away and roll back on failure
     const appliedDelta = previousPlayer
@@ -349,8 +363,7 @@ export default function Home() {
       let succeeded = false;
       let updatedPlayer: Player | null = null;
       try {
-        const body: { amount: number; date?: string } = { amount };
-        if (date) body.date = date;
+        const body = { amount, date: activityDate };
 
         const response = await fetch(`/api/players/${playerId}/pushups`, {
           method: 'POST',
@@ -1166,6 +1179,11 @@ export default function Home() {
         </div>
       ) : activeSessionName ? (
         <>
+          {sessionAuthMode === 'account' && hasJoinedSession && activeSessionId !== null && (
+            <div className="max-w-7xl mx-auto px-4 mt-4">
+              <ReminderSettings sessionId={activeSessionId} />
+            </div>
+          )}
           {/* Countdown Timer */}
           <div className="max-w-7xl mx-auto px-4 mt-4">
             <CountdownTimer
