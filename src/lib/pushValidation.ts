@@ -8,7 +8,9 @@ export function isValidPushEndpoint(endpoint: string): boolean {
   try {
     const url = new URL(endpoint);
     const allowedHost =
-      PUSH_HOSTS.has(url.hostname) || url.hostname.endsWith('.push.apple.com');
+      PUSH_HOSTS.has(url.hostname) ||
+      url.hostname.endsWith('.push.apple.com') ||
+      url.hostname.endsWith('.notify.windows.com');
     return (
       url.protocol === 'https:' &&
       allowedHost &&

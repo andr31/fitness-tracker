@@ -20,6 +20,7 @@ import ReminderSettings from '@/components/ReminderSettings';
 import { useToast } from '@/components/Providers';
 import { usePullToRefresh } from '@/lib/usePullToRefresh';
 import { haptic } from '@/lib/haptics';
+import { formatLocalDate } from '@/lib/dailyAverage';
 import { Theme } from '@/lib/emojis';
 import { getSeasonalTheme } from '@/lib/themeConfig';
 import AuthModal, { CurrentUser } from '@/components/AuthModal';
@@ -339,6 +340,7 @@ export default function Home() {
     amount: number,
     date?: string,
   ): Promise<void> => {
+    const activityDate = date ?? formatLocalDate(new Date());
     const previousPlayer = players.find((p) => p.id === playerId);
     // Optimistic update: show the new total right away and roll back on failure
     const appliedDelta = previousPlayer
@@ -361,8 +363,7 @@ export default function Home() {
       let succeeded = false;
       let updatedPlayer: Player | null = null;
       try {
-        const body: { amount: number; date?: string } = { amount };
-        if (date) body.date = date;
+        const body = { amount, date: activityDate };
 
         const response = await fetch(`/api/players/${playerId}/pushups`, {
           method: 'POST',

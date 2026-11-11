@@ -151,7 +151,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
       <div>
         <p className="font-semibold">Daily exercise reminders</p>
         <p className="text-sm text-gray-300">
-          Get your pace around 7 PM in your local time while this session has an unfinished goal and a deadline.
+          Get a reminder around 7 PM in your local time if you haven&apos;t met your needed-per-day pace. Your session needs an unfinished goal and a deadline.
         </p>
         {status === 'unsupported' && (
           <p className="mt-1 text-sm text-yellow-300">

@@ -25,25 +25,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const now = new Date();
+    const timestamp = now.toISOString();
     const subscriptions = await sql`
       SELECT n.id, n.user_id, n.session_id, n.endpoint, n.p256dh, n.auth, n.timezone,
              p.totalpushups, s.sessionType, s.customExerciseName,
              COALESCE((SELECT value FROM settings WHERE sessionId = s.id AND key = 'milestone' LIMIT 1), '1000') AS milestone,
-             (SELECT endDate FROM competition_settings WHERE sessionId = s.id ORDER BY id DESC LIMIT 1) AS end_date
+             (SELECT endDate FROM competition_settings WHERE sessionId = s.id ORDER BY id DESC LIMIT 1) AS end_date,
+             COALESCE((SELECT SUM(h.amount) FROM pushupHistory h
+                       WHERE h.playerId = p.id AND h.sessionId = s.id
+                         AND h.localDate = (${timestamp}::timestamptz AT TIME ZONE n.timezone)::date), 0) AS today_total
       FROM push_subscriptions n
       JOIN sessions s ON s.id = n.session_id AND s.archivedAt IS NULL AND s.authMode = 'account'
       JOIN players p ON p.sessionId = s.id AND p.userId = n.user_id
     `;
     let failed = false;
     let sent = 0;
-    const now = new Date();
-
     for (const row of subscriptions.rows) {
       try {
         if (!isValidPushEndpoint(row.endpoint)) throw new Error('Invalid stored push endpoint');
         const total = Number(row.totalpushups);
+        const todayTotal = Number(row.today_total);
         const milestone = Number(row.milestone);
-        if (!Number.isFinite(total) || !Number.isFinite(milestone) || milestone <= 0) {
+        if (!Number.isFinite(total) || !Number.isFinite(todayTotal) || !Number.isFinite(milestone) || milestone <= 0) {
           throw new Error('Invalid player progress or milestone');
         }
         const reminder = getDailyReminder({
@@ -52,6 +56,7 @@ export async function POST(request: NextRequest) {
           endDate: row.end_date,
           milestone,
           total,
+          todayTotal,
           sessionType: row.sessiontype,
           exerciseName: row.customexercisename,
         });
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
           await webPush.sendNotification(
             { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
             JSON.stringify({ title: 'Fitness Battle', body: reminder.body }),
-            { vapidDetails: config, TTL: 3600 },
+            { vapidDetails: config, TTL: 3600, timeout: 10_000 },
           );
           sent++;
         } catch (error) {

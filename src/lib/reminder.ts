@@ -6,6 +6,7 @@ interface ReminderInput {
   endDate: string | null;
   milestone: number;
   total: number;
+  todayTotal: number;
   sessionType: string;
   exerciseName: string | null;
 }
@@ -44,13 +45,16 @@ export function getDailyReminder(input: ReminderInput): { date: string; body: st
   if (days <= 0) return null;
 
   const pace = getRequiredDailyPace(input.milestone - input.total, days, input.sessionType);
+  if (input.todayTotal >= pace) return null;
+
   const activity = input.sessionType === 'plank'
-    ? 'minutes of plank'
+    ? 'plank'
     : input.sessionType === 'custom'
       ? input.exerciseName?.trim() || 'exercises'
       : 'push-ups';
+  const unit = input.sessionType === 'plank' ? ' min' : '';
   return {
     date,
-    body: `Keep going! Your pace is ${pace} ${activity} per day to reach your goal.`,
+    body: `Time for ${activity}! ${pace}${unit}/day needed; ${input.total}/${input.milestone}${unit} done.`,
   };
 }
