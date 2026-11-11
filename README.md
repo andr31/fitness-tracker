@@ -20,6 +20,15 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Install on a phone
+
+The app can be installed from its HTTPS website without an app store:
+
+- **iPhone:** Open the site in Safari, tap Share, then Add to Home Screen. If shown, leave "Open as Web App" enabled.
+- **Android:** Open the site in Chrome, then use the browser menu to choose Install app or Add to Home screen.
+
+The installed app uses the same server and requires an internet connection. Offline access and push notifications are not yet supported.
+
 ## Password reset
 
 "Forgot password?" emails a one-hour, single-use reset link over SMTP. Any free provider works, e.g. Gmail with an [app password](https://myaccount.google.com/apppasswords) (`smtp.gmail.com`, port 587) or Brevo's free SMTP tier. Set in `.env.local` / Vercel:
