@@ -15,6 +15,7 @@ import HalloweenBackground from '@/components/HalloweenBackground';
 import CountdownTimer from '@/components/CountdownTimer';
 import StopwatchWidget from '@/components/StopwatchWidget';
 import CelebrationEffect from '@/components/CelebrationEffect';
+import InstallHelp from '@/components/InstallHelp';
 import { useToast } from '@/components/Providers';
 import { usePullToRefresh } from '@/lib/usePullToRefresh';
 import { haptic } from '@/lib/haptics';
@@ -656,6 +657,7 @@ export default function Home() {
                 )}
               </div>
 
+              <InstallHelp />
               {/* Toggle button */}
               <motion.button
                 whileTap={{ scale: 0.9 }}
