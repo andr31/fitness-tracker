@@ -19,6 +19,7 @@ import DailyGoalStatsModal from './DailyGoalStatsModal';
 import EncouragementAnimation from './EncouragementAnimation';
 import { getPlayerEmoji, getPlayerAnimation, Theme } from '@/lib/emojis';
 import { getTotalDailyAverage } from '@/lib/dailyAverage';
+import { getCalendarDaysRemaining, getRequiredDailyPace, roundUpToActivityIncrement } from '@/lib/pace';
 
 // Helper to format numbers: show decimals only if needed
 const formatNumber = (num: number | string): string => {
@@ -26,36 +27,6 @@ const formatNumber = (num: number | string): string => {
   if (isNaN(n)) return '0';
   return n % 1 === 0 ? n.toString() : n.toFixed(2).replace(/\.?0+$/, '');
 };
-
-function getCalendarDaysRemaining(endDate: Date, currentDate: Date): number {
-  if (endDate.getTime() <= currentDate.getTime()) return 0;
-
-  const today = Date.UTC(
-    currentDate.getFullYear(),
-    currentDate.getMonth(),
-    currentDate.getDate(),
-  );
-  const lastActivityDate = new Date(endDate);
-  if (
-    lastActivityDate.getHours() === 0 &&
-    lastActivityDate.getMinutes() === 0 &&
-    lastActivityDate.getSeconds() === 0 &&
-    lastActivityDate.getMilliseconds() === 0
-  ) {
-    lastActivityDate.setDate(lastActivityDate.getDate() - 1);
-  }
-  const deadline = Date.UTC(
-    lastActivityDate.getFullYear(),
-    lastActivityDate.getMonth(),
-    lastActivityDate.getDate(),
-  );
-
-  return Math.max(0, Math.floor((deadline - today) / 86_400_000) + 1);
-}
-
-function roundUpToActivityIncrement(value: number, increment: number): number {
-  return Math.ceil((value - Number.EPSILON) / increment) * increment;
-}
 
 interface Player {
   id: number;
@@ -201,10 +172,7 @@ export default function PlayerCard({
       : 0;
   const requiredDailyAverage =
     daysRemaining && daysRemaining > 0
-      ? roundUpToActivityIncrement(
-          remainingToMilestone / daysRemaining,
-          sessionType === 'plank' ? 0.25 : 1,
-        )
+      ? getRequiredDailyPace(remainingToMilestone, daysRemaining, sessionType)
       : null;
   const activityIncrement = sessionType === 'plank' ? 0.25 : 1;
   const currentDailyAverage = getTotalDailyAverage(

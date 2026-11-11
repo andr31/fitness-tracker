@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { addKnownSessionId } from '@/lib/sessionHelpers';
 import { getCurrentUser } from '@/lib/auth';
+import { syncPushSession } from '@/lib/pushDevice';
 
 interface RouteParams {
   params: Promise<{
@@ -61,6 +62,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
       }
     }
+
+    await syncPushSession((await getCurrentUser())?.id ?? null, sessionId);
 
     // Remember the previously active session before the cookie is overwritten
     await addKnownSessionId(sessionId);
