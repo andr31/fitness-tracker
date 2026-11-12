@@ -185,7 +185,9 @@ export default function SessionSelectorModal({
             className="p-4 sm:p-6 border-b"
             style={{ borderColor: 'rgb(55, 65, 81)' }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className={`flex justify-between gap-3 ${
+              isPage ? 'flex-col sm:flex-row sm:items-center' : 'items-start sm:items-center'
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <History className="text-white" size={24} />
@@ -219,9 +221,10 @@ export default function SessionSelectorModal({
                 </button>
               ) : !isPage ? (
                 <button
+                  type="button"
                   onClick={onClose}
                   aria-label="Close"
-                  className="text-gray-400 hover:text-gray-300 transition-colors p-2"
+                  className="flex-shrink-0 text-gray-400 hover:text-gray-300 transition-colors p-2"
                 >
                   <X size={24} />
                 </button>
