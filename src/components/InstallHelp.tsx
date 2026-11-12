@@ -18,7 +18,11 @@ export default function InstallHelp() {
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (
+        event.key === 'Escape' &&
+        event.target instanceof Node &&
+        containerRef.current?.contains(event.target)
+      ) {
         setIsOpen(false);
         buttonRef.current?.focus();
       }
@@ -33,7 +37,7 @@ export default function InstallHelp() {
   }, [isOpen]);
 
   return (
-    <div ref={containerRef} className="install-help relative flex-shrink-0">
+    <div ref={containerRef} className="install-help flex-shrink-0">
       <button
         ref={buttonRef}
         type="button"
@@ -50,7 +54,7 @@ export default function InstallHelp() {
           id={id}
           role="dialog"
           aria-labelledby={`${id}-title`}
-          className="absolute right-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-gray-600 bg-gray-800 p-4 text-left text-sm text-gray-200 shadow-xl"
+          className="absolute right-4 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-gray-600 bg-gray-800 p-4 text-left text-sm text-gray-200 shadow-xl"
         >
           <div className="flex items-start justify-between gap-4">
             <h2 id={`${id}-title`} className="font-bold text-white">
