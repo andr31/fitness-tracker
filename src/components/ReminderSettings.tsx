@@ -58,10 +58,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
     let active = true;
     async function initialize() {
       if (!window.isSecureContext || !('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-        if (active) {
-          setStatus('unsupported');
-          if (!interacted.current) setIsOpen(true);
-        }
+        if (active) setStatus('unsupported');
         return;
       }
 
@@ -184,6 +181,8 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
     }
   };
 
+  if (status === 'loading' || status === 'unsupported') return null;
+
   return (
     <div ref={containerRef} className="relative flex justify-end">
       <button
@@ -225,11 +224,6 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
           <p className="mt-2 text-gray-300">
             Get a reminder around 7 PM in your local time if you haven&apos;t met your needed-per-day pace. Your session needs an unfinished goal and a deadline.
           </p>
-          {status === 'unsupported' && (
-            <p className="mt-2 text-yellow-300">
-              Push notifications are unavailable here. On iPhone, install the app to your Home Screen and open it there.
-            </p>
-          )}
           {status === 'error' && <p className="mt-2 text-red-300">{errorMessage}</p>}
           {status === 'ready' && (
             <button
