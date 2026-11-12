@@ -33,6 +33,8 @@ The installed app uses the same server and requires an internet connection. Offl
 
 Members of account-based sessions can opt in to a daily push reminder on each device. Around 7 PM in the device's local time, a reminder is sent if today's net exercise is below the current "needed per day" pace shown in the app. It includes the daily pace and progress toward the milestone. A future deadline and an unfinished milestone are required. Reminders pause when the user logs out, switches to an open session, leaves the session, or the session is archived. The device's timezone is refreshed when its reminder settings are loaded. On iPhone, open the installed Home Screen app to enable notifications.
 
+Reminder settings open automatically when reminders are off; use the bell in the header to open or close them.
+
 Older exercise entries without a selected date were recorded in Los Angeles time and are not automatically corrected.
 
 To configure reminders:

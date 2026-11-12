@@ -613,9 +613,9 @@ export default function Home() {
                 : 'none',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-start gap-2">
           {/* Mobile: Compact header with toggle */}
-          <div className="lg:hidden">
+          <div className="flex-1 min-w-0 lg:hidden">
             <div className="flex items-center justify-between">
               {/* Logo, Title, and Milestone in one line */}
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -659,7 +659,7 @@ export default function Home() {
                         : 'PushUp Battle'}
                 </h1>
                 {activeSessionName && (
-                  <span className="text-xs font-medium text-blue-300 whitespace-nowrap flex-shrink-0 truncate max-w-[100px]">
+                  <span className="hidden min-[400px]:inline text-xs font-medium text-blue-300 whitespace-nowrap flex-shrink-0 truncate max-w-[100px]">
                     {activeSessionName}
                   </span>
                 )}
@@ -901,7 +901,7 @@ export default function Home() {
           </div>
 
           {/* Desktop: Original layout */}
-          <div className="hidden lg:block">
+          <div className="hidden min-w-0 flex-1 lg:block">
             <div className="flex items-center justify-between gap-6">
               {/* Left: Title and Logo */}
               <motion.div
@@ -1160,6 +1160,9 @@ export default function Home() {
               </div>
             </div>
           </div>
+          {activeSessionName && sessionAuthMode === 'account' && hasJoinedSession && activeSessionId !== null && (
+            <ReminderSettings sessionId={activeSessionId} />
+          )}
         </div>
       </motion.header>
 
@@ -1179,11 +1182,6 @@ export default function Home() {
         </div>
       ) : activeSessionName ? (
         <>
-          {sessionAuthMode === 'account' && hasJoinedSession && activeSessionId !== null && (
-            <div className="max-w-7xl mx-auto px-4 mt-4">
-              <ReminderSettings sessionId={activeSessionId} />
-            </div>
-          )}
           {/* Countdown Timer */}
           <div className="max-w-7xl mx-auto px-4 mt-4">
             <CountdownTimer
