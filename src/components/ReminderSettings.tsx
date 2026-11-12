@@ -36,7 +36,11 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (
+        event.key === 'Escape' &&
+        event.target instanceof Node &&
+        containerRef.current?.contains(event.target)
+      ) {
         interacted.current = true;
         setIsOpen(false);
         buttonRef.current?.focus();
@@ -201,7 +205,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
           id={id}
           role="dialog"
           aria-labelledby={`${id}-title`}
-          className="absolute right-0 top-full z-20 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-gray-600 bg-gray-800 p-4 text-sm text-white shadow-xl"
+          className="absolute right-0 top-full z-20 mt-2 max-h-[calc(100dvh-5rem)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-gray-600 bg-gray-800 p-4 text-sm text-white shadow-xl"
         >
           <div className="flex items-start justify-between gap-4">
             <h2 id={`${id}-title`} className="font-semibold">Daily exercise reminders</h2>
