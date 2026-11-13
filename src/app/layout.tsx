@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Fitness Competition Tracker',
+  title: 'Rep Rally',
   description:
     'A fun and interactive pushup competition tracker with live leaderboard animations',
   icons: {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: 'Fitness Battle',
+    title: 'Rep Rally',
     statusBarStyle: 'default',
   },
   other: {
