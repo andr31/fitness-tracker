@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Bell, BellOff, X } from 'lucide-react';
 import { useToast } from '@/components/Providers';
+import { DEFAULT_REMINDER_TIMES, isValidReminderTimes, MAX_REMINDERS } from '@/lib/reminder';
 
 function applicationServerKey(value: string): Uint8Array<ArrayBuffer> {
   const padded = (value + '='.repeat((4 - value.length % 4) % 4))
@@ -25,6 +26,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
   const [busy, setBusy] = useState(false);
   const [publicKey, setPublicKey] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [reminderTimes, setReminderTimes] = useState<string[]>(DEFAULT_REMINDER_TIMES);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -71,7 +73,11 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
           const data = await response.json();
           throw new Error(data.error || 'Failed to load reminder settings');
         }
-        const settings: { enabled: boolean; publicKey: string | null } = await response.json();
+        const settings: { enabled: boolean; publicKey: string | null; reminderTimes: unknown } = await response.json();
+        if (!isValidReminderTimes(settings.reminderTimes)) {
+          throw new Error('Invalid saved reminder times');
+        }
+        let times = settings.reminderTimes;
         if (!settings.enabled && existing) {
           if (!await existing.unsubscribe()) {
             throw new Error('Failed to remove the previous device subscription');
@@ -82,6 +88,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
           const removed = await fetch('/api/notifications', { method: 'DELETE' });
           if (!removed.ok) throw new Error('Failed to remove the inactive reminder subscription');
           settings.enabled = false;
+          times = DEFAULT_REMINDER_TIMES;
         }
         if (settings.enabled && existing) {
           const sync = await fetch('/api/notifications', {
@@ -95,6 +102,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
         registration.current = worker;
         subscription.current = existing;
         setPublicKey(settings.publicKey ?? '');
+        setReminderTimes(times);
         setEnabled(settings.enabled && !!existing);
         if (!settings.enabled && !interacted.current) setIsOpen(true);
         if (!settings.publicKey && !settings.enabled) {
@@ -138,6 +146,7 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
         throw new Error(data.error || 'Failed to enable reminders');
       }
       subscription.current = current;
+      setReminderTimes(DEFAULT_REMINDER_TIMES);
       setEnabled(true);
       toast.success('Daily reminders enabled on this device');
     } catch (error) {
@@ -176,6 +185,33 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
     } catch (error) {
       console.error('Failed to disable reminders:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to disable reminders');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveTimes = async () => {
+    if (!isValidReminderTimes(reminderTimes)) {
+      toast.error('Choose one to three different reminder times');
+      return;
+    }
+    setBusy(true);
+    try {
+      const sorted = [...reminderTimes].sort();
+      const response = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reminderTimes: sorted }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save reminder times');
+      }
+      setReminderTimes(sorted);
+      toast.success('Reminder times saved');
+    } catch (error) {
+      console.error('Failed to save reminder times:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save reminder times');
     } finally {
       setBusy(false);
     }
@@ -222,9 +258,62 @@ export default function ReminderSettings({ sessionId }: { sessionId: number }) {
             </button>
           </div>
           <p className="mt-2 text-gray-300">
-            Get a reminder around 7 PM in your local time if you haven&apos;t met your needed-per-day pace. Your session needs an unfinished goal and a deadline.
+            Get up to three reminders a day in your local time if you haven&apos;t met your needed-per-day pace. Your session needs an unfinished goal and a deadline. Reminders may arrive shortly after the selected time.
           </p>
           {status === 'error' && <p className="mt-2 text-red-300">{errorMessage}</p>}
+          {status === 'ready' && enabled && (
+            <div className="mt-4">
+              <p className="font-semibold">Reminder times</p>
+              {reminderTimes.map((time, index) => (
+                <div key={index} className="mt-2 flex items-center gap-2">
+                  <label htmlFor={`${id}-time-${index}`} className="sr-only">Reminder {index + 1} time</label>
+                  <input
+                    id={`${id}-time-${index}`}
+                    type="time"
+                    value={time}
+                    disabled={busy}
+                    onChange={(event) => {
+                      const nextTime = event.target.value;
+                      setReminderTimes((times) =>
+                        times.map((value, i) => i === index ? nextTime : value));
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-gray-600 bg-gray-900 px-3 py-2 text-white"
+                  />
+                  {reminderTimes.length > 1 && (
+                    <button
+                      type="button"
+                      aria-label={`Remove reminder ${index + 1}`}
+                      disabled={busy}
+                      onClick={() => setReminderTimes((times) => times.filter((_, i) => i !== index))}
+                      className="rounded p-2 text-gray-300 hover:bg-gray-700 disabled:opacity-60"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {reminderTimes.length < MAX_REMINDERS && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setReminderTimes((times) => [...times, ''])}
+                    className="rounded-lg border border-gray-500 px-3 py-2 font-semibold hover:bg-gray-700 disabled:opacity-60"
+                  >
+                    Add time
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={saveTimes}
+                  className="rounded-lg bg-blue-600 px-3 py-2 font-semibold hover:bg-blue-700 disabled:opacity-60"
+                >
+                  Save times
+                </button>
+              </div>
+            </div>
+          )}
           {status === 'ready' && (
             <button
               type="button"

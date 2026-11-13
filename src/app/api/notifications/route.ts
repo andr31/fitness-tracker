@@ -12,6 +12,7 @@ import {
 } from '@/lib/pushDevice';
 import { isValidPushEndpoint, isValidPushKey, isValidTimeZone } from '@/lib/pushValidation';
 import { getPushConfig } from '@/lib/pushConfig';
+import { DEFAULT_REMINDER_TIMES, isValidReminderTimes } from '@/lib/reminder';
 
 export const runtime = 'nodejs';
 
@@ -23,13 +24,14 @@ export async function GET() {
     const deviceHash = await getPushDeviceHash();
     const result = deviceHash
       ? await sql`
-          SELECT 1 FROM push_subscriptions
+          SELECT reminder_times FROM push_subscriptions
           WHERE device_hash = ${deviceHash} AND user_id = ${user.id}
         `
       : null;
     return NextResponse.json({
       enabled: !!result?.rows.length,
       publicKey: getPushConfig()?.publicKey ?? null,
+      reminderTimes: result?.rows[0]?.reminder_times ?? DEFAULT_REMINDER_TIMES,
     });
   } catch (error) {
     console.error('Failed to load notification settings:', error);
@@ -92,6 +94,8 @@ export async function POST(request: NextRequest) {
         user_id = EXCLUDED.user_id, session_id = EXCLUDED.session_id,
         endpoint = EXCLUDED.endpoint, p256dh = EXCLUDED.p256dh,
         auth = EXCLUDED.auth, timezone = EXCLUDED.timezone,
+        reminder_times = CASE WHEN push_subscriptions.user_id = EXCLUDED.user_id
+          THEN push_subscriptions.reminder_times ELSE '["19:00"]'::jsonb END,
         last_reminder_date = NULL, last_attempt_id = NULL,
         updated_at = CURRENT_TIMESTAMP
     `;
@@ -108,13 +112,29 @@ export async function PATCH(request: NextRequest) {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Please log in' }, { status: 401 });
     const body: unknown = await request.json();
-    if (
-      !body || typeof body !== 'object' || !('timezone' in body) ||
-      typeof body.timezone !== 'string' || !isValidTimeZone(body.timezone)
+    if (!body || typeof body !== 'object' ||
+      (!('timezone' in body) && !('reminderTimes' in body)) ||
+      ('timezone' in body && (typeof body.timezone !== 'string' || !isValidTimeZone(body.timezone))) ||
+      ('reminderTimes' in body && !isValidReminderTimes(body.reminderTimes))
     ) {
-      return NextResponse.json({ error: 'Invalid timezone' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid reminder settings' }, { status: 400 });
     }
-    await syncPushSession(user.id, await getActiveSessionId(), body.timezone);
+    if ('timezone' in body && typeof body.timezone === 'string') {
+      await syncPushSession(user.id, await getActiveSessionId(), body.timezone);
+    }
+    if ('reminderTimes' in body && isValidReminderTimes(body.reminderTimes)) {
+      const deviceHash = await getPushDeviceHash();
+      const result = await sql`
+        UPDATE push_subscriptions
+        SET reminder_times = ${JSON.stringify([...body.reminderTimes].sort())}::jsonb,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE device_hash = ${deviceHash} AND user_id = ${user.id}
+        RETURNING id
+      `;
+      if (!result.rows.length) {
+        return NextResponse.json({ error: 'Enable reminders first' }, { status: 404 });
+      }
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to update the reminder session:', error);

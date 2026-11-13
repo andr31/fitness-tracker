@@ -20,6 +20,26 @@ async function createPushSubscriptionsTable() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `;
+  await sql`
+    ALTER TABLE push_subscriptions
+    ADD COLUMN IF NOT EXISTS reminder_times JSONB NOT NULL DEFAULT '["19:00"]'::jsonb
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS push_reminder_attempts (
+      subscription_id INTEGER NOT NULL REFERENCES push_subscriptions(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reminder_date DATE NOT NULL,
+      reminder_time TEXT NOT NULL,
+      attempt_id TEXT NOT NULL,
+      PRIMARY KEY (subscription_id, user_id, reminder_date, reminder_time)
+    )
+  `;
+  await sql`
+    INSERT INTO push_reminder_attempts (subscription_id, user_id, reminder_date, reminder_time, attempt_id)
+    SELECT id, user_id, last_reminder_date, '19:00', COALESCE(last_attempt_id, 'legacy')
+    FROM push_subscriptions WHERE last_reminder_date IS NOT NULL
+    ON CONFLICT DO NOTHING
+  `;
   console.log('Push subscriptions table is ready.');
 }
 

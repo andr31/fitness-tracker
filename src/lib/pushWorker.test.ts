@@ -31,13 +31,13 @@ describe('push service worker', () => {
     });
 
     handlers.push({
-      data: { json: () => ({ title: 'Rep Rally', body: 'Your daily pace' }) },
+      data: { json: () => ({ title: 'Rep Rally', body: 'Your daily pace', tag: 'reminder-19:00' }) },
       waitUntil: (promise: Promise<unknown>) => { pending = promise; },
     });
     await pending;
     assert.equal(notification?.title, 'Rep Rally');
     assert.equal(notification?.options.body, 'Your daily pace');
-    assert.equal(notification?.options.tag, 'daily-exercise-reminder');
+    assert.equal(notification?.options.tag, 'reminder-19:00');
 
     handlers.notificationclick({
       notification: { close: () => { closed = true; } },

@@ -31,7 +31,7 @@ The installed app uses the same server and requires an internet connection. Offl
 
 ## Daily reminders
 
-Members of account-based sessions can opt in to a daily push reminder on each device. Around 7 PM in the device's local time, a reminder is sent if today's net exercise is below the current "needed per day" pace shown in the app. It includes the daily pace and progress toward the milestone. A future deadline and an unfinished milestone are required. Reminders pause when the user logs out, switches to an open session, leaves the session, or the session is archived. The device's timezone is refreshed when its reminder settings are loaded. The reminder control appears only in browsers that support push notifications; on iPhone, open the installed Home Screen app to enable them.
+Members of account-based sessions can opt in to push reminders on each device. The default is one reminder around 7 PM; use the bell to choose one to three distinct daily times in the device's local time. Each reminder is sent if that day's net exercise is below the current "needed per day" pace shown in the app. It includes the daily pace and progress toward the milestone. A future deadline and an unfinished milestone are required. Reminders pause when the user logs out, switches to an open session, leaves the session, or the session is archived. The device's timezone is refreshed when its reminder settings are loaded. The reminder control appears only in browsers that support push notifications; on iPhone, open the installed Home Screen app to enable them.
 
 Reminder settings open automatically when reminders are off; use the bell in the header to open or close them.
 
@@ -41,10 +41,10 @@ To configure reminders:
 
 1. Generate VAPID keys with `npx web-push generate-vapid-keys` and add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or HTTPS URL) to the deployment environment. Keep the private key secret.
 2. Set `CRON_SECRET` to a random secret of at least 16 characters in Vercel. Vercel uses it to authorize the scheduled endpoint.
-3. Run `npx tsx create-push-subscriptions-table.ts` against the deployment database before deploying.
-4. Deploy the app with Vercel Schedules enabled. The schedule in `vercel.json` runs every 15 minutes; Hobby scheduling can add up to 15 minutes of jitter and has a monthly execution limit. Preview schedules are inactive by default.
+3. Before upgrading an existing installation, pause the old reminder schedule and wait for any in-flight sends to finish. Run `npx tsx create-push-subscriptions-table.ts` against the deployment database after the old sender has drained. This adds the schedule and delivery-claim tables and backfills the legacy claims; it is safe to rerun if the schema was prepared earlier. Do not restart the old sender after this final backfill.
+4. Deploy the new app, then enable its Vercel Schedule. The schedule in `vercel.json` runs every 15 minutes; Hobby scheduling can add up to 15 minutes of jitter and has a monthly execution limit. Preview schedules are inactive by default.
 
-Push delivery is subject to device permissions, network connectivity, and the push service. It is not guaranteed to arrive exactly at 7 PM.
+The scheduler checks for times within the preceding 30 minutes, so reminders can arrive after the selected time; longer outages can cause missed reminders. Push delivery is also subject to device permissions, network connectivity, and the push service.
 
 ## Password reset
 
