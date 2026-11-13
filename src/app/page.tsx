@@ -65,10 +65,9 @@ export default function Home() {
             Run a fitness challenge with your friends
           </h2>
           <p>
-            {SITE_NAME} is a free fitness challenge tracker. Create a private
+            {SITE_NAME} is a free fitness challenge tracker. Create a
             password-protected session, invite friends with a link and
-            password, and compete on a
-            leaderboard as everyone logs reps.
+            password, and compete on a leaderboard as everyone logs progress.
           </p>
           <ul className="list-disc pl-6 space-y-2">
             {SITE_FEATURES.map((feature) => (

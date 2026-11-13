@@ -80,8 +80,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 The homepage has server-rendered descriptive content, metadata, structured data,
 and a canonical URL. `robots.txt` and `sitemap.xml` advertise the public
-homepage; invite pages use `noindex` and are intentionally not in the sitemap.
-These settings do not guarantee indexing or rankings.
+homepage; invite, admin, and password-reset pages use `noindex` and are
+intentionally not in the sitemap. These settings do not guarantee indexing or
+rankings, and `noindex` is not a substitute for access controls.
 
 The canonical site defaults to `https://www.rep-rally.com`. If the production
 domain changes, set `NEXT_PUBLIC_SITE_URL` to the new public origin at build
