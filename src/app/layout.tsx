@@ -4,7 +4,6 @@ import './globals.css';
 import Providers from '@/components/Providers';
 import {
   SITE_DESCRIPTION,
-  SITE_KEYWORDS,
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
@@ -27,12 +26,9 @@ export const metadata: Metadata = {
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  keywords: SITE_KEYWORDS,
   applicationName: SITE_NAME,
-  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
-    url: '/',
     siteName: SITE_NAME,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,

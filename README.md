@@ -75,3 +75,31 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Search visibility
+
+The homepage has server-rendered descriptive content, metadata, structured data,
+and a canonical URL. `robots.txt` and `sitemap.xml` advertise the public
+homepage; invite pages use `noindex` and are intentionally not in the sitemap.
+These settings do not guarantee indexing or rankings.
+
+The canonical site defaults to `https://www.rep-rally.com`. If the production
+domain changes, set `NEXT_PUBLIC_SITE_URL` to the new public origin at build
+time, and redirect alternate domains to it. Do not set it to a preview URL for
+a production build.
+
+After deploying:
+
+1. Check that the homepage, `/robots.txt`, and `/sitemap.xml` are publicly
+   accessible, reference the production domain, and are not blocked by hosting
+   authentication or an `X-Robots-Tag: noindex` header.
+2. Verify the domain in [Google Search Console](https://search.google.com/search-console),
+   submit `https://www.rep-rally.com/sitemap.xml`, and use URL Inspection to test
+   and request indexing of the homepage.
+3. Use the [Rich Results Test](https://search.google.com/test/rich-results)
+   and monitor Search Console's indexing and performance reports. Keep the
+   homepage content accurate and useful, and share the site through relevant
+   communities and genuine links.
+
+See [Google's indexing FAQ](https://developers.google.com/search/help/crawling-index-faq)
+for details on discovery and indexing.

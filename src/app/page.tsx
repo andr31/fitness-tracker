@@ -1,10 +1,24 @@
+import type { Metadata } from 'next';
 import FitnessApp from '@/components/FitnessApp';
 import {
   SITE_DESCRIPTION,
   SITE_FEATURES,
   SITE_NAME,
+  SITE_TITLE,
   SITE_URL,
 } from '@/lib/seo';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    url: '/',
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: 'en_US',
+  },
+};
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -52,7 +66,8 @@ export default function Home() {
           </h2>
           <p>
             {SITE_NAME} is a free fitness challenge tracker. Create a private
-            session, invite friends with a link, and compete on a live
+            password-protected session, invite friends with a link and
+            password, and compete on a
             leaderboard as everyone logs reps.
           </p>
           <ul className="list-disc pl-6 space-y-2">
@@ -66,9 +81,9 @@ export default function Home() {
               Create a session and choose pushups, planks, or your own custom
               exercise.
             </li>
-            <li>Share the invite link with friends so they can join.</li>
+            <li>Share the invite link and password with friends so they can join.</li>
             <li>
-              Log reps every day, hit daily goals, and race to the milestone.
+              Log your progress, work toward daily goals, and race to the milestone.
             </li>
           </ol>
         </div>
