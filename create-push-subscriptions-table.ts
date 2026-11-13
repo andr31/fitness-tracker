@@ -40,10 +40,6 @@ async function createPushSubscriptionsTable() {
     FROM push_subscriptions WHERE last_reminder_date IS NOT NULL
     ON CONFLICT DO NOTHING
   `;
-  await sql`
-    UPDATE push_subscriptions SET last_reminder_date = NULL, last_attempt_id = NULL
-    WHERE last_reminder_date IS NOT NULL
-  `;
   console.log('Push subscriptions table is ready.');
 }
 

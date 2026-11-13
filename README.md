@@ -41,8 +41,8 @@ To configure reminders:
 
 1. Generate VAPID keys with `npx web-push generate-vapid-keys` and add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or HTTPS URL) to the deployment environment. Keep the private key secret.
 2. Set `CRON_SECRET` to a random secret of at least 16 characters in Vercel. Vercel uses it to authorize the scheduled endpoint.
-3. Run `npx tsx create-push-subscriptions-table.ts` against the deployment database before deploying, including when upgrading an existing installation. It adds the reminder schedule and delivery-claim tables while preserving the 7 PM default.
-4. Deploy the app with Vercel Schedules enabled. The schedule in `vercel.json` runs every 15 minutes; Hobby scheduling can add up to 15 minutes of jitter and has a monthly execution limit. Preview schedules are inactive by default.
+3. Before upgrading an existing installation, pause the old reminder schedule and wait for any in-flight sends to finish. Run `npx tsx create-push-subscriptions-table.ts` against the deployment database after the old sender has drained. This adds the schedule and delivery-claim tables and backfills the legacy claims; it is safe to rerun if the schema was prepared earlier. Do not restart the old sender after this final backfill.
+4. Deploy the new app, then enable its Vercel Schedule. The schedule in `vercel.json` runs every 15 minutes; Hobby scheduling can add up to 15 minutes of jitter and has a monthly execution limit. Preview schedules are inactive by default.
 
 The scheduler checks for times within the preceding 30 minutes, so reminders can arrive after the selected time; longer outages can cause missed reminders. Push delivery is also subject to device permissions, network connectivity, and the push service.
 
