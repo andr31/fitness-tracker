@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         try {
           await webPush.sendNotification(
             { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
-            JSON.stringify({ title: 'Rep Rally', body: reminder.body, tag: `daily-exercise-reminder-${row.reminder_date}-${row.reminder_time}` }),
+            JSON.stringify({ title: 'Exercise reminder', body: reminder.body, tag: `daily-exercise-reminder-${row.reminder_date}-${row.reminder_time}` }),
             { vapidDetails: config, TTL: 3600, timeout: 10_000 },
           );
           sent++;
