@@ -651,7 +651,7 @@ export default function Home() {
                   }}
                 >
                   {!activeSessionName
-                    ? 'Fitness Battle'
+                    ? 'Rep Rally'
                     : sessionType === 'plank'
                       ? 'Plank Pos Battle'
                       : sessionType === 'custom'
@@ -940,7 +940,7 @@ export default function Home() {
                   }}
                 >
                   {!activeSessionName
-                    ? 'Fitness Battle'
+                    ? 'Rep Rally'
                     : sessionType === 'plank'
                       ? 'Plank Pos Battle'
                       : sessionType === 'custom'

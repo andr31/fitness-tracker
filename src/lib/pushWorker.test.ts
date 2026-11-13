@@ -31,11 +31,11 @@ describe('push service worker', () => {
     });
 
     handlers.push({
-      data: { json: () => ({ title: 'Fitness Battle', body: 'Your daily pace' }) },
+      data: { json: () => ({ title: 'Rep Rally', body: 'Your daily pace' }) },
       waitUntil: (promise: Promise<unknown>) => { pending = promise; },
     });
     await pending;
-    assert.equal(notification?.title, 'Fitness Battle');
+    assert.equal(notification?.title, 'Rep Rally');
     assert.equal(notification?.options.body, 'Your daily pace');
     assert.equal(notification?.options.tag, 'daily-exercise-reminder');
 

@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Fitness Battle',
-    short_name: 'Fitness Battle',
+    name: 'Rep Rally',
+    short_name: 'Rep Rally',
     description: 'A fun and interactive fitness competition tracker',
     start_url: '/',
     scope: '/',

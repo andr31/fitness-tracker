@@ -58,7 +58,7 @@ export default function InstallHelp() {
         >
           <div className="flex items-start justify-between gap-4">
             <h2 id={`${id}-title`} className="font-bold text-white">
-              Add Fitness Battle to your phone
+              Add Rep Rally to your phone
             </h2>
             <button
               type="button"
