@@ -47,6 +47,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [dashboardKey, setDashboardKey] = useState(0);
   const [error, setError] = useState('');
+  const [sessionJoinError, setSessionJoinError] = useState('');
   const [activeSessionName, setActiveSessionName] = useState<string>('');
   const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const [sessionType, setSessionType] = useState<'pushups' | 'plank' | 'custom'>(
@@ -234,6 +235,7 @@ export default function Home() {
       if (!response.ok) {
         if (response.status === 401) {
           // No active session: the dashboard is shown instead
+          setPlayers([]);
           setLoading(false);
           return [];
         }
@@ -537,8 +539,9 @@ export default function Home() {
     threshold,
   } = usePullToRefresh(refreshAll, !!activeSessionName);
 
-  const handleSessionChange = () => {
+  const handleSessionChange = (sessionError = '') => {
     // Reload data after session change
+    setSessionJoinError(sessionError);
     fetchPlayers();
     fetchSettings();
     fetchActiveSession();
@@ -1165,6 +1168,21 @@ export default function Home() {
           )}
         </div>
       </motion.header>
+
+      {sessionJoinError && (
+        <div role="alert" className="max-w-7xl mx-auto px-4 mt-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-red-200">
+            <span>{sessionJoinError}</span>
+            <button
+              type="button"
+              onClick={() => setSessionJoinError('')}
+              className="underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Show session-dependent content only when a session is active */}
       {!activeSessionName && !loading ? (
