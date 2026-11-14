@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, History, Share2, Check } from 'lucide-react';
 import { SessionCardSkeleton } from '@/components/Skeleton';
 import { useToast } from '@/components/Providers';
+import AuthModal, { CurrentUser } from '@/components/AuthModal';
 
 interface Session {
   id: number;
@@ -31,6 +32,7 @@ interface SessionSelectorModalProps {
   isLoggedIn?: boolean;
   onBrowse?: () => void;
   onSignIn?: () => void;
+  onAuthenticated: (user: CurrentUser | null) => void;
 }
 
 export default function SessionSelectorModal({
@@ -42,6 +44,7 @@ export default function SessionSelectorModal({
   isLoggedIn = false,
   onBrowse,
   onSignIn,
+  onAuthenticated,
 }: SessionSelectorModalProps) {
   const isPage = variant === 'page';
   const toast = useToast();
@@ -53,6 +56,7 @@ export default function SessionSelectorModal({
   const [password, setPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [copiedSessionId, setCopiedSessionId] = useState<number | null>(null);
+  const [showJoinAuth, setShowJoinAuth] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -118,13 +122,21 @@ export default function SessionSelectorModal({
         throw new Error(data.error || 'Failed to activate session');
       }
 
-      setPassword('');
-      setSelectedSession(null);
-      setError(''); // Clear error on success
-      toast.success('Session activated');
-      await fetchActiveSession(); // Refresh active session indicator
-      onSessionChange();
-      onClose();
+      const session = sessions.find((item) => item.id === targetId);
+      if (session?.authMode === 'account') {
+        const meResponse = await fetch('/api/auth/me');
+        if (meResponse.status === 401) {
+          onAuthenticated(null);
+          setSelectedSession(targetId);
+          setShowJoinAuth(true);
+          return;
+        }
+        if (!meResponse.ok) throw new Error('Failed to check sign-in status');
+        onAuthenticated(await meResponse.json());
+        await joinAccountSession();
+      }
+
+      await finishActivation();
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to activate session';
@@ -134,6 +146,45 @@ export default function SessionSelectorModal({
         await fetchSessions();
       }
       setError(errorMessage);
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const joinAccountSession = async () => {
+    const response = await fetch('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      if (response.status === 409 && data.error === 'You have already joined this session') {
+        return;
+      }
+      throw new Error(data.error || 'Failed to join session');
+    }
+  };
+
+  const finishActivation = async () => {
+    setPassword('');
+    setSelectedSession(null);
+    setError('');
+    toast.success('Session activated');
+    await fetchActiveSession();
+    onSessionChange();
+    onClose();
+  };
+
+  const handleJoinAuthenticated = async (user: CurrentUser) => {
+    setShowJoinAuth(false);
+    onAuthenticated(user);
+    setIsActivating(true);
+    try {
+      await joinAccountSession();
+      await finishActivation();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to join session');
     } finally {
       setIsActivating(false);
     }
@@ -537,15 +588,26 @@ export default function SessionSelectorModal({
         </motion.div>
   );
 
-  if (isPage) {
-    return <div className="flex justify-center">{panel}</div>;
-  }
-
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        {panel}
-      </div>
-    </AnimatePresence>
+    <>
+      {isPage ? (
+        <div className="flex justify-center">{panel}</div>
+      ) : (
+        <AnimatePresence>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {panel}
+          </div>
+        </AnimatePresence>
+      )}
+      <AuthModal
+        isOpen={showJoinAuth}
+        onClose={() => {
+          setShowJoinAuth(false);
+          onSessionChange();
+        }}
+        onAuthenticated={handleJoinAuthenticated}
+        title="Sign in to join"
+      />
+    </>
   );
 }

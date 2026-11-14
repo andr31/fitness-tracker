@@ -1176,6 +1176,7 @@ export default function Home() {
             isLoggedIn={!!currentUser}
             onBrowse={() => setIsSessionSelectorOpen(true)}
             onSignIn={() => setIsAuthModalOpen(true)}
+            onAuthenticated={setCurrentUser}
             onCreateNew={() => setIsCreateSessionOpen(true)}
             onSessionChange={handleSessionChange}
           />
@@ -1454,6 +1455,7 @@ export default function Home() {
           setIsCreateSessionOpen(true);
         }}
         onSessionChange={handleSessionChange}
+        onAuthenticated={setCurrentUser}
       />
 
       <CreateSessionModal
