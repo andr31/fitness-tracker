@@ -59,6 +59,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const input: unknown = request.body ? await request.json() : {};
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+    const body = input as Record<string, unknown>;
+    const { expectedSessionId } = body;
+    if (expectedSessionId !== undefined) {
+      if (
+        typeof expectedSessionId !== 'number' ||
+        !Number.isInteger(expectedSessionId) ||
+        expectedSessionId <= 0
+      ) {
+        return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
+      }
+      if (expectedSessionId !== sessionId) {
+        return NextResponse.json(
+          { error: 'The active session changed. Please select the session again.' },
+          { status: 409 },
+        );
+      }
+    }
+
     const sessionResult = await sql`
       SELECT authMode, creatorUserId FROM sessions WHERE id = ${sessionId}
     `;
@@ -96,7 +118,7 @@ export async function POST(request: NextRequest) {
       userId = currentUser.id;
       role = currentUser.id === creatorUserId ? 'admin' : 'member';
     } else {
-      const { name } = await request.json();
+      const { name } = body;
       if (!name || typeof name !== 'string') {
         return NextResponse.json(
           { error: 'Name is required' },

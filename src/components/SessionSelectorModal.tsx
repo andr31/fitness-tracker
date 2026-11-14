@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, History, Share2, Check } from 'lucide-react';
 import { SessionCardSkeleton } from '@/components/Skeleton';
 import { useToast } from '@/components/Providers';
+import AuthModal, { CurrentUser } from '@/components/AuthModal';
 
 interface Session {
   id: number;
@@ -26,11 +27,12 @@ interface SessionSelectorModalProps {
   isOpen: boolean;
   onClose?: () => void;
   onCreateNew: () => void;
-  onSessionChange: () => void;
+  onSessionChange: (error?: string) => void;
   variant?: 'modal' | 'page';
   isLoggedIn?: boolean;
   onBrowse?: () => void;
   onSignIn?: () => void;
+  onAuthenticated: (user: CurrentUser | null) => void;
 }
 
 export default function SessionSelectorModal({
@@ -42,6 +44,7 @@ export default function SessionSelectorModal({
   isLoggedIn = false,
   onBrowse,
   onSignIn,
+  onAuthenticated,
 }: SessionSelectorModalProps) {
   const isPage = variant === 'page';
   const toast = useToast();
@@ -53,6 +56,10 @@ export default function SessionSelectorModal({
   const [password, setPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
   const [copiedSessionId, setCopiedSessionId] = useState<number | null>(null);
+  const [showJoinAuth, setShowJoinAuth] = useState(false);
+  const [pendingJoinSessionId, setPendingJoinSessionId] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -101,6 +108,7 @@ export default function SessionSelectorModal({
       return;
     }
 
+    let activated = false;
     try {
       setIsActivating(true);
       setError(''); // Clear any previous errors
@@ -117,23 +125,86 @@ export default function SessionSelectorModal({
         const data = await response.json();
         throw new Error(data.error || 'Failed to activate session');
       }
+      activated = true;
 
-      setPassword('');
-      setSelectedSession(null);
-      setError(''); // Clear error on success
-      toast.success('Session activated');
-      await fetchActiveSession(); // Refresh active session indicator
-      onSessionChange();
-      onClose();
+      const session = sessions.find((item) => item.id === targetId);
+      if (session?.authMode === 'account') {
+        const meResponse = await fetch('/api/auth/me');
+        if (meResponse.status === 401) {
+          onAuthenticated(null);
+          setSelectedSession(targetId);
+          setPendingJoinSessionId(targetId);
+          setShowJoinAuth(true);
+          return;
+        }
+        if (!meResponse.ok) throw new Error('Failed to check sign-in status');
+        onAuthenticated(await meResponse.json());
+        await joinAccountSession(targetId);
+      }
+
+      await finishActivation();
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to activate session';
-      if (memberSessionId) {
+      if (memberSessionId && !activated) {
         // Membership may be stale (logged out elsewhere): refresh and fall back to the password form
         setSelectedSession(memberSessionId);
         await fetchSessions();
       }
       setError(errorMessage);
+      if (activated) reconcileActivationFailure(errorMessage);
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const joinAccountSession = async (sessionId: number) => {
+    const response = await fetch('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expectedSessionId: sessionId }),
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      if (response.status === 409 && data.error === 'You have already joined this session') {
+        return;
+      }
+      throw new Error(data.error || 'Failed to join session');
+    }
+  };
+
+  const reconcileActivationFailure = (message: string) => {
+    toast.error(message);
+    void fetchActiveSession();
+    onSessionChange(message);
+  };
+
+  const finishActivation = async () => {
+    setPassword('');
+    setSelectedSession(null);
+    setPendingJoinSessionId(null);
+    setError('');
+    toast.success('Session activated');
+    await fetchActiveSession();
+    onSessionChange();
+    onClose();
+  };
+
+  const handleJoinAuthenticated = async (user: CurrentUser) => {
+    setShowJoinAuth(false);
+    onAuthenticated(user);
+    setIsActivating(true);
+    try {
+      if (pendingJoinSessionId === null) {
+        throw new Error('Please select the session again.');
+      }
+      await joinAccountSession(pendingJoinSessionId);
+      await finishActivation();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to join session';
+      setError(message);
+      reconcileActivationFailure(message);
     } finally {
       setIsActivating(false);
     }
@@ -537,15 +608,28 @@ export default function SessionSelectorModal({
         </motion.div>
   );
 
-  if (isPage) {
-    return <div className="flex justify-center">{panel}</div>;
-  }
-
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        {panel}
-      </div>
-    </AnimatePresence>
+    <>
+      {isPage ? (
+        <div className="flex justify-center">{panel}</div>
+      ) : (
+        <AnimatePresence>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {panel}
+          </div>
+        </AnimatePresence>
+      )}
+      <AuthModal
+        isOpen={showJoinAuth}
+        onClose={() => {
+          setShowJoinAuth(false);
+          setPendingJoinSessionId(null);
+          void fetchActiveSession();
+          onSessionChange();
+        }}
+        onAuthenticated={handleJoinAuthenticated}
+        title="Sign in to join"
+      />
+    </>
   );
 }
