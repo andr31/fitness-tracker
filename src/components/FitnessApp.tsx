@@ -62,6 +62,7 @@ export default function Home() {
   const [competitionEndDate, setCompetitionEndDate] = useState<Date | null>(
     null,
   );
+  const [competitionEnded, setCompetitionEnded] = useState(false);
   const [headerExpanded, setHeaderExpanded] = useState(false);
   const [celebratingPlayer, setCelebratingPlayer] = useState<string | null>(
     null,
@@ -142,9 +143,7 @@ export default function Home() {
     fetchCurrentUser();
   }, []);
 
-  const fetchActiveSession = async (silent = false) => {
-    // The countdown only refetches its end date on mount, so keep it on silent refreshes
-    if (!silent) setCompetitionEndDate(null);
+  const fetchActiveSession = async () => {
     try {
       const response = await fetch('/api/sessions/active');
       if (response.ok) {
@@ -342,6 +341,11 @@ export default function Home() {
     amount: number,
     date?: string,
   ): Promise<void> => {
+    if (competitionEnded || (competitionEndDate && competitionEndDate.getTime() <= Date.now())) {
+      setCompetitionEnded(true);
+      toast.error('Competition ended. Exercise entries are locked.');
+      return Promise.resolve();
+    }
     const activityDate = date ?? formatLocalDate(new Date());
     const previousPlayer = players.find((p) => p.id === playerId);
     // Optimistic update: show the new total right away and roll back on failure
@@ -375,6 +379,7 @@ export default function Home() {
 
         if (!response.ok) {
           const errorData = await response.json();
+          if (response.status === 409) setCompetitionEnded(true);
           console.error('API Error:', errorData);
           throw new Error(
             errorData.details || errorData.error || 'Failed to update pushups',
@@ -384,7 +389,7 @@ export default function Home() {
         updatedPlayer = await response.json();
         succeeded = true;
       } catch (err) {
-        toast.error(`Failed to update ${exerciseLabel.toLowerCase()}`);
+        toast.error(err instanceof Error ? err.message : `Failed to update ${exerciseLabel.toLowerCase()}`);
         console.error(err);
       }
 
@@ -521,7 +526,7 @@ export default function Home() {
         Promise.all([
           fetchPlayers(true),
           fetchSettings(),
-          fetchActiveSession(true),
+          fetchActiveSession(),
         ]),
         timeout,
       ]);
@@ -1204,10 +1209,11 @@ export default function Home() {
           {/* Countdown Timer */}
           <div className="max-w-7xl mx-auto px-4 mt-4">
             <CountdownTimer
-              key={activeSessionName}
+              key={activeSessionId}
               theme={theme}
               canEdit={canEditMilestone}
               onEndDateChange={setCompetitionEndDate}
+              onEndedChange={setCompetitionEnded}
             />
           </div>
 
@@ -1417,6 +1423,7 @@ export default function Home() {
                             theme={theme}
                             milestone={milestone}
                             competitionEndDate={competitionEndDate}
+                            competitionEnded={competitionEnded}
                             sessionType={sessionType}
                             exerciseLabel={exerciseLabel}
                             accountMode={sessionAuthMode === 'account'}

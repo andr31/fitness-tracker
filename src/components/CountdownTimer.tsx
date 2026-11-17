@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Theme } from '@/lib/emojis';
+import { useToast } from '@/components/Providers';
 
 interface CountdownTimerProps {
   theme?: Theme;
   canEdit?: boolean;
   onEndDateChange?: (endDate: Date | null) => void;
+  onEndedChange?: (ended: boolean) => void;
 }
 
 function getThemeColors(theme: Theme) {
@@ -47,7 +49,9 @@ export default function CountdownTimer({
   theme = 'cartoon',
   canEdit = true,
   onEndDateChange,
+  onEndedChange,
 }: CountdownTimerProps) {
+  const toast = useToast();
   const colors = getThemeColors(theme);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [timeRemaining, setTimeRemaining] = useState({
@@ -59,56 +63,75 @@ export default function CountdownTimer({
   });
   const [editingEndDate, setEditingEndDate] = useState(false);
   const [dateInput, setDateInput] = useState('');
+  const [loadError, setLoadError] = useState(false);
+  const requestVersion = useRef(0);
+  const saving = useRef(false);
 
   const fetchEndDate = useCallback(async (): Promise<Date | null> => {
     const response = await fetch('/api/competition');
-    if (!response.ok) return null;
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error('Failed to fetch competition deadline');
 
     const data = await response.json();
-    // Parse the UTC date and use it directly (JS Date handles timezone conversion)
-    return new Date(data.endDate);
+    const parsed = new Date(data.endDate);
+    if (!Number.isFinite(parsed.getTime())) throw new Error('Invalid competition deadline');
+    return parsed;
   }, []);
 
   const updateEndDate = async () => {
     if (!dateInput) return;
-    
+    saving.current = true;
+    requestVersion.current++;
     try {
       const response = await fetch('/api/competition', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endDate: dateInput }),
+        body: JSON.stringify({ endDate: new Date(dateInput).toISOString() }),
       });
       
-      if (response.ok) {
-        const nextEndDate = await fetchEndDate();
-        setEndDate(nextEndDate);
-        onEndDateChange?.(nextEndDate);
-        setEditingEndDate(false);
-      }
+      if (!response.ok) throw new Error('Failed to save competition deadline');
+      const nextEndDate = await fetchEndDate();
+      setLoadError(false);
+      setEndDate(nextEndDate);
+      onEndDateChange?.(nextEndDate);
+      onEndedChange?.(!!nextEndDate && nextEndDate.getTime() <= Date.now());
+      setEditingEndDate(false);
     } catch (error) {
       console.error('Error updating competition end date:', error);
+      toast.error('Failed to update competition deadline');
+    } finally {
+      saving.current = false;
     }
   };
 
   useEffect(() => {
     let isCurrent = true;
-    fetchEndDate()
+    const refresh = () => {
+      if (saving.current) return;
+      const version = ++requestVersion.current;
+      fetchEndDate()
       .then((nextEndDate) => {
-        if (!isCurrent) return;
+        if (!isCurrent || version !== requestVersion.current) return;
+        setLoadError(false);
         setEndDate(nextEndDate);
         onEndDateChange?.(nextEndDate);
+        onEndedChange?.(!!nextEndDate && nextEndDate.getTime() <= Date.now());
       })
       .catch((error) => {
         console.error('Error fetching competition end date:', error);
-        if (!isCurrent) return;
-        setEndDate(null);
-        onEndDateChange?.(null);
+        if (isCurrent && version === requestVersion.current) setLoadError(true);
       });
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
 
     return () => {
       isCurrent = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
     };
-  }, [fetchEndDate, onEndDateChange]);
+  }, [fetchEndDate, onEndDateChange, onEndedChange]);
 
   useEffect(() => {
     if (!endDate) return;
@@ -116,6 +139,7 @@ export default function CountdownTimer({
     const updateCountdown = () => {
       const now = new Date();
       const diff = endDate.getTime() - now.getTime();
+      if (diff <= 0) onEndedChange?.(true);
 
       if (diff <= 0) {
         setTimeRemaining({
@@ -140,7 +164,7 @@ export default function CountdownTimer({
     const interval = setInterval(updateCountdown, 1000);
 
     return () => clearInterval(interval);
-  }, [endDate]);
+  }, [endDate, onEndedChange]);
 
   return (
     <motion.div
@@ -199,7 +223,9 @@ export default function CountdownTimer({
         </div>
       ) : (
         <>
-          {!endDate ? (
+          {loadError ? (
+            <p role="alert" className="text-center text-red-300">Unable to load the competition deadline. Please refresh.</p>
+          ) : !endDate ? (
             <div className="text-center py-4">
               <p className="text-lg text-gray-300">No competition end date set</p>
               <p className="text-sm text-gray-400 mt-2">Click the ✏️ to set a deadline!</p>
@@ -208,6 +234,7 @@ export default function CountdownTimer({
             <div className="text-center">
               <p className="text-3xl font-bold mb-2">🎉</p>
               <p className="text-xl font-bold text-white">Competition Ended!</p>
+              <p className="text-sm text-white/70 mt-2">Exercise entries are locked.</p>
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-4">

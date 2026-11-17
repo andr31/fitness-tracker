@@ -37,6 +37,10 @@ Reminder settings open automatically when reminders are off; use the bell in the
 
 Older exercise entries without a selected date were recorded in Los Angeles time and are not automatically corrected.
 
+## Competition deadlines
+
+When a competition deadline expires, exercise and daily-goal entries cannot be added or removed, including entries for earlier dates. Sessions without a deadline remain open. Session admins can extend a deadline to reopen a competition. New deadlines are saved as absolute times in the setter's local time zone and displayed in each viewer's time zone. Older deadlines stored without a time zone are interpreted as UTC.
+
 To configure reminders:
 
 1. Generate VAPID keys with `npx web-push generate-vapid-keys` and add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (a `mailto:` address or HTTPS URL) to the deployment environment. Keep the private key secret.

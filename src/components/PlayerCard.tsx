@@ -44,6 +44,7 @@ interface PlayerCardProps {
   theme?: Theme;
   milestone?: number;
   competitionEndDate?: Date | null;
+  competitionEnded?: boolean;
   sessionType?: 'pushups' | 'plank' | 'custom';
   // Display name for custom sessions (e.g. "Squats"); ignored for pushups/plank.
   exerciseLabel?: string;
@@ -122,10 +123,11 @@ export default function PlayerCard({
   isMine = true,
   isAdmin = false,
   competitionEndDate = null,
+  competitionEnded = false,
 }: PlayerCardProps) {
   const toast = useToast();
   const confirm = useConfirm();
-  const canEditData = !accountMode || isMine;
+  const canEditData = (!accountMode || isMine) && !competitionEnded;
   const canDelete = !accountMode || isMine || isAdmin;
   const activityUnit =
     sessionType === 'plank' ? 'minutes' : exerciseLabel.toLowerCase();
@@ -348,6 +350,9 @@ export default function PlayerCard({
       if (response.ok) {
         fetchDailyGoalProgress();
         fetchDailyGoalStats();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to update daily goal');
       }
     } catch (error) {
       console.error('Error adding daily goal:', error);
@@ -604,12 +609,14 @@ export default function PlayerCard({
 
       {!canEditData && (
         <p className="text-xs text-white opacity-50 italic mb-2">
-          🔒 View only — only {player.name} can update this data
+          {competitionEnded
+            ? '🔒 Competition ended — exercise entries are locked'
+            : `🔒 View only — only ${player.name} can update this data`}
         </p>
       )}
 
       <div className="space-y-4">
-        {milestone > 0 && competitionEndDate && (
+        {milestone > 0 && competitionEndDate && !competitionEnded && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -822,7 +829,8 @@ export default function PlayerCard({
               setShowDatePicker(!showDatePicker);
               if (showDatePicker) setSelectedDate('');
             }}
-            className="px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-2"
+            disabled={!canEditData}
+            className="px-3 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: showDatePicker
                 ? colors.highlightBgStrong
@@ -836,6 +844,7 @@ export default function PlayerCard({
           {showDatePicker && (
             <input
               type="date"
+              disabled={!canEditData}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               max={new Date().toISOString().split('T')[0]}
@@ -1119,6 +1128,7 @@ export default function PlayerCard({
               </div>
               <input
                 type="range"
+                disabled={!canEditData}
                 min={sessionType === 'plank' ? 0.25 : 1}
                 max={sessionType === 'plank' ? 10 : 70}
                 step={sessionType === 'plank' ? 0.25 : 1}

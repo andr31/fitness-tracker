@@ -81,23 +81,28 @@ export async function POST(
       }
     }
 
-    // Insert daily goal history entry
-    if (date) {
-      await sql`
-        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
-        VALUES (${playerId}, ${amount}, ${date}::DATE, ${dailyGoalTarget}, ${sessionId})
-      `;
-    } else {
-      await sql`
-        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
-        VALUES (
-          ${playerId}, 
-          ${amount}, 
-          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
-          ${dailyGoalTarget},
-          ${sessionId}
-        )
-      `;
+    const result = await sql`
+      INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId)
+      SELECT ${playerId}, ${amount},
+        COALESCE(${date ?? null}::date, (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::date),
+        ${dailyGoalTarget}, ${sessionId}
+      WHERE NOT EXISTS (
+        SELECT 1 FROM (
+          SELECT CASE
+            WHEN endDate ~ '(Z|[+-][0-9]{2}:[0-9]{2})$' THEN endDate::timestamptz
+            ELSE endDate::timestamp AT TIME ZONE 'UTC'
+          END AS ends_at
+          FROM competition_settings WHERE sessionId = ${sessionId}
+          ORDER BY id DESC LIMIT 1
+        ) deadline WHERE ends_at <= clock_timestamp()
+      )
+      RETURNING id
+    `;
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Competition ended. Exercise entries are locked.' },
+        { status: 409 },
+      );
     }
 
     return NextResponse.json({ success: true });

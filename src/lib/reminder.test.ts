@@ -111,6 +111,19 @@ describe('daily reminders', () => {
     }), null);
   });
 
+  it('uses the same absolute deadline across time zones, including legacy UTC deadlines', () => {
+    for (const endDate of ['2026-03-09T00:00', '2026-03-09T00:00:00.000Z']) {
+      for (const timezone of ['America/Los_Angeles', 'Asia/Kathmandu']) {
+        assert.ok(getDailyReminder({
+          ...base, timezone, endDate, now: new Date('2026-03-08T23:59:00Z'),
+        }));
+        assert.equal(getDailyReminder({
+          ...base, timezone, endDate, now: new Date('2026-03-09T00:00:00Z'),
+        }), null);
+      }
+    }
+  });
+
   it('handles timezones with non-hour offsets', () => {
     const result = getDailyReminder({
       ...base,

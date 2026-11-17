@@ -16,7 +16,10 @@ export async function GET() {
     }
 
     const result = await sql`
-      SELECT endDate FROM competition_settings 
+      SELECT CASE
+        WHEN endDate ~ '(Z|[+-][0-9]{2}:[0-9]{2})$' THEN endDate::timestamptz
+        ELSE endDate::timestamp AT TIME ZONE 'UTC'
+      END AS enddate FROM competition_settings
       WHERE sessionId = ${sessionId}
       ORDER BY id DESC LIMIT 1;
     `;
@@ -28,7 +31,6 @@ export async function GET() {
       );
     }
 
-    // Return endDate as-is (stored as local datetime string without timezone)
     return NextResponse.json({ endDate: result.rows[0].enddate });
   } catch (error) {
     console.error('Error fetching competition end date:', error);
@@ -53,9 +55,9 @@ export async function PUT(request: NextRequest) {
 
     const { endDate } = await request.json();
 
-    if (!endDate) {
+    if (typeof endDate !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(endDate) || !Number.isFinite(Date.parse(endDate))) {
       return NextResponse.json(
-        { error: 'End date is required' },
+        { error: 'A valid UTC end date is required' },
         { status: 400 }
       );
     }
