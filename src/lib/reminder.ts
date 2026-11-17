@@ -84,13 +84,17 @@ export function getDailyReminder(input: ReminderInput): { date: string; body: st
   if (!input.endDate || input.total >= input.milestone) return null;
 
   const { date, time: localNow } = localTime(input.now);
-  const endDate = new Date(input.endDate);
+  const endDate = new Date(
+    /(?:Z|[+-]\d{2}:\d{2})$/i.test(input.endDate)
+      ? input.endDate
+      : `${input.endDate}Z`,
+  );
   if (!Number.isFinite(endDate.getTime())) {
     throw new Error('Invalid competition deadline');
   }
-  if (input.deliveryNow && endDate.getTime() <= localTime(input.deliveryNow).time.getTime()) return null;
-  const days = getCalendarDaysRemaining(endDate, localNow);
-  if (days <= 0) return null;
+  if (endDate.getTime() <= (input.deliveryNow ?? input.now).getTime()) return null;
+  // During a fall-back transition, the later instant can have an earlier wall time.
+  const days = Math.max(1, getCalendarDaysRemaining(localTime(endDate).time, localNow));
 
   const pace = getRequiredDailyPace(input.milestone - input.total, days, input.sessionType);
   if (input.todayTotal >= pace) return null;

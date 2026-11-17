@@ -53,7 +53,7 @@ export async function POST(
     if (!authz.ok) return authz.response;
 
     const body = await request.json();
-    let { amount, date } = body;
+    const { amount, date } = body;
     console.log('[API] Request body:', { amount, date, type: typeof amount });
 
     if (typeof amount !== 'number' || !Number.isFinite(amount)) {
@@ -93,105 +93,70 @@ export async function POST(
       }
     }
 
-    // Check if player exists and get current total
-    const playerResult = await sql`
-      SELECT id, totalpushups FROM players WHERE id = ${playerId} AND sessionId = ${sessionId}
-    `;
-
-    if (!playerResult.rows || playerResult.rows.length === 0) {
-      return NextResponse.json({ error: 'Player not found' }, { status: 404 });
-    }
-
-    const player = playerResult.rows[0];
-    // Convert totalpushups to number (it comes as string from NUMERIC columns)
-    const currentTotal = parseFloat(player.totalpushups) || 0;
-    let newTotal = currentTotal + amount;
-
-    // Cap at 0 instead of allowing negative values
-    if (newTotal < 0) {
-      newTotal = 0;
-      // Adjust amount to only remove what's available
-      amount = -currentTotal;
-    }
-
-    // Get player's current daily goal setting
-    const dailyGoalResult = await sql`
-      SELECT dailyGoal FROM dailyGoalSettings WHERE playerId = ${playerId} AND sessionId = ${sessionId}
-    `;
-    const dailyGoalTarget =
-      dailyGoalResult.rows.length > 0
-        ? parseFloat(dailyGoalResult.rows[0].dailygoal) || 100
-        : 100;
-
-    // For removals (negative amounts), check current daily goal progress to prevent negative values
-    let dailyGoalAmount = amount;
-    if (amount < 0) {
-      const progressResult = date
-        ? await sql`
-            SELECT COALESCE(SUM(amount), 0) as total
-            FROM dailyGoalHistory
-            WHERE playerId = ${playerId} AND sessionId = ${sessionId} AND localDate = ${date}::DATE
-          `
-        : await sql`
-            SELECT COALESCE(SUM(amount), 0) as total
-            FROM dailyGoalHistory
-            WHERE playerId = ${playerId} AND sessionId = ${sessionId} AND localDate = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE
-          `;
-      const currentProgress = parseFloat(progressResult.rows[0]?.total) || 0;
-      // Only remove up to current progress (don't go below 0)
-      dailyGoalAmount = Math.max(amount, -currentProgress);
-    }
-
-    // Insert history with either provided date or auto-calculated PST date
-    if (date) {
-      await sql`
-        INSERT INTO pushupHistory (playerId, amount, localDate, sessionId) 
-        VALUES (${playerId}, ${amount}, ${date}::DATE, ${sessionId})
-      `;
-      // Also update daily goal history with the same date, but cap removal at 0
-      if (dailyGoalAmount !== 0) {
-        await sql`
-          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
-          VALUES (${playerId}, ${dailyGoalAmount}, ${date}::DATE, ${dailyGoalTarget}, ${sessionId})
-        `;
-      }
-    } else {
-      await sql`
-        INSERT INTO pushupHistory (playerId, amount, localDate, sessionId) 
-        VALUES (
-          ${playerId}, 
-          ${amount}, 
-          (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
-          ${sessionId}
-        )
-      `;
-      // Also update daily goal history, but cap removal at 0
-      if (dailyGoalAmount !== 0) {
-        await sql`
-          INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId) 
-          VALUES (
-            ${playerId}, 
-            ${dailyGoalAmount}, 
-            (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::DATE,
-            ${dailyGoalTarget},
-            ${sessionId}
-          )
-        `;
-      }
-    }
-
-    // Update player total
+    // The cutoff, total and both history entries must be applied in one statement.
     const result = await sql`
-      UPDATE players 
-      SET totalpushups = ${newTotal}, updatedat = CURRENT_TIMESTAMP 
-      WHERE id = ${playerId}
-      RETURNING id, name, totalpushups, updatedat
+      WITH deadline AS MATERIALIZED (
+        SELECT CASE
+          WHEN endDate ~ '(Z|[+-][0-9]{2}:[0-9]{2})$' THEN endDate::timestamptz
+          ELSE endDate::timestamp AT TIME ZONE 'UTC'
+        END AS ends_at
+        FROM competition_settings WHERE sessionId = ${sessionId}
+        ORDER BY id DESC LIMIT 1
+      ),
+      target AS MATERIALIZED (
+        SELECT id, totalpushups AS old_total FROM players
+        WHERE id = ${playerId} AND sessionId = ${sessionId}
+        FOR UPDATE
+      ),
+      updated AS (
+        UPDATE players p
+        SET totalpushups = GREATEST(0, target.old_total + ${amount}),
+            updatedat = CURRENT_TIMESTAMP
+        FROM target
+        WHERE p.id = target.id
+          AND clock_timestamp() < COALESCE(
+            (SELECT ends_at FROM deadline), 'infinity'::timestamptz
+          )
+        RETURNING p.id, p.name, p.totalpushups, p.updatedat, target.old_total
+      ),
+      entry AS (
+        SELECT updated.*, totalpushups - old_total AS delta,
+          COALESCE(${date ?? null}::date, (CURRENT_TIMESTAMP AT TIME ZONE 'America/Los_Angeles')::date) AS activity_date
+        FROM updated
+      ),
+      history AS (
+        INSERT INTO pushupHistory (playerId, amount, localDate, sessionId)
+        SELECT id, delta, activity_date, ${sessionId} FROM entry
+      ),
+      goal_entry AS (
+        SELECT entry.*,
+          CASE WHEN delta < 0 THEN GREATEST(delta, -COALESCE((
+            SELECT SUM(amount) FROM dailyGoalHistory
+            WHERE playerId = entry.id AND sessionId = ${sessionId}
+              AND localDate = entry.activity_date
+          ), 0)) ELSE delta END AS goal_delta,
+          COALESCE((SELECT NULLIF(dailyGoal, 0) FROM dailyGoalSettings
+            WHERE playerId = entry.id AND sessionId = ${sessionId} LIMIT 1), 100) AS goal_target
+        FROM entry
+      ),
+      goal_history AS (
+        INSERT INTO dailyGoalHistory (playerId, amount, localDate, dailyGoalTarget, sessionId)
+        SELECT id, goal_delta, activity_date, goal_target, ${sessionId}
+        FROM goal_entry WHERE goal_delta <> 0
+      )
+      SELECT * FROM entry
     `;
 
     if (!result.rows || result.rows.length === 0) {
+      const player = await sql`
+        SELECT id FROM players WHERE id = ${playerId} AND sessionId = ${sessionId}
+      `;
+      if (player.rows.length === 0) {
+        return NextResponse.json({ error: 'Player not found' }, { status: 404 });
+      }
       return NextResponse.json(
-        { error: 'Failed to update player' },
-        { status: 500 },
+        { error: 'Competition ended. Exercise entries are locked.' },
+        { status: 409 },
       );
     }
 
